@@ -1,0 +1,19 @@
+{
+  "name": "tradingview",
+  "version": "1.0.0",
+  "description": "Tradingview instant stocks API",
+  "main": "main.js",
+  "scripts": {
+    "test": "node test",
+    "start": "npm test"
+  },
+  "keywords": [
+    "tradingwiew",
+    "api"
+  ],
+  "author": "Mathieu Colmon",
+  "license": "ISC",
+  "dependencies": {
+    "ws": "^7.4.3"
+  }
+}
