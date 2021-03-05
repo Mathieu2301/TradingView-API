@@ -1,5 +1,5 @@
 {
-  "name": "tradingview",
+  "name": "@mathieuc/tradingview",
   "version": "1.0.0",
   "description": "Tradingview instant stocks API",
   "main": "main.js",

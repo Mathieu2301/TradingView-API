@@ -5,7 +5,7 @@ ___
 ## Installation
 
 ```
-npm i tradingview
+npm i @mathieuc/tradingview
 ```
 
 ## Example (test.js)
