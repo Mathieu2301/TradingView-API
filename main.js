@@ -1,23 +1,35 @@
 const WebSocket = require('ws');
 const https = require('https');
 
+let onPacket = () => null;
+
 function parse(str) {
-  const data = JSON.parse(str.split('~').pop());
+  const packets = str.replace(/~h~/g, '').split(/~m~[0-9]{1,}~m~/g).map((p) => {
+    if (!p) return false;
+    try {
+      return JSON.parse(p);
+    } catch (error) {
+      console.log('Cant parse', p);
+      return false;
+    }
+  }).filter((p) => p);
 
-  if (data.m === 'protocol_error') return {
-    type: 'error',
-    syntax: data.p[0],
-  }
+  packets.forEach((packet) => {
+    if (packet.m === 'protocol_error') return onPacket({
+      type: 'error',
+      syntax: packet.p[0],
+    });
 
-  if (data.m && data.p) return {
-    type: data.m,
-    session: data.p[0],
-    data: data.p[1],
-  }
+    if (packet.m && packet.p) return onPacket({
+      type: packet.m,
+      session: packet.p[0],
+      data: packet.p[1],
+    });
 
-  if (typeof data === 'number') return { type: 'ping', ping: data }
+    if (typeof packet === 'number') return onPacket({ type: 'ping', ping: packet });
 
-  return { type: 'info', ...data }
+    return onPacket({ type: 'info', ...packet });
+  });
 }
 
 function genSession() {
@@ -36,83 +48,103 @@ module.exports = () => {
     ping: [],
     price: [],
     data: [],
-    
+
     error: [],
     event: [],
   };
-
-  let ws = new WebSocket('wss://widgetdata.tradingview.com/socket.io/websocket?from=embed-widget%2Fmini-symbol-overview%2F&date=2021_03_04-12_35', {
-    origin: 'https://s.tradingview.com',
-  });
-
-  function send(m = '', p = []) {
-    if (!session) return;
-
-    const msg = JSON.stringify({ m, p });
-    ws.send(`~m~${msg.length}~m~${msg}`);
-  }
-
-  let logged = false;
-  let session = '';
-
-  ws.on('open', () => {
-    session = genSession();
-    handleEvent('connected');
-  });
-
-  ws.on('close', () => {
-    logged = false;
-    session = '';
-    handleEvent('disconnected');
-  });
-
-  ws.on('message', (str) => {
-    const data = parse(str);
-
-    if (data.type === 'ping') {
-      const pingStr = `~h~${data.ping}`;
-      ws.send(`~m~${pingStr.length}~m~${pingStr}`);
-      handleEvent('ping', data.ping);
-      return;
-    }
-
-    if (data.type === 'quote_completed' && data.data) {
-      handleEvent('subscribed', data.data);
-      return;
-    }
-
-    if (data.type === 'qsd' && data.data.n && data.data.v.lp) {
-      handleEvent('price', {
-        symbol: data.data.n,
-        price: data.data.v.lp,
-      });
-
-      return;
-    }
-
-    if (!logged && data.type === 'info') {
-      send('set_auth_token', ['unauthorized_user_token']);
-      send('quote_create_session', [session]);
-      send('quote_set_fields', [session, 'lp']);
-      
-      handleEvent('logged', data);
-      return;
-    }
-
-    if (data.type === 'error') {
-      handleEvent('error', { message: 'API error, please make sure you have the latest API version', syntax: data.syntax });
-      return;
-    }
-
-    handleEvent('data', data);
-  });
 
   function handleEvent(ev, ...data) {
     callbacks[ev].forEach((e) => e(...data));
     callbacks.event.forEach((e) => e(ev, ...data));
   }
 
+  const ws = new WebSocket('wss://widgetdata.tradingview.com/socket.io/websocket', {
+    origin: 'https://s.tradingview.com',
+  });
+
+  let logged = false;
+  /** SessionID of the websocket connection */
+  let sessionId = '';
+
+  /** List of subscribed symbols */
+  let subscribed = [];
+
+  /**
+   * Send a custom packet
+   * @param {string} t Packet type
+   * @param {string[]} p Packet data
+   * @example
+   * // Subscribe manualy to BTCEUR
+   * send('quote_add_symbols', [sessionId, 'BTCEUR']);
+  */
+  function send(t, p = []) {
+    if (!sessionId) return;
+
+    const msg = JSON.stringify({ m: t, p });
+    ws.send(`~m~${msg.length}~m~${msg}`);
+  }
+
+  ws.on('open', () => {
+    sessionId = genSession();
+    handleEvent('connected');
+  });
+
+  ws.on('close', () => {
+    logged = false;
+    sessionId = '';
+    handleEvent('disconnected');
+  });
+
+  ws.on('message', parse);
+
+  onPacket = (packet) => {
+    if (packet.type === 'ping') {
+      const pingStr = `~h~${packet.ping}`;
+      ws.send(`~m~${pingStr.length}~m~${pingStr}`);
+      handleEvent('ping', packet.ping);
+      return;
+    }
+
+    if (packet.type === 'quote_completed' && packet.data) {
+      handleEvent('subscribed', packet.data);
+      return;
+    }
+
+    if (packet.type === 'qsd' && packet.data.n && packet.data.v.lp) {
+      handleEvent('price', {
+        symbol: packet.data.n,
+        price: packet.data.v.lp,
+      });
+
+      return;
+    }
+
+    if (!logged && packet.type === 'info') {
+      send('set_auth_token', ['unauthorized_user_token']);
+      send('quote_create_session', [sessionId]);
+      send('quote_set_fields', [sessionId, 'lp']);
+
+      subscribed.forEach((symbol) => send('quote_add_symbols', [sessionId, symbol]));
+
+      handleEvent('logged', packet);
+      return;
+    }
+
+    if (packet.type === 'error') {
+      handleEvent('error', { message: 'API error, please make sure you have the latest API version', syntax: packet.syntax });
+      ws.close();
+      return;
+    }
+
+    handleEvent('data', packet);
+  };
+
   return {
+    /**
+     * @param {'connected' | 'disconnected' | 'logged'
+     * | 'subscribed' | 'price' | 'data' | 'error' | 'ping' } ev
+     * @param {(...data: object) => null} cb
+     */
     on(ev, cb) {
       if (!callbacks[ev]) {
         console.log('Wrong event:', ev);
@@ -123,6 +155,20 @@ module.exports = () => {
       callbacks[ev].push(cb);
     },
 
+    /**
+     * @typedef {{
+     *  id: string,
+     *  symbol: string,
+     *  description: string,
+     *  type: string,
+     * }} SearchResult
+     */
+
+    /**
+     * @param {string} search Search a symbol
+     * @param {'stock' | 'futures' | 'forex' | 'cfd' | 'crypto' | 'index' | 'economic'} filter
+     * @returns {Promise<SearchResult[]>} Search results
+     */
     async search(search, filter = '') {
       return new Promise((cb, err) => {
         https.get({
@@ -154,20 +200,21 @@ module.exports = () => {
       });
     },
 
-    subscribed: [],
+    subscribed,
 
     subscribe(symbol = '') {
-      if (this.subscribed.includes(symbol)) return;
-      send('quote_add_symbols', [session, symbol]);
-      this.subscribed.push(symbol);
+      if (subscribed.includes(symbol)) return;
+      send('quote_add_symbols', [sessionId, symbol]);
+      subscribed.push(symbol);
     },
 
     unsubscribe(symbol = '') {
-      if (!this.subscribed.includes(symbol)) return;
-      send('quote_remove_symbols', [session, symbol]);
-      this.subscribed = this.subscribed.filter((s) => s !== symbol);
+      if (!subscribed.includes(symbol)) return;
+      send('quote_remove_symbols', [sessionId, symbol]);
+      subscribed = subscribed.filter((s) => s !== symbol);
     },
 
     send,
+    sessionId,
   }
 }

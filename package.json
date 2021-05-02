@@ -1,6 +1,6 @@
 {
   "name": "@mathieuc/tradingview",
-  "version": "1.0.0",
+  "version": "1.4.0",
   "description": "Tradingview instant stocks API",
   "main": "main.js",
   "scripts": {
@@ -15,5 +15,10 @@
   "license": "ISC",
   "dependencies": {
     "ws": "^7.4.3"
+  },
+  "devDependencies": {
+    "eslint": "^7.25.0",
+    "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-plugin-import": "^2.22.1"
   }
 }
