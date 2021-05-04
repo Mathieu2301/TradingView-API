@@ -15,6 +15,10 @@ function fetchScanData(tickers = [], type = '', columns = []) {
       let data = '';
       res.on('data', (c) => { data += c; });
       res.on('end', () => {
+        if (!data.startsWith('{')) {
+          err(new Error('Wrong screener'));
+          return;
+        }
         try {
           cb(JSON.parse(data));
         } catch (error) {
@@ -26,14 +30,6 @@ function fetchScanData(tickers = [], type = '', columns = []) {
     req.on('error', err);
     req.end(JSON.stringify({ symbols: { tickers }, columns }));
   });
-}
-
-function parseSignal(v) {
-  if (v >= -1 && v < -0.5) return 'STRONG_SELL';
-  if (v >= -0.5 && v < 0) return 'SELL';
-  if (v > 0 && v <= 0.5) return 'BUY';
-  if (v > 0.5 && v <= 1) return 'STRONG_BUY';
-  return 'NEUTRAL';
 }
 
 /**
@@ -49,29 +45,58 @@ function parseSignal(v) {
  *  '1W': { Other: advice, All: advice, MA: advice },
  *  '1M': { Other: advice, All: advice, MA: advice },
  * }} Periods
+ *
+ * @typedef {string | 'forex' | 'crypto'
+ * | 'america' | 'australia' | 'canada' | 'egypt'
+ * | 'germany' | 'india' | 'israel' | 'italy'
+ * | 'luxembourg' | 'poland' | 'sweden' | 'turkey'
+ * | 'uk' | 'vietnam'} screener
  */
 
 module.exports = {
+  /**
+   * @param {string} exchange Example: BINANCE, EURONEXT, NASDAQ
+   * @returns {screener}
+  */
+  getScreener(exchange) {
+    const e = exchange.toUpperCase();
+    if (['NASDAQ', 'NYSE', 'NYSE ARCA', 'OTC'].includes(e)) return 'america';
+    if (['ASX'].includes(e)) return 'australia';
+    if (['TSX', 'TSXV', 'CSE', 'NEO'].includes(e)) return 'canada';
+    if (['EGX'].includes(e)) return 'egypt';
+    if (['FWB', 'SWB', 'XETR'].includes(e)) return 'germany';
+    if (['BSE', 'NSE'].includes(e)) return 'india';
+    if (['TASE'].includes(e)) return 'israel';
+    if (['MIL', 'MILSEDEX'].includes(e)) return 'italy';
+    if (['LUXSE'].includes(e)) return 'luxembourg';
+    if (['NEWCONNECT'].includes(e)) return 'poland';
+    if (['NGM'].includes(e)) return 'sweden';
+    if (['BIST'].includes(e)) return 'turkey';
+    if (['LSE', 'LSIN'].includes(e)) return 'uk';
+    if (['HNX'].includes(e)) return 'vietnam';
+    return exchange.toLowerCase();
+  },
+
   /** Get technical analysis
-   * @param {'stock' | 'futures' | 'forex' | 'cfd' | 'crypto' | 'index' | 'economic'} type
-   * @param {string} symbol Example: BINANCE:BTCEUR
+   * @param {screener} screener
+   * @param {string} symbol You can use `getScreener(exchange)` function
    * @returns {Promise<Periods>} results
    */
-  async getTA(type, symbol) {
+  async getTA(screener, symbol) {
     const advice = {};
 
     const cols = ['1', '5', '15', '60', '240', '1D', '1W', '1M']
       .map((t) => indicators.map((i) => (t !== '1D' ? `${i}|${t}` : i)))
       .flat();
 
-    const rs = await fetchScanData([symbol], type, cols);
+    const rs = await fetchScanData([symbol], screener, cols);
     if (!rs.data || !rs.data[0]) return false;
 
     rs.data[0].d.forEach((val, i) => {
       const [name, period] = cols[i].split('|');
       const pName = period || '1D';
       if (!advice[pName]) advice[pName] = {};
-      advice[pName][name.split('.').pop()] = parseSignal(val);
+      advice[pName][name.split('.').pop()] = Math.round(val * 1000) / 500;
     });
 
     return advice;
@@ -80,6 +105,8 @@ module.exports = {
   /**
    * @typedef {{
    *  id: string,
+   *  exchange: string,
+   *  fullExchange: string,
    *  symbol: string,
    *  description: string,
    *  type: string,
@@ -108,7 +135,9 @@ module.exports = {
             return;
           }
           cb(rs.map((s) => ({
-            id: `${s.exchange}:${s.symbol}`,
+            id: `${s.exchange.split(' ')[0]}:${s.symbol}`,
+            exchange: s.exchange.split(' ')[0],
+            fullExchange: s.exchange,
             symbol: s.symbol,
             description: s.description,
             type: s.type,

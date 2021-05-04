@@ -1,5 +1,5 @@
 const WebSocket = require('ws');
-const { getTA, search } = require('./miscRequests');
+const { search, getScreener, getTA } = require('./miscRequests');
 
 let onPacket = () => null;
 
@@ -160,6 +160,7 @@ module.exports = () => {
     },
 
     search,
+    getScreener,
     getTA,
     subscribed,
 
