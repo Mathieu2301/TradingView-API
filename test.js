@@ -9,6 +9,9 @@ const stocksAPI = require('./main');
     const searchBTC = (await stocks.search('bitcoin euro', 'crypto'))[0];
     console.log('Found Bitcoin / Euro:', searchBTC);
     stocks.subscribe(searchBTC.id);
+
+    const btcTA = (await stocks.getTA(searchBTC.type, searchBTC.id));
+    console.log('Technical Analysis for Bitcoin / Euro:', btcTA);
   });
 
   stocks.on('price', (data) => {

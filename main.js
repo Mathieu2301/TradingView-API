@@ -1,5 +1,5 @@
 const WebSocket = require('ws');
-const https = require('https');
+const { getTA, search } = require('./miscRequests');
 
 let onPacket = () => null;
 
@@ -15,16 +15,20 @@ function parse(str) {
   }).filter((p) => p);
 
   packets.forEach((packet) => {
-    if (packet.m === 'protocol_error') return onPacket({
-      type: 'error',
-      syntax: packet.p[0],
-    });
+    if (packet.m === 'protocol_error') {
+      return onPacket({
+        type: 'error',
+        syntax: packet.p[0],
+      });
+    }
 
-    if (packet.m && packet.p) return onPacket({
-      type: packet.m,
-      session: packet.p[0],
-      data: packet.p[1],
-    });
+    if (packet.m && packet.p) {
+      return onPacket({
+        type: packet.m,
+        session: packet.p[0],
+        data: packet.p[1],
+      });
+    }
 
     if (typeof packet === 'number') return onPacket({ type: 'ping', ping: packet });
 
@@ -35,7 +39,7 @@ function parse(str) {
 function genSession() {
   let r = '';
   const c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  for (let i = 0; i < 12; i++) r += c.charAt(Math.floor(Math.random() * c.length));
+  for (let i = 0; i < 12; i += 1) r += c.charAt(Math.floor(Math.random() * c.length));
   return `qs_${r}`;
 }
 
@@ -155,51 +159,8 @@ module.exports = () => {
       callbacks[ev].push(cb);
     },
 
-    /**
-     * @typedef {{
-     *  id: string,
-     *  symbol: string,
-     *  description: string,
-     *  type: string,
-     * }} SearchResult
-     */
-
-    /**
-     * @param {string} search Search a symbol
-     * @param {'stock' | 'futures' | 'forex' | 'cfd' | 'crypto' | 'index' | 'economic'} filter
-     * @returns {Promise<SearchResult[]>} Search results
-     */
-    async search(search, filter = '') {
-      return new Promise((cb, err) => {
-        https.get({
-          host: 'symbol-search.tradingview.com',
-          path: `/symbol_search/?text=${search.replace(/ /g, '%20')}&type=${filter}`,
-          origin: 'https://www.tradingview.com',
-        }, (res) => {
-          let rs = '';
-          res.on('data', (d) => rs += d);
-          res.on('end', () => {
-            try {
-              rs = JSON.parse(rs);
-            } catch (e) {
-              err(new Error('Can\'t parse server response'));
-              return;
-            }
-            cb(rs.map((s) => ({
-              id: `${s.exchange}:${s.symbol}`,
-              symbol: s.symbol,
-              description: s.description,
-              type: s.type,
-            })));
-          });
-          res.on('error', (e) => {
-            err(e);
-            return;
-          });
-        })
-      });
-    },
-
+    search,
+    getTA,
     subscribed,
 
     subscribe(symbol = '') {
@@ -216,5 +177,5 @@ module.exports = () => {
 
     send,
     sessionId,
-  }
-}
+  };
+};
