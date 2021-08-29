@@ -1,5 +1,7 @@
 const WebSocket = require('ws');
-const { search, getScreener, getTA } = require('./miscRequests');
+const {
+  search, getScreener, getTA, getIndicator,
+} = require('./miscRequests');
 
 let onPacket = () => null;
 
@@ -9,7 +11,7 @@ function parse(str) {
     try {
       return JSON.parse(p);
     } catch (error) {
-      console.log('Cant parse', p);
+      console.warn('Cant parse', p);
       return false;
     }
   }).filter((p) => p);
@@ -43,7 +45,7 @@ function genSession() {
   return `qs_${r}`;
 }
 
-module.exports = () => {
+module.exports = (autoInit = true) => {
   const callbacks = {
     connected: [],
     disconnected: [],
@@ -57,9 +59,22 @@ module.exports = () => {
     event: [],
   };
 
+  const chartEventNames = [
+    'du', 'timescale_update',
+    'series_loading', 'series_completed', 'series_error',
+    'symbol_resolved', 'symbol_error',
+    'study_loading', 'study_error',
+  ];
+  const chartCBs = {};
+
   function handleEvent(ev, ...data) {
     callbacks[ev].forEach((e) => e(...data));
     callbacks.event.forEach((e) => e(ev, ...data));
+  }
+
+  function handleError(...msgs) {
+    if (callbacks.error.length === 0) console.error(...msgs);
+    else handleEvent('error', ...msgs);
   }
 
   const ws = new WebSocket('wss://widgetdata.tradingview.com/socket.io/websocket', {
@@ -67,7 +82,7 @@ module.exports = () => {
   });
 
   let logged = false;
-  /** SessionID of the websocket connection */
+  /** ID of the quote session */
   let sessionId = '';
 
   /** List of subscribed symbols */
@@ -123,19 +138,26 @@ module.exports = () => {
       return;
     }
 
-    if (!logged && packet.type === 'info') {
-      send('set_auth_token', ['unauthorized_user_token']);
-      send('quote_create_session', [sessionId]);
-      send('quote_set_fields', [sessionId, 'lp']);
+    if (chartEventNames.includes(packet.type) && chartCBs[packet.session]) {
+      chartCBs[packet.session](packet);
+      return;
+    }
 
-      subscribed.forEach((symbol) => send('quote_add_symbols', [sessionId, symbol]));
+    if (!logged && packet.type === 'info') {
+      if (autoInit) {
+        send('set_auth_token', ['unauthorized_user_token']);
+        send('quote_create_session', [sessionId]);
+        send('quote_set_fields', [sessionId, 'lp']);
+
+        subscribed.forEach((symbol) => send('quote_add_symbols', [sessionId, symbol]));
+      }
 
       handleEvent('logged', packet);
       return;
     }
 
     if (packet.type === 'error') {
-      handleEvent('error', { message: 'API error, please make sure you have the latest API version', syntax: packet.syntax });
+      handleError(`Market API critical error: ${packet.syntax}`);
       ws.close();
       return;
     }
@@ -174,6 +196,123 @@ module.exports = () => {
       if (!subscribed.includes(symbol)) return;
       send('quote_remove_symbols', [sessionId, symbol]);
       subscribed = subscribed.filter((s) => s !== symbol);
+    },
+
+    /**
+     * @typedef {Object} IndicatorInfos Indicator infos
+     * @property {string} id ID of the indicator (Like: XXX;XXXXXXXXXXXXXXXXXXXXX)
+     * @property {string} version Wanted version of the indicator
+     * @property {(string | number | boolean | null)[]} [settings] Indicator settings value
+     *
+     * @typedef {Object} ChartInfos
+     * @property {string} symbol Market symbol (Example: BTCEUR or COINBASE:BTCEUR)
+     * @property { '1' | '3' | '5' | '15' | '30' | '45'
+     *  | '60' | '120' | '180' | '240'
+     *  | '1D' | '1W' | '1M'
+     * } [period] Period
+     * @property {number} [range] Number of loaded periods
+     * @property {string} [timezone] Timezone in 'Europe/Paris' format
+     * @property {IndicatorInfos[]} [indicators] List of indicators
+     */
+
+    /**
+     * @typedef {Object} Period List of prices / indicator values
+     * @property {number} $time
+     * @property {{
+     *  time: number, open: number, close: number,
+     *  max: number, min: number, change: number,
+     * }} $prices
+     */
+
+    /**
+     * Init a chart instance
+     * @param {ChartInfos} chart
+     * @param {{(prices: Period[]): null}} onUpdate List of periods starting from the lastest
+     */
+    async initChart(chart, onUpdate) {
+      const chartSession = genSession();
+      const periods = [];
+      const indicators = await Promise.all(
+        (chart.indicators || []).map((i) => getIndicator(i.id, i.version, i.settings)),
+      );
+
+      function updatePeriods(packet) {
+        const newData = packet.data;
+
+        Object.keys(newData).forEach((type) => {
+          (newData[type].s || newData[type].st || []).forEach((p) => {
+            if (!periods[p.i]) periods[p.i] = {};
+
+            if (newData[type].s) {
+              [periods[p.i].$time] = p.v;
+
+              periods[p.i][type] = {
+                open: p.v[1],
+                close: p.v[4],
+                max: p.v[2],
+                min: p.v[3],
+                change: Math.round(p.v[5] * 100) / 100,
+              };
+            }
+
+            if (newData[type].st) {
+              const period = {};
+              const indicator = indicators[parseInt(type, 10)];
+
+              p.v.forEach((val, i) => {
+                if (i === 0) return;
+                if (indicator.plots[`plot_${i - 1}`]) period[indicator.plots[`plot_${i - 1}`]] = val;
+                else period[`_plot_${i - 1}`] = val;
+              });
+              periods[p.i][chart.indicators[parseInt(type, 10)].name || `st${type}`] = period;
+            }
+          });
+        });
+      }
+
+      chartCBs[chartSession] = (packet) => {
+        if (['timescale_update', 'du'].includes(packet.type)) {
+          updatePeriods(packet);
+          onUpdate([...periods].reverse());
+          return;
+        }
+
+        if (packet.type.endsWith('_error')) {
+          handleError(`Error on '${chart.symbol}' (${chartSession}) chart: "${packet.type}"`);
+        }
+      };
+
+      send('chart_create_session', [chartSession, '']);
+      if (chart.timezone) send('switch_timezone', [chartSession, chart.timezone]);
+      send('resolve_symbol', [chartSession, 'sds_sym_1', `={"symbol":"${chart.symbol || 'BTCEUR'}","adjustment":"splits"}`]);
+      send('create_series', [chartSession, '$prices', 's1', 'sds_sym_1', (chart.period || '240'), (chart.range || 100), '']);
+
+      indicators.forEach(async (indicator, i) => {
+        const pineInfos = {
+          pineId: indicator.pineId,
+          pineVersion: indicator.pineVersion,
+          text: indicator.script,
+        };
+
+        Object.keys(indicator.inputs).forEach((inputID, inp) => {
+          const input = indicator.inputs[inputID];
+          if (input.type === 'bool' && typeof input.value !== 'boolean') handleError(`Input '${input.name}' (${inp}) must be a boolean !`);
+          if (input.type === 'integer' && typeof input.value !== 'number') handleError(`Input '${input.name}' (${inp}) must be a number !`);
+          if (input.type === 'float' && typeof input.value !== 'number') handleError(`Input '${input.name}' (${inp}) must be a number !`);
+          if (input.type === 'text' && typeof input.value !== 'string') handleError(`Input '${input.name}' (${inp}) must be a string !`);
+          if (input.options && !input.options.includes(input.value)) {
+            handleError(`Input '${input.name}' (${inp}) must be one of these values:`, input.options);
+          }
+
+          pineInfos[inputID] = {
+            v: input.value,
+            f: input.isFake,
+            t: input.type,
+          };
+        });
+
+        send('create_study', [chartSession, `${i}`, 'st1', '$prices', 'Script@tv-scripting-101!', pineInfos]);
+      });
     },
 
     send,

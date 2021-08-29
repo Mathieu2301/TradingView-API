@@ -16,7 +16,7 @@ function fetchScanData(tickers = [], type = '', columns = []) {
       res.on('data', (c) => { data += c; });
       res.on('end', () => {
         if (!data.startsWith('{')) {
-          err(new Error('Wrong screener'));
+          err(new Error('Wrong screener or symbol'));
           return;
         }
         try {
@@ -33,17 +33,19 @@ function fetchScanData(tickers = [], type = '', columns = []) {
 }
 
 /**
- * @typedef {'STRONG_SELL' | 'SELL' | 'NEUTRAL' | 'BUY' | 'STRONG_BUY'} advice
+ * @typedef {number} advice
+ *
+ * @typedef {{ Other: advice, All: advice, MA: advice }} Period
  *
  * @typedef {{
- *  '1': { Other: advice, All: advice, MA: advice },
- *  '5': { Other: advice, All: advice, MA: advice },
- *  '15': { Other: advice, All: advice, MA: advice },
- *  '60': { Other: advice, All: advice, MA: advice },
- *  '240': { Other: advice, All: advice, MA: advice },
- *  '1D': { Other: advice, All: advice, MA: advice },
- *  '1W': { Other: advice, All: advice, MA: advice },
- *  '1M': { Other: advice, All: advice, MA: advice },
+ *  '1': Period,
+ *  '5': Period,
+ *  '15': Period,
+ *  '60': Period,
+ *  '240': Period,
+ *  '1D': Period,
+ *  '1W': Period,
+ *  '1M': Period,
  * }} Periods
  *
  * @typedef {string | 'forex' | 'crypto'
@@ -51,6 +53,7 @@ function fetchScanData(tickers = [], type = '', columns = []) {
  * | 'germany' | 'india' | 'israel' | 'italy'
  * | 'luxembourg' | 'poland' | 'sweden' | 'turkey'
  * | 'uk' | 'vietnam'} screener
+ * You can use `getScreener(exchange)` function for non-forex and non-crypto markets.
  */
 
 module.exports = {
@@ -79,17 +82,17 @@ module.exports = {
 
   /** Get technical analysis
    * @param {screener} screener
-   * @param {string} symbol You can use `getScreener(exchange)` function
+   * @param {string} id Full market id (Example: COINBASE:BTCEUR)
    * @returns {Promise<Periods>} results
    */
-  async getTA(screener, symbol) {
+  async getTA(screener, id) {
     const advice = {};
 
     const cols = ['1', '5', '15', '60', '240', '1D', '1W', '1M']
       .map((t) => indicators.map((i) => (t !== '1D' ? `${i}|${t}` : i)))
       .flat();
 
-    const rs = await fetchScanData([symbol], screener, cols);
+    const rs = await fetchScanData([id], screener, cols);
     if (!rs.data || !rs.data[0]) return false;
 
     rs.data[0].d.forEach((val, i) => {
@@ -103,14 +106,15 @@ module.exports = {
   },
 
   /**
-   * @typedef {{
-   *  id: string,
-   *  exchange: string,
-   *  fullExchange: string,
-   *  symbol: string,
-   *  description: string,
-   *  type: string,
-   * }} SearchResult
+   * @typedef {Object} SearchResult
+   * @property {string} id
+   * @property {string} exchange
+   * @property {string} fullExchange
+   * @property {string} screener
+   * @property {string} symbol
+   * @property {string} description
+   * @property {string} type
+   * @property {() => Promise<Periods>} getTA
    */
 
   /**
@@ -134,15 +138,119 @@ module.exports = {
             err(new Error('Can\'t parse server response'));
             return;
           }
-          cb(rs.map((s) => ({
-            id: `${s.exchange.split(' ')[0]}:${s.symbol}`,
-            exchange: s.exchange.split(' ')[0],
-            fullExchange: s.exchange,
-            symbol: s.symbol,
-            description: s.description,
-            type: s.type,
-          })));
+
+          cb(rs.map((s) => {
+            const exchange = s.exchange.split(' ')[0];
+            const id = `${exchange}:${s.symbol}`;
+
+            const screener = (['forex', 'crypto'].includes(s.type)
+              ? s.type
+              : this.getScreener(exchange)
+            );
+
+            return {
+              id,
+              exchange,
+              fullExchange: s.exchange,
+              screener,
+              symbol: s.symbol,
+              description: s.description,
+              type: s.type,
+              getTA: () => this.getTA(screener, id),
+            };
+          }));
         });
+
+        res.on('error', err);
+      });
+    });
+  },
+
+  /**
+   * @typedef {Object} indicatorInput
+   * @property {string} name
+   * @property {string} inline Inline name
+   * @property { 'text' | 'source' | 'integer' | 'float' | 'resolution' | 'bool' } type
+   * @property {string | number | boolean} value
+   * @property {string | number | boolean} defVal
+   * @property {boolean} hidden
+   * @property {boolean} isFake
+   * @property {string[]} [options]
+   */
+
+  /**
+   * @typedef {Object} Indicator
+   * @property {string} pineId Indicator ID
+   * @property {string} pineVersion Indicator version
+   * @property {string} description Indicator description
+   * @property {string} shortDescription Indicator short description
+   * @property {Object<string, indicatorInput>} inputs Indicator inputs
+   * @property {Object<string, string>} plots Indicator plots
+   * @property {string} script Indicator script
+   */
+
+  /**
+   * Get an indicator
+   * @param {string} id Indicator ID (Like: PUB;XXXXXXXXXXXXXXXXXXXXX)
+   * @param {string} version Wanted version of the indicator
+   * @returns {Promise<Indicator>} Indicator
+   */
+  async getIndicator(id, version, settings = []) {
+    return new Promise((cb, err) => {
+      https.get(`https://pine-facade.tradingview.com/pine-facade/translate/${id}/${version}`, (res) => {
+        let rs = '';
+        res.on('data', (d) => { rs += d; });
+        res.on('end', () => {
+          try {
+            rs = JSON.parse(rs);
+          } catch (e) {
+            err(new Error('Inexistent or unsupported indicator'));
+            return;
+          }
+
+          if (!rs.success || !rs.result.metaInfo || !rs.result.metaInfo.inputs) {
+            err(new Error('Inexistent or unsupported indicator'));
+            return;
+          }
+
+          const inputs = {};
+
+          rs.result.metaInfo.inputs.forEach((input) => {
+            if (['text', 'pineId', 'pineVersion'].includes(input.id)) return;
+            const inline = input.inline || input.name.replace(/ /g, '_').replace(/[^a-zA-Z0-9]/g, '');
+
+            const i = parseInt(input.id.replace(/[^0-9]/g, ''), 10);
+
+            inputs[input.id] = {
+              name: input.name,
+              type: input.type,
+              value: settings[i] ?? input.defval,
+              defVal: input.defval,
+              hidden: !!input.isHidden,
+              isFake: !!input.isFake,
+              inline,
+            };
+
+            if (input.options) inputs[input.id].options = input.options;
+          });
+
+          const plots = {};
+
+          Object.keys(rs.result.metaInfo.styles).forEach((plotId) => {
+            plots[plotId] = rs.result.metaInfo.styles[plotId].title.replace(/ /g, '_').replace(/[^a-zA-Z0-9]/g, '');
+          });
+
+          cb({
+            pineId: id,
+            pineVersion: version,
+            description: rs.result.metaInfo.description,
+            shortDescription: rs.result.metaInfo.shortDescription,
+            inputs,
+            plots,
+            script: rs.result.ilTemplate,
+          });
+        });
+
         res.on('error', err);
       });
     });

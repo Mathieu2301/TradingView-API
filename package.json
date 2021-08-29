@@ -4,7 +4,9 @@
   "description": "Tradingview instant stocks API",
   "main": "main.js",
   "scripts": {
-    "test": "node test",
+    "test-prices": "node ./tests/prices.js",
+    "test-analysis": "node ./tests/analysis.js",
+    "test-indicator": "node ./tests/indicator.js",
     "start": "npm test"
   },
   "keywords": [
