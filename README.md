@@ -1,5 +1,5 @@
 # Tradingview API
-Get realtime market from Tradingview
+Get realtime market prices and indicator values from Tradingview !
 
 ___
 ## Installation
