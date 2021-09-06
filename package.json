@@ -1,16 +1,23 @@
 {
   "name": "@mathieuc/tradingview",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Tradingview instant stocks API",
   "main": "main.js",
   "scripts": {
     "test-prices": "node ./tests/prices.js",
     "test-analysis": "node ./tests/analysis.js",
     "test-indicator": "node ./tests/indicator.js",
-    "start": "npm test"
+    "test-alerts": "node ./tests/alerts/alerts.js",
+    "start-prices": "npm test"
   },
   "keywords": [
     "tradingwiew",
+    "market",
+    "stocks",
+    "crypto",
+    "forex",
+    "indicator",
+    "bitcoin",
     "api"
   ],
   "author": "Mathieu Colmon",
