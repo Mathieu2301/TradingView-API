@@ -38,20 +38,6 @@ market.on('logged', () => {
     }, (periods) => {
       if (!periods[0].CIPHER_B) return;
 
-      // periods.forEach((p, i) => {
-      //   if (p.CIPHER_B.WTWave1 > 0 || p.CIPHER_B.WTWave1 < -35) return;
-
-      //   const pBefore = periods[i + 1];
-      //   if (!pBefore) return;
-
-      //   const gapBefore = pBefore.CIPHER_B.VWAP;
-      //   const gap = p.CIPHER_B.VWAP;
-      //   if (
-      //     gapBefore < 0 && gapBefore < gap
-      //     && pBefore.CIPHER_B.WTWave1 < p.CIPHER_B.WTWave1
-      //   ) console.log(symbol, 'TRIG', new Date(p.$time * 1000).toLocaleString());
-      // });
-
       const pBefore = periods[1];
       const p = periods[0];
 

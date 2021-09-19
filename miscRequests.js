@@ -255,4 +255,31 @@ module.exports = {
       });
     });
   },
+
+  /**
+   * Get a token for an user from a 'sessionid' cookie
+   * @param {string} session User 'sessionid' cookie
+   * @param {string} [location] Auth page location (For france: https://fr.tradingview.com/)
+   * @returns {Promise<string>} Token
+   */
+  async getUserToken(session, location = 'https://www.tradingview.com/') {
+    return new Promise((cb, err) => {
+      https.get(location, {
+        headers: { cookie: `sessionid=${session}` },
+      }, (res) => {
+        let rs = '';
+        res.on('data', (d) => { rs += d; });
+        res.on('end', async () => {
+          if (res.headers.location && location !== res.headers.location) {
+            cb(await module.exports.getUserToken(session, res.headers.location));
+            return;
+          }
+          if (rs.includes('auth_token')) cb(/"auth_token":"(.*?)"/g.exec(rs)[1]);
+          else err(new Error('Wrong or expired sessionid'));
+        });
+
+        res.on('error', err);
+      }).end();
+    });
+  },
 };

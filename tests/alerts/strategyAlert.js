@@ -30,8 +30,8 @@ const markets = [
     symbol: 'USDCAD',
     period: '1D',
     settings: {
-      1: 89, // HMA 1 Length
-      3: 21, // HMA 2 Length
+      1: 21, // HMA 1 Length
+      3: 89, // HMA 2 Length
       5: 10, // RSI Length
       8: 3, // Stop Loss (%)
       9: 2, // Take Profit (%)

@@ -1,14 +1,15 @@
 {
   "name": "@mathieuc/tradingview",
-  "version": "2.0.3",
-  "description": "Tradingview instant stocks API",
+  "version": "2.0.5",
+  "description": "Tradingview instant stocks API, indicator alerts, trading bot, and more !",
   "main": "main.js",
   "scripts": {
     "test-prices": "node ./tests/prices.js",
     "test-analysis": "node ./tests/analysis.js",
     "test-indicator": "node ./tests/indicator.js",
-    "test-alerts": "node ./tests/alerts/alerts.js",
-    "start-prices": "npm test"
+    "test-manual-alerts": "node ./tests/alerts/manualAlert.js",
+    "test-strat-alerts": "node ./tests/alerts/strategyAlert.js",
+    "test": "npm run test-prices"
   },
   "keywords": [
     "tradingwiew",

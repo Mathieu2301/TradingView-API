@@ -1,6 +1,6 @@
 const WebSocket = require('ws');
 const {
-  search, getScreener, getTA, getIndicator,
+  search, getScreener, getTA, getIndicator, getUserToken,
 } = require('./miscRequests');
 
 let onPacket = () => null;
@@ -166,33 +166,47 @@ module.exports = (autoInit = true) => {
   };
 
   return {
-    /**
-     * @param {'connected' | 'disconnected' | 'logged'
-     * | 'subscribed' | 'price' | 'data' | 'error' | 'ping' } ev
-     * @param {(...data: object) => null} cb
+    /** Event listener
+     * @param { 'connected' | 'disconnected' | 'logged'
+     * | 'subscribed' | 'price' | 'data' | 'error' | 'ping' } event Event
+     * @param {(...data: object) => null} cb Callback
      */
-    on(ev, cb) {
-      if (!callbacks[ev]) {
-        console.log('Wrong event:', ev);
+    on(event, cb) {
+      if (!callbacks[event]) {
+        console.log('Wrong event:', event);
         console.log('Available events:', Object.keys(callbacks));
         return;
       }
 
-      callbacks[ev].push(cb);
+      callbacks[event].push(cb);
     },
+
+    /**
+     * Close the websocket connection
+     * @param {string} symbol Market symbol (Example: BTCEUR or COINBASE:BTCEUR)
+     */
+    end() { ws.close(); },
 
     search,
     getScreener,
     getTA,
     subscribed,
 
-    subscribe(symbol = '') {
+    /**
+     * Unsubscribe to a market
+     * @param {string} symbol Market symbol (Example: BTCEUR or COINBASE:BTCEUR)
+     */
+    subscribe(symbol) {
       if (subscribed.includes(symbol)) return;
       send('quote_add_symbols', [sessionId, symbol]);
       subscribed.push(symbol);
     },
 
-    unsubscribe(symbol = '') {
+    /**
+     * Unsubscribe from a market
+     * @param {string} symbol Market symbol (Example: BTCEUR or COINBASE:BTCEUR)
+     */
+    unsubscribe(symbol) {
       if (!subscribed.includes(symbol)) return;
       send('quote_remove_symbols', [sessionId, symbol]);
       subscribed = subscribed.filter((s) => s !== symbol);
@@ -205,6 +219,7 @@ module.exports = (autoInit = true) => {
      * @property {(string | number | boolean | null)[]} [settings] Indicator settings value
      *
      * @typedef {Object} ChartInfos
+     * @property {string} [session] User 'sessionid' cookie
      * @property {string} symbol Market symbol (Example: BTCEUR or COINBASE:BTCEUR)
      * @property { '1' | '3' | '5' | '15' | '30' | '45'
      *  | '60' | '120' | '180' | '240'
@@ -282,6 +297,7 @@ module.exports = (autoInit = true) => {
         }
       };
 
+      if (chart.session) send('set_auth_token', [await getUserToken(chart.session)]);
       send('chart_create_session', [chartSession, '']);
       if (chart.timezone) send('switch_timezone', [chartSession, chart.timezone]);
       send('resolve_symbol', [chartSession, 'sds_sym_1', `={"symbol":"${chart.symbol || 'BTCEUR'}","adjustment":"splits"}`]);
