@@ -1,4 +1,5 @@
 require('./envLoader');
+const { getSentNotifs, addSentNotifs } = require('./sentNotifs');
 const marketAPI = require('../../main');
 const discordWH = require('./discordWH')(process.env.DISCORD_TOKEN);
 
@@ -6,8 +7,6 @@ if (!process.env.SYMBOLS) process.env.SYMBOLS = 'BTCEUR';
 if (!process.env.PERIOD) process.env.PERIOD = '240';
 
 const market = marketAPI(false);
-
-const sentNotifs = [];
 
 market.on('logged', () => {
   process.env.SYMBOLS.split(',').forEach((symbol) => {
@@ -62,12 +61,12 @@ market.on('logged', () => {
       const notifID = `${symbol}@${p.$time}@BULL_TRIGGER`;
 
       if (
-        !sentNotifs.includes(notifID)
-        && p.CIPHER_B.WTWave1 <= 0 && p.CIPHER_B.WTWave1 > -35
+        p.CIPHER_B.WTWave1 <= 0 && p.CIPHER_B.WTWave1 > -35
         && gapBefore < 0 && gapBefore < gap
         && pBefore.CIPHER_B.WTWave1 < p.CIPHER_B.WTWave1
+        && !getSentNotifs().includes(notifID)
       ) {
-        sentNotifs.push(notifID);
+        addSentNotifs(notifID);
         console.log(symbol, 'TRIG NOW', new Date(p.$time * 1000).toLocaleString());
 
         discordWH({
