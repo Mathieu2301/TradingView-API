@@ -88,6 +88,9 @@ module.exports = (autoInit = true) => {
   /** List of subscribed symbols */
   let subscribed = [];
 
+  /** Stop WS calls */
+  let isEnded = false;
+
   /**
    * Send a custom packet
    * @param {string} t Packet type
@@ -183,9 +186,16 @@ module.exports = (autoInit = true) => {
 
     /**
      * Close the websocket connection
-     * @param {string} symbol Market symbol (Example: BTCEUR or COINBASE:BTCEUR)
+     * @param {function} callback Callback function to execute after websocket is closed
      */
-    end() { ws.close(); },
+    end(callback) {
+      isEnded = true;
+      ws.close();
+
+      if (typeof callback === 'function') {
+        callback();
+      }
+    },
 
     search,
     getScreener,
@@ -286,6 +296,10 @@ module.exports = (autoInit = true) => {
       }
 
       chartCBs[chartSession] = (packet) => {
+        if (isEnded) {
+          return;
+        }
+
         if (['timescale_update', 'du'].includes(packet.type)) {
           updatePeriods(packet);
           onUpdate([...periods].reverse());
