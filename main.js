@@ -88,7 +88,7 @@ module.exports = (autoInit = true) => {
   /** List of subscribed symbols */
   let subscribed = [];
 
-  /** Stop WS calls */
+  /** Websockets status calls */
   let isEnded = false;
 
   /**
@@ -186,15 +186,14 @@ module.exports = (autoInit = true) => {
 
     /**
      * Close the websocket connection
-     * @param {function} callback Callback function to execute after websocket is closed
+     * @return {Promise<void>} When websocket is closed
      */
-    end(callback) {
-      isEnded = true;
-      ws.close();
-
-      if (typeof callback === 'function') {
-        callback();
-      }
+    end() {
+      return new Promise((cb) => {
+        isEnded = true;
+        ws.close();
+        cb();
+      });
     },
 
     search,
@@ -296,9 +295,7 @@ module.exports = (autoInit = true) => {
       }
 
       chartCBs[chartSession] = (packet) => {
-        if (isEnded) {
-          return;
-        }
+        if (isEnded) return;
 
         if (['timescale_update', 'du'].includes(packet.type)) {
           updatePeriods(packet);
