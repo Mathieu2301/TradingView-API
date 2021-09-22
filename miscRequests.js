@@ -80,7 +80,8 @@ module.exports = {
     return exchange.toLowerCase();
   },
 
-  /** Get technical analysis
+  /**
+   * Get technical analysis
    * @param {screener} screener
    * @param {string} id Full market id (Example: COINBASE:BTCEUR)
    * @returns {Promise<Periods>} results
@@ -118,8 +119,9 @@ module.exports = {
    */
 
   /**
-   * @param {string} search Search a symbol
-   * @param {'stock' | 'futures' | 'forex' | 'cfd' | 'crypto' | 'index' | 'economic'} filter
+   * Find a symbol
+   * @param {string} search Keywords
+   * @param {'stock' | 'futures' | 'forex' | 'cfd' | 'crypto' | 'index' | 'economic'} [filter]
    * @returns {Promise<SearchResult[]>} Search results
    */
   async search(search, filter = '') {
@@ -257,12 +259,31 @@ module.exports = {
   },
 
   /**
+   * @typedef {Object} User Instance of User
+   * @property {number} id User ID
+   * @property {string} username User username
+   * @property {string} firstName User first name
+   * @property {string} lastName User last name
+   * @property {number} reputation User reputation
+   * @property {number} following Number of following accounts
+   * @property {number} followers Number of followers
+   * @property {Object} notifications User's notifications
+   * @property {number} notifications.user User notifications
+   * @property {number} notifications.following Notification from following accounts
+   * @property {string} session User session
+   * @property {string} sessionHash User session hash
+   * @property {string} privateChannel User private channel
+   * @property {string} authToken User auth token
+   * @property {Date} joinDate Account creation date
+   */
+
+  /**
    * Get a token for an user from a 'sessionid' cookie
    * @param {string} session User 'sessionid' cookie
    * @param {string} [location] Auth page location (For france: https://fr.tradingview.com/)
-   * @returns {Promise<string>} Token
+   * @returns {Promise<User>} Token
    */
-  async getUserToken(session, location = 'https://www.tradingview.com/') {
+  async getUser(session, location = 'https://www.tradingview.com/') {
     return new Promise((cb, err) => {
       https.get(location, {
         headers: { cookie: `sessionid=${session}` },
@@ -271,11 +292,125 @@ module.exports = {
         res.on('data', (d) => { rs += d; });
         res.on('end', async () => {
           if (res.headers.location && location !== res.headers.location) {
-            cb(await module.exports.getUserToken(session, res.headers.location));
+            cb(await module.exports.getUser(session, res.headers.location));
             return;
           }
-          if (rs.includes('auth_token')) cb(/"auth_token":"(.*?)"/g.exec(rs)[1]);
-          else err(new Error('Wrong or expired sessionid'));
+          if (rs.includes('auth_token')) {
+            cb({
+              id: /"id":([0-9]{1,10}),/.exec(rs)[1],
+              username: /"username":"(.*?)"/.exec(rs)[1],
+              firstName: /"first_name":"(.*?)"/.exec(rs)[1],
+              lastName: /"last_name":"(.*?)"/.exec(rs)[1],
+              reputation: parseFloat(/"reputation":(.*?),/.exec(rs)[1] || 0),
+              following: parseFloat(/,"following":([0-9]*?),/.exec(rs)[1] || 0),
+              followers: parseFloat(/,"followers":([0-9]*?),/.exec(rs)[1] || 0),
+              notifications: {
+                following: parseFloat(/"notification_count":\{"following":([0-9]*),/.exec(rs)[1] || 0),
+                user: parseFloat(/"notification_count":\{"following":[0-9]*,"user":([0-9]*)/.exec(rs)[1] || 0),
+              },
+              session,
+              sessionHash: /"session_hash":"(.*?)"/.exec(rs)[1],
+              privateChannel: /"private_channel":"(.*?)"/.exec(rs)[1],
+              authToken: /"auth_token":"(.*?)"/.exec(rs)[1],
+              joinDate: new Date(/"date_joined":"(.*?)"/.exec(rs)[1] || 0),
+            });
+          } else err(new Error('Wrong or expired sessionid'));
+        });
+
+        res.on('error', err);
+      }).end();
+    });
+  },
+
+  /**
+   * User credentials
+   * @typedef {Object} UserCredentials
+   * @property {number} id User ID
+   * @property {string} session User session ('sessionid' cookie)
+   */
+
+  /**
+   * Get a chart token from a layout ID and the user credentials if the layout is not public
+   * @param {string} layout The layout ID found in the layout URL (Like: 'XXXXXXXX')
+   * @param {UserCredentials} [credentials] User credentials (id + session)
+   * @returns {Promise<string>} Token
+   */
+  async getChartToken(layout, credentials = {}) {
+    return new Promise((cb, err) => {
+      const creds = credentials.id && credentials.session;
+      const userID = creds ? credentials.id : -1;
+      const session = creds ? credentials.session : null;
+
+      https.get(`https://www.tradingview.com/chart-token/?image_url=${layout}&user_id=${userID}`, {
+        headers: { cookie: session ? `sessionid=${session}` : '' },
+      }, (res) => {
+        let rs = '';
+        res.on('data', (d) => { rs += d; });
+        res.on('end', async () => {
+          rs = JSON.parse(rs);
+
+          if (rs.token) cb(rs.token);
+          else err(new Error('Wrong layout or credentials'));
+        });
+
+        res.on('error', err);
+      }).end();
+    });
+  },
+
+  /**
+   * @typedef {Object} DrawingPoint
+   * @property {number} time_t Point X time position
+   * @property {number} price Point Y price position
+   * @property {number} offset Point offset
+   */
+
+  /**
+   * @typedef {Object} Drawing
+   * @property {string} id Drawing ID (Like: 'XXXXXX')
+   * @property {string} symbol Layout market symbol (Like: 'BINANCE:BUCEUR')
+   * @property {string} ownerSource Owner user ID (Like: 'XXXXXX')
+   * @property {string} serverUpdateTime Drawing last update timestamp
+   * @property {string} currencyId Currency ID (Like: 'EUR')
+   * @property {any} unitId Unit ID
+   * @property {string} type Drawing type
+   * @property {DrawingPoint[]} points List of drawing points
+   * @property {number} zorder Drawing Z order
+   * @property {string} linkKey Drawing link key
+   * @property {Object} state Drawing state
+   */
+
+  /**
+   * Get a chart token from a layout ID and the user credentials if the layout is not public
+   * @param {string} layout The layout ID found in the layout URL (Like: 'XXXXXXXX')
+   * @param {string | ''} [symbol] Market filter (Like: 'BINANCE:BTCEUR')
+   * @param {UserCredentials} [credentials] User credentials (id + session)
+   * @param {number} [chartID = 1] Chart ID
+   * @returns {Promise<Drawing[]>} Drawings
+   */
+  async getDrawings(layout, symbol = '', credentials = {}, chartID = 1) {
+    const chartToken = await module.exports.getChartToken(layout, credentials);
+
+    return new Promise((cb, err) => {
+      const creds = credentials.id && credentials.session;
+      const session = creds ? credentials.session : null;
+
+      const url = `https://charts-storage.tradingview.com/charts-storage/layout/${
+        layout}/sources?chart_id=${chartID}&jwt=${chartToken}${symbol ? `&symbol=${symbol}` : ''}`;
+
+      https.get(url, {
+        headers: { cookie: session ? `sessionid=${session}` : '' },
+      }, (res) => {
+        let rs = '';
+        res.on('data', (d) => { rs += d; });
+        res.on('end', async () => {
+          rs = JSON.parse(rs);
+
+          if (rs.payload) {
+            cb(Object.values(rs.payload.sources || {}).map((drawing) => ({
+              ...drawing, ...drawing.state,
+            })));
+          } else err(new Error('Wrong layout, user credentials, or chart id.'));
         });
 
         res.on('error', err);

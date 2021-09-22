@@ -1,6 +1,7 @@
 const WebSocket = require('ws');
 const {
-  search, getScreener, getTA, getIndicator, getUserToken,
+  search, getScreener, getTA, getIndicator,
+  getUser, getChartToken, getDrawings,
 } = require('./miscRequests');
 
 let onPacket = () => null;
@@ -187,6 +188,9 @@ module.exports = (autoInit = true) => {
      */
     end() { ws.close(); },
 
+    getUser,
+    getChartToken,
+    getDrawings,
     search,
     getScreener,
     getTA,
@@ -297,7 +301,7 @@ module.exports = (autoInit = true) => {
         }
       };
 
-      if (chart.session) send('set_auth_token', [await getUserToken(chart.session)]);
+      if (chart.session) send('set_auth_token', [(await getUser(chart.session)).authToken]);
       send('chart_create_session', [chartSession, '']);
       if (chart.timezone) send('switch_timezone', [chartSession, chart.timezone]);
       send('resolve_symbol', [chartSession, 'sds_sym_1', `={"symbol":"${chart.symbol || 'BTCEUR'}","adjustment":"splits"}`]);
