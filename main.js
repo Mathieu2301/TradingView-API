@@ -89,7 +89,7 @@ module.exports = (autoInit = true) => {
   /** List of subscribed symbols */
   let subscribed = [];
 
-  /** Websockets status calls */
+  /** Websockets status */
   let isEnded = false;
 
   /**
