@@ -1,6 +1,28 @@
 # Tradingview API
 Get realtime market prices and indicator values from Tradingview !
 
+## Features
+- [x] Automatically backtest many strategies and try many settings in a very little time
+- [x] Get drawings you made on your chart
+- [x] Works with invite-only indicators
+- [x] Unlimited simultaneous indicators
+- [x] Realtime
+- [x] Get TradingView's technical analysis
+- [ ] Get values from a specific date range
+- [ ] TradingView socket server emulation
+- [ ] Interract with public chats
+- [ ] Get Screener top values
+- [ ] Get Hotlists
+- [ ] Get Calendar
+- IF YOU WANT A FEATURE, ASK ME !!
+
+## Possibilities
+- Trading bot
+- Discord alerts
+- Hard backtest
+- Machine Learning based indicator
+- Free replay mode for all timeframes
+
 ___
 ## Installation
 
