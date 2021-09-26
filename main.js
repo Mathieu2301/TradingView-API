@@ -1,7 +1,9 @@
 const WebSocket = require('ws');
+const JSZip = require('jszip');
+
 const {
   search, getScreener, getTA, getIndicator,
-  getUser, getChartToken, getDrawings,
+  getUser, getChartToken, getDrawings, searchIndicator,
 } = require('./miscRequests');
 
 let onPacket = () => null;
@@ -197,13 +199,14 @@ module.exports = (autoInit = true) => {
       });
     },
 
-    getUser,
-    getChartToken,
-    getDrawings,
     search,
     getScreener,
     getTA,
     subscribed,
+    searchIndicator,
+    getUser,
+    getChartToken,
+    getDrawings,
 
     /**
      * Unsubscribe to a market
@@ -228,8 +231,10 @@ module.exports = (autoInit = true) => {
     /**
      * @typedef {Object} IndicatorInfos Indicator infos
      * @property {string} id ID of the indicator (Like: XXX;XXXXXXXXXXXXXXXXXXXXX)
+     * @property {string} [name] Name of the indicator
      * @property {string} version Wanted version of the indicator
      * @property {(string | number | boolean | null)[]} [settings] Indicator settings value
+     * @property {'study' | 'strategy'} [type] Script type
      *
      * @typedef {Object} ChartInfos
      * @property {string} [session] User 'sessionid' cookie
@@ -255,19 +260,166 @@ module.exports = (autoInit = true) => {
     /**
      * Init a chart instance
      * @param {ChartInfos} chart
-     * @param {{(prices: Period[]): null}} onUpdate List of periods starting from the lastest
+     * @param {{(prices: Period[], strategies: Object<string, StrategyReport>): null}} onUpdate
      */
     async initChart(chart, onUpdate) {
       const chartSession = genSession();
       const periods = [];
+
+      /**
+       * @typedef {Object} RelAbsValue Relative and Absolute values
+       * @property {number} v Absolute value
+       * @property {number} p Relative value
+       */
+
+      /**
+       * @typedef {Object} TradeReport Trade report
+
+       * @property {Object} entry Trade entry
+       * @property {string} entry.name Trade name
+       * @property {'long' | 'short'} entry.type Entry type (long/short)
+       * @property {number} entry.value Entry price value
+       * @property {number} entry.time Entry timestamp
+
+       * @property {Object} exit Trade exit
+       * @property {'' | string} exit.name Trade name ('' if false exit)
+       * @property {number} exit.value Exit price value
+       * @property {number} exit.time Exit timestamp
+
+       * @property {number} quantity Trade quantity
+       * @property {RelAbsValue} profit Trade profit
+       * @property {RelAbsValue} cumulative Trade cummulative profit
+       * @property {RelAbsValue} runup Trade run-up
+       * @property {RelAbsValue} drawdown Trade drawdown
+       */
+
+      /**
+       * @typedef {Object} PerfReport
+       * @property {number} avgBarsInTrade Average bars in trade
+       * @property {number} avgBarsInWinTrade Average bars in winning trade
+       * @property {number} avgBarsInLossTrade Average bars in losing trade
+       * @property {number} avgTrade Average trade gain
+       * @property {number} avgTradePercent Average trade performace
+       * @property {number} avgLosTrade Average losing trade gain
+       * @property {number} avgLosTradePercent Average losing trade performace
+       * @property {number} avgWinTrade Average winning trade gain
+       * @property {number} avgWinTradePercent Average winning trade performace
+       * @property {number} commissionPaid Commission paid
+       * @property {number} grossLoss Gross loss value
+       * @property {number} grossLossPercent Gross loss percent
+       * @property {number} grossProfit Gross profit
+       * @property {number} grossProfitPercent Gross profit percent
+       * @property {number} largestLosTrade Largest losing trade gain
+       * @property {number} largestLosTradePercent Largent losing trade performance
+       * @property {number} largestWinTrade Largest winning trade gain
+       * @property {number} largestWinTradePercent Largest winning trade performance
+       * @property {number} marginCalls Margin calls
+       * @property {number} maxContractsHeld Max Contracts Held
+       * @property {number} netProfit Net profit
+       * @property {number} netProfitPercent Net performance
+       * @property {number} numberOfLosingTrades Number of losing trades
+       * @property {number} numberOfWiningTrades Number of winning trades
+       * @property {number} percentProfitable Strategy winrate
+       * @property {number} profitFactor Profit factor
+       * @property {number} ratioAvgWinAvgLoss Ratio Average Win / Average Loss
+       * @property {number} totalOpenTrades Total open trades
+       * @property {number} totalTrades Total trades
+      */
+
+      /**
+       * @typedef {Object} StrategyReport
+       * @property {'EUR' | 'USD' | 'JPY' | '' | 'CHF'} currency Selected currency
+       * @property {TradeReport[]} trades Trade list
+       * @property {Object} history History Chart value
+       * @property {number[]} history.buyHold Buy hold values
+       * @property {number[]} history.buyHoldPercent Buy hold percent values
+       * @property {number[]} history.drawDown Drawdown values
+       * @property {number[]} history.drawDownPercent Drawdown percent values
+       * @property {number[]} history.equity Equity values
+       * @property {number[]} history.equityPercent Equity percent values
+       * @property {Object} performance Strategy performance
+       * @property {PerfReport} performance.all Strategy long/short performances
+       * @property {PerfReport} performance.long Strategy long performances
+       * @property {PerfReport} performance.short Strategy short performances
+       * @property {number} performance.buyHoldReturn Strategy Buy & Hold Return
+       * @property {number} performance.buyHoldReturnPercent Strategy Buy & Hold Return percent
+       * @property {number} performance.maxDrawDown Strategy max drawdown
+       * @property {number} performance.maxDrawDownPercent Strategy max drawdown percent
+       * @property {number} performance.openPL Strategy Open P&L (Profit And Loss)
+       * @property {number} performance.openPLPercent Strategy Open P&L (Profit And Loss) percent
+       * @property {number} performance.sharpeRatio Strategy Sharpe Ratio
+       * @property {number} performance.sortinoRatio Strategy Sortino Ratio
+       */
+
+      /** @type {Object<string, StrategyReport>} Strategies */
+      const strategies = {};
+
       const indicators = await Promise.all(
-        (chart.indicators || []).map((i) => getIndicator(i.id, i.version, i.settings)),
+        (chart.indicators || []).map((i) => getIndicator(i.id, i.version, i.settings, i.type)),
       );
 
-      function updatePeriods(packet) {
+      async function updatePeriods(packet) {
         const newData = packet.data;
 
-        Object.keys(newData).forEach((type) => {
+        await Promise.all(Object.keys(newData).map(async (type) => {
+          const std = chart.indicators[parseInt(type, 10)] || {};
+
+          if (newData[type].ns && newData[type].ns.d) {
+            const stratData = JSON.parse(newData[type].ns.d);
+
+            if (stratData.dataCompressed) {
+              const zip = new JSZip();
+              const data = JSON.parse(
+                await (
+                  await zip.loadAsync(stratData.dataCompressed, { base64: true })
+                ).file('').async('text'),
+              );
+
+              strategies[std.name || type] = {
+                currency: data.report.currency,
+
+                trades: data.report.trades.map((t) => ({
+                  entry: {
+                    name: t.e.c,
+                    type: (t.e.tp[0] === 's' ? 'short' : 'long'),
+                    value: t.e.p,
+                    time: t.e.tm,
+                  },
+                  exit: {
+                    name: t.x.c,
+                    value: t.x.p,
+                    time: t.x.tm,
+                  },
+                  quantity: t.q,
+                  profit: t.tp,
+                  cumulative: t.cp,
+                  runup: t.rn,
+                  drawdown: t.dd,
+                })),
+
+                history: {
+                  buyHold: data.report.buyHold,
+                  buyHoldPercent: data.report.buyHoldPercent,
+                  drawDown: data.report.drawDown,
+                  drawDownPercent: data.report.drawDownPercent,
+                  equity: data.report.equity,
+                  equityPercent: data.report.equityPercent,
+                },
+
+                performance: data.report.performance,
+              };
+              return;
+            }
+
+            if (stratData.data && stratData.data.report && stratData.data.report.performance) {
+              if (!strategies[std.name || type]) strategies[std.name || type] = { performance: {} };
+              strategies[std.name || type].performance = stratData.data.report.performance;
+              return;
+            }
+
+            return;
+          }
+
           (newData[type].s || newData[type].st || []).forEach((p) => {
             if (!periods[p.i]) periods[p.i] = {};
 
@@ -295,20 +447,20 @@ module.exports = (autoInit = true) => {
               periods[p.i][chart.indicators[parseInt(type, 10)].name || `st${type}`] = period;
             }
           });
-        });
+        }));
       }
 
-      chartCBs[chartSession] = (packet) => {
+      chartCBs[chartSession] = async (packet) => {
         if (isEnded) return;
 
         if (['timescale_update', 'du'].includes(packet.type)) {
-          updatePeriods(packet);
-          onUpdate([...periods].reverse());
+          await updatePeriods(packet);
+          onUpdate([...periods].reverse(), strategies);
           return;
         }
 
         if (packet.type.endsWith('_error')) {
-          handleError(`Error on '${chart.symbol}' (${chartSession}) chart: "${packet.type}"`);
+          handleError(`Error on '${chart.symbol}' (${chartSession}) chart: "${packet.type}":`, packet);
         }
       };
 
@@ -342,7 +494,7 @@ module.exports = (autoInit = true) => {
           };
         });
 
-        send('create_study', [chartSession, `${i}`, 'st1', '$prices', 'Script@tv-scripting-101!', pineInfos]);
+        send('create_study', [chartSession, `${i}`, 'st1', '$prices', indicator.typeID, pineInfos]);
       });
     },
 

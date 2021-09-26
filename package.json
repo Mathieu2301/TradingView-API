@@ -1,6 +1,6 @@
 {
   "name": "@mathieuc/tradingview",
-  "version": "2.0.7",
+  "version": "2.0.9",
   "description": "Tradingview instant stocks API, indicator alerts, trading bot, and more !",
   "main": "main.js",
   "scripts": {
@@ -24,6 +24,7 @@
   "author": "Mathieu Colmon",
   "license": "ISC",
   "dependencies": {
+    "jszip": "^3.7.1",
     "ws": "^7.4.3"
   },
   "devDependencies": {

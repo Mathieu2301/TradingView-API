@@ -1,35 +1,60 @@
 const https = require('https');
 
 const indicators = ['Recommend.Other', 'Recommend.All', 'Recommend.MA'];
+const indicList = [];
 
-function fetchScanData(tickers = [], type = '', columns = []) {
+/**
+ * @param {https.RequestOptions} options HTTPS Request options
+ * @param {boolean} [raw] Get raw or JSON data
+ * @param {string} [content] Request body content
+ * @returns {Promise<string | object | array>} Result
+ */
+function request(options = {}, raw = false, content = '') {
   return new Promise((cb, err) => {
-    const req = https.request({
-      method: 'POST',
-      hostname: 'scanner.tradingview.com',
-      path: `/${type}/scan`,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    }, (res) => {
+    const req = https.request(options, (res) => {
       let data = '';
       res.on('data', (c) => { data += c; });
       res.on('end', () => {
-        if (!data.startsWith('{')) {
-          err(new Error('Wrong screener or symbol'));
+        if (raw) {
+          cb(data);
           return;
         }
+
         try {
-          cb(JSON.parse(data));
+          data = JSON.parse(data);
         } catch (error) {
           err(new Error('Can\'t parse server response'));
+          return;
         }
+
+        cb(data);
       });
     });
 
     req.on('error', err);
-    req.end(JSON.stringify({ symbols: { tickers }, columns }));
+    req.end(content);
   });
+}
+
+async function fetchScanData(tickers = [], type = '', columns = []) {
+  let data = await request({
+    method: 'POST',
+    hostname: 'scanner.tradingview.com',
+    path: `/${type}/scan`,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  }, true, JSON.stringify({ symbols: { tickers }, columns }));
+
+  if (!data.startsWith('{')) throw new Error('Wrong screener or symbol');
+
+  try {
+    data = JSON.parse(data);
+  } catch (e) {
+    throw new Error('Can\'t parse server response');
+  }
+
+  return data;
 }
 
 /**
@@ -125,47 +150,102 @@ module.exports = {
    * @returns {Promise<SearchResult[]>} Search results
    */
   async search(search, filter = '') {
-    return new Promise((cb, err) => {
-      https.get({
-        host: 'symbol-search.tradingview.com',
-        path: `/symbol_search/?text=${search.replace(/ /g, '%20')}&type=${filter}`,
-        origin: 'https://www.tradingview.com',
-      }, (res) => {
-        let rs = '';
-        res.on('data', (d) => { rs += d; });
-        res.on('end', () => {
-          try {
-            rs = JSON.parse(rs);
-          } catch (e) {
-            err(new Error('Can\'t parse server response'));
-            return;
-          }
-
-          cb(rs.map((s) => {
-            const exchange = s.exchange.split(' ')[0];
-            const id = `${exchange}:${s.symbol}`;
-
-            const screener = (['forex', 'crypto'].includes(s.type)
-              ? s.type
-              : this.getScreener(exchange)
-            );
-
-            return {
-              id,
-              exchange,
-              fullExchange: s.exchange,
-              screener,
-              symbol: s.symbol,
-              description: s.description,
-              type: s.type,
-              getTA: () => this.getTA(screener, id),
-            };
-          }));
-        });
-
-        res.on('error', err);
-      });
+    const data = await request({
+      host: 'symbol-search.tradingview.com',
+      path: `/symbol_search/?text=${search.replace(/ /g, '%20')}&type=${filter}`,
+      origin: 'https://www.tradingview.com',
     });
+
+    return data.map((s) => {
+      const exchange = s.exchange.split(' ')[0];
+      const id = `${exchange}:${s.symbol}`;
+
+      const screener = (['forex', 'crypto'].includes(s.type)
+        ? s.type
+        : this.getScreener(exchange)
+      );
+
+      return {
+        id,
+        exchange,
+        fullExchange: s.exchange,
+        screener,
+        symbol: s.symbol,
+        description: s.description,
+        type: s.type,
+        getTA: () => this.getTA(screener, id),
+      };
+    });
+  },
+
+  /**
+   * @typedef {Object} IndicatorResult
+   * @property {string} id Script ID
+   * @property {string} version Script version
+   * @property {string} name Script complete name
+   * @property {{ id: number, username: string }} author Author user ID
+   * @property {string} image Image ID https://tradingview.com/i/${image}
+   * @property {string | ''} source Script source (if available)
+   * @property {'study' | 'strategy'} type Script type (study / strategy)
+   * @property {'open_source' | 'closed_source' | 'invite_only' | 'other'} access Script access type
+   */
+
+  /**
+   * Find an indicator
+   * @param {string} search Keywords
+   * @returns {Promise<IndicatorResult[]>} Search results
+   */
+  async searchIndicator(search = '') {
+    if (!indicList.length) {
+      await Promise.all(['standard', 'candlestick', 'fundamental'].map(async (type) => {
+        indicList.push(...await request({
+          host: 'pine-facade.tradingview.com',
+          path: `/pine-facade/list/?filter=${type}`,
+        }));
+      }));
+    }
+
+    const data = await request({
+      host: 'www.tradingview.com',
+      path: `/pubscripts-suggest-json/?search=${search.replace(/ /g, '%20')}`,
+    });
+
+    function norm(str = '') {
+      return str.toUpperCase().replace(/[^A-Z]/g, '');
+    }
+
+    return [
+      ...indicList.filter((i) => (
+        norm(i.scriptName).includes(norm(search))
+        || norm(i.extra.shortDescription).includes(norm(search))
+      )).map((ind) => ({
+        id: ind.scriptIdPart,
+        version: ind.version,
+        name: ind.scriptName,
+        author: {
+          id: ind.userId,
+          username: '@TRADINGVIEW@',
+        },
+        image: '',
+        access: 'closed_source',
+        source: '',
+        type: (ind.extra && ind.extra.kind) ? ind.extra.kind : 'study',
+      })),
+
+      ...data.results.map((ind) => ({
+        id: ind.scriptIdPart,
+        version: ind.version,
+        name: ind.scriptName,
+        author: {
+          id: ind.author.id,
+          username: ind.author.username,
+        },
+        image: ind.imageUrl,
+        access: ['open_source', 'closed_source', 'invite_only'][ind.access - 1] || 'other',
+        source: ind.scriptSource,
+        type: (ind.extra && ind.extra.kind) ? ind.extra.kind : 'study',
+      })),
+    ];
   },
 
   /**
@@ -186,6 +266,7 @@ module.exports = {
    * @property {string} pineVersion Indicator version
    * @property {string} description Indicator description
    * @property {string} shortDescription Indicator short description
+   * @property {string} typeID Indicator script type ID
    * @property {Object<string, indicatorInput>} inputs Indicator inputs
    * @property {Object<string, string>} plots Indicator plots
    * @property {string} script Indicator script
@@ -195,67 +276,68 @@ module.exports = {
    * Get an indicator
    * @param {string} id Indicator ID (Like: PUB;XXXXXXXXXXXXXXXXXXXXX)
    * @param {string} version Wanted version of the indicator
+   * @param {'study' | 'strategy'} [type] Script type
    * @returns {Promise<Indicator>} Indicator
    */
-  async getIndicator(id, version, settings = []) {
-    return new Promise((cb, err) => {
-      https.get(`https://pine-facade.tradingview.com/pine-facade/translate/${id}/${version}`, (res) => {
-        let rs = '';
-        res.on('data', (d) => { rs += d; });
-        res.on('end', () => {
-          try {
-            rs = JSON.parse(rs);
-          } catch (e) {
-            err(new Error('Inexistent or unsupported indicator'));
-            return;
-          }
+  async getIndicator(id, version, settings = [], type = 'study') {
+    const indicID = id.replace(/ |%/g, '%25');
 
-          if (!rs.success || !rs.result.metaInfo || !rs.result.metaInfo.inputs) {
-            err(new Error('Inexistent or unsupported indicator'));
-            return;
-          }
+    let data = await request({
+      host: 'pine-facade.tradingview.com',
+      path: `/pine-facade/translate/${indicID}/${version}`,
+    }, true);
 
-          const inputs = {};
+    try {
+      data = JSON.parse(data);
+    } catch (e) {
+      throw new Error(`Inexistent or unsupported indicator: '${id}'`);
+    }
 
-          rs.result.metaInfo.inputs.forEach((input) => {
-            if (['text', 'pineId', 'pineVersion'].includes(input.id)) return;
-            const inline = input.inline || input.name.replace(/ /g, '_').replace(/[^a-zA-Z0-9]/g, '');
+    if (!data.success || !data.result.metaInfo || !data.result.metaInfo.inputs) {
+      console.error(data);
+      throw new Error('Inexistent or unsupported indicator');
+    }
 
-            const i = parseInt(input.id.replace(/[^0-9]/g, ''), 10);
+    const inputs = {};
 
-            inputs[input.id] = {
-              name: input.name,
-              type: input.type,
-              value: settings[i] ?? input.defval,
-              defVal: input.defval,
-              hidden: !!input.isHidden,
-              isFake: !!input.isFake,
-              inline,
-            };
+    data.result.metaInfo.inputs.forEach((input) => {
+      if (['text', 'pineId', 'pineVersion'].includes(input.id)) return;
+      const inline = input.inline || input.name.replace(/ /g, '_').replace(/[^a-zA-Z0-9_]/g, '');
 
-            if (input.options) inputs[input.id].options = input.options;
-          });
+      const i = parseInt(input.id.replace(/[^0-9]/g, ''), 10);
 
-          const plots = {};
+      inputs[input.id] = {
+        name: input.name,
+        type: input.type,
+        value: settings[input.internalID] ?? settings[i] ?? input.defval,
+        defVal: input.defval,
+        hidden: !!input.isHidden,
+        isFake: !!input.isFake,
+        inline,
+      };
 
-          Object.keys(rs.result.metaInfo.styles).forEach((plotId) => {
-            plots[plotId] = rs.result.metaInfo.styles[plotId].title.replace(/ /g, '_').replace(/[^a-zA-Z0-9]/g, '');
-          });
-
-          cb({
-            pineId: id,
-            pineVersion: version,
-            description: rs.result.metaInfo.description,
-            shortDescription: rs.result.metaInfo.shortDescription,
-            inputs,
-            plots,
-            script: rs.result.ilTemplate,
-          });
-        });
-
-        res.on('error', err);
-      });
+      if (input.options) inputs[input.id].options = input.options;
     });
+
+    const plots = {};
+
+    Object.keys(data.result.metaInfo.styles).forEach((plotId) => {
+      plots[plotId] = data.result.metaInfo.styles[plotId].title.replace(/ /g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+    });
+
+    return {
+      pineId: indicID,
+      pineVersion: version,
+      description: data.result.metaInfo.description,
+      shortDescription: data.result.metaInfo.shortDescription,
+      typeID: {
+        study: 'Script@tv-scripting-101!',
+        strategy: 'StrategyScript@tv-scripting-101!',
+      }[type] || type,
+      inputs,
+      plots,
+      script: data.result.ilTemplate,
+    };
   },
 
   /**
@@ -336,30 +418,23 @@ module.exports = {
    * @returns {Promise<string>} Token
    */
   async getChartToken(layout, credentials = {}) {
-    return new Promise((cb, err) => {
-      const creds = credentials.id && credentials.session;
-      const userID = creds ? credentials.id : -1;
-      const session = creds ? credentials.session : null;
+    const creds = credentials.id && credentials.session;
+    const userID = creds ? credentials.id : -1;
+    const session = creds ? credentials.session : null;
 
-      https.get(`https://www.tradingview.com/chart-token/?image_url=${layout}&user_id=${userID}`, {
-        headers: { cookie: session ? `sessionid=${session}` : '' },
-      }, (res) => {
-        let rs = '';
-        res.on('data', (d) => { rs += d; });
-        res.on('end', async () => {
-          rs = JSON.parse(rs);
-
-          if (rs.token) cb(rs.token);
-          else err(new Error('Wrong layout or credentials'));
-        });
-
-        res.on('error', err);
-      }).end();
+    const data = await request({
+      host: 'www.tradingview.com',
+      path: `/chart-token/?image_url=${layout}&user_id=${userID}`,
+      headers: { cookie: session ? `sessionid=${session}` : '' },
     });
+
+    if (!data.token) throw new Error('Wrong layout or credentials');
+
+    return data.token;
   },
 
   /**
-   * @typedef {Object} DrawingPoint
+   * @typedef {Object} DrawingPoint Drawing poitn
    * @property {number} time_t Point X time position
    * @property {number} price Point Y price position
    * @property {number} offset Point offset
@@ -390,31 +465,20 @@ module.exports = {
    */
   async getDrawings(layout, symbol = '', credentials = {}, chartID = 1) {
     const chartToken = await module.exports.getChartToken(layout, credentials);
+    const creds = credentials.id && credentials.session;
+    const session = creds ? credentials.session : null;
 
-    return new Promise((cb, err) => {
-      const creds = credentials.id && credentials.session;
-      const session = creds ? credentials.session : null;
-
-      const url = `https://charts-storage.tradingview.com/charts-storage/layout/${
-        layout}/sources?chart_id=${chartID}&jwt=${chartToken}${symbol ? `&symbol=${symbol}` : ''}`;
-
-      https.get(url, {
-        headers: { cookie: session ? `sessionid=${session}` : '' },
-      }, (res) => {
-        let rs = '';
-        res.on('data', (d) => { rs += d; });
-        res.on('end', async () => {
-          rs = JSON.parse(rs);
-
-          if (rs.payload) {
-            cb(Object.values(rs.payload.sources || {}).map((drawing) => ({
-              ...drawing, ...drawing.state,
-            })));
-          } else err(new Error('Wrong layout, user credentials, or chart id.'));
-        });
-
-        res.on('error', err);
-      }).end();
+    const data = await request({
+      host: 'charts-storage.tradingview.com',
+      path: `/charts-storage/layout/${layout}/sources?chart_id=${chartID
+      }&jwt=${chartToken}${symbol ? `&symbol=${symbol}` : ''}`,
+      headers: { cookie: session ? `sessionid=${session}` : '' },
     });
+
+    if (!data.payload) throw new Error('Wrong layout, user credentials, or chart id.');
+
+    return Object.values(data.payload.sources || {}).map((drawing) => ({
+      ...drawing, ...drawing.state,
+    }));
   },
 };
