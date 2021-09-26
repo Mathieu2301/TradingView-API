@@ -1,4 +1,4 @@
-# Tradingview API
+# TradingView API
 Get realtime market prices and indicator values from Tradingview !
 
 ## Features
