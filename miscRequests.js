@@ -275,11 +275,11 @@ module.exports = {
   /**
    * Get an indicator
    * @param {string} id Indicator ID (Like: PUB;XXXXXXXXXXXXXXXXXXXXX)
-   * @param {string} version Wanted version of the indicator
+   * @param {'last' | string} [version] Wanted version of the indicator
    * @param {'study' | 'strategy'} [type] Script type
    * @returns {Promise<Indicator>} Indicator
    */
-  async getIndicator(id, version, settings = [], type = 'study') {
+  async getIndicator(id, version = 'last', settings = [], type = 'study') {
     const indicID = id.replace(/ |%/g, '%25');
 
     let data = await request({

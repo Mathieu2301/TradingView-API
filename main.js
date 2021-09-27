@@ -232,7 +232,7 @@ module.exports = (autoInit = true) => {
      * @typedef {Object} IndicatorInfos Indicator infos
      * @property {string} id ID of the indicator (Like: XXX;XXXXXXXXXXXXXXXXXXXXX)
      * @property {string} [name] Name of the indicator
-     * @property {string} version Wanted version of the indicator
+     * @property {'last' | string} [version] Wanted version of the indicator
      * @property {(string | number | boolean | null)[]} [settings] Indicator settings value
      * @property {'study' | 'strategy'} [type] Script type
      *
@@ -455,7 +455,7 @@ module.exports = (autoInit = true) => {
 
         if (['timescale_update', 'du'].includes(packet.type)) {
           await updatePeriods(packet);
-          onUpdate([...periods].reverse(), strategies);
+          if (!isEnded) onUpdate([...periods].reverse(), strategies);
           return;
         }
 
