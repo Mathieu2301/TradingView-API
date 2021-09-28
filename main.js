@@ -441,8 +441,9 @@ module.exports = (autoInit = true) => {
 
               p.v.forEach((val, i) => {
                 if (i === 0) return;
-                if (indicator.plots[`plot_${i - 1}`]) period[indicator.plots[`plot_${i - 1}`]] = val;
-                else period[`_plot_${i - 1}`] = val;
+                if (indicator.plots[`plot_${i - 1}`] && !period[indicator.plots[`plot_${i - 1}`]]) {
+                  period[indicator.plots[`plot_${i - 1}`]] = val;
+                } else period[`_plot_${i - 1}`] = val;
               });
               periods[p.i][chart.indicators[parseInt(type, 10)].name || `st${type}`] = period;
             }
