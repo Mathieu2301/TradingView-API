@@ -1,9 +1,10 @@
 const WebSocket = require('ws');
 
 const misc = require('./miscRequests');
+const protocol = require('./protocol');
 
 const quoteSessionGenerator = require('./quote/session');
-const chartSessionGenerator = require('./quote/session');
+const chartSessionGenerator = require('./chart/session');
 
 /**
  * @typedef {Object} Session
@@ -152,60 +153,48 @@ module.exports = class Client {
   #parsePacket(str) {
     if (!this.isOpen) return;
 
-    str.replace(/~h~/g, '').split(/~m~[0-9]{1,}~m~/g)
-      .map((p) => {
-        if (!p) return false;
-        try {
-          return JSON.parse(p);
-        } catch (error) {
-          console.warn('Cant parse', p);
-          return false;
-        }
-      })
-      .filter((p) => p)
-      .forEach((packet) => {
-        console.log('[CLIENT] PACKET', packet);
-        if (typeof packet === 'number') { // Ping
-          const pingStr = `~h~${packet}`;
-          this.#ws.send(`~m~${pingStr.length}~m~${pingStr}`);
-          this.#handleEvent('ping', packet);
+    protocol.parseWSPacket(str).forEach((packet) => {
+      console.log('§90§30§107 CLIENT §0 PACKET', packet);
+      if (typeof packet === 'number') { // Ping
+        this.#ws.send(protocol.formatWSPacket(`~h~${packet}`));
+        this.#handleEvent('ping', packet);
+        return;
+      }
+
+      if (packet.m === 'protocol_error') { // Error
+        this.#handleError('Client critical error:', packet.p);
+        this.#ws.close();
+        return;
+      }
+
+      if (packet.m && packet.p) { // Normal packet
+        const parsed = {
+          type: packet.m,
+          data: packet.p,
+        };
+
+        const session = packet.p[0];
+
+        if (session && this.#sessions[session]) {
+          this.#sessions[session].onData(parsed);
           return;
         }
+      }
 
-        if (packet.m === 'protocol_error') { // Error
-          this.#handleError('Client critical error:', packet.p);
-          this.#ws.close();
-          return;
-        }
+      if (!this.#logged) {
+        this.#handleEvent('logged', packet);
+        return;
+      }
 
-        if (packet.m && packet.p) { // Normal packet
-          const parsed = {
-            type: packet.m,
-            session: packet.p[0],
-            data: packet.p[1],
-          };
-
-          if (parsed.session && this.#sessions[parsed.session]) {
-            this.#sessions[parsed.session].onData(parsed);
-            return;
-          }
-        }
-
-        if (!this.#logged) {
-          this.#handleEvent('logged', packet);
-          return;
-        }
-
-        this.#handleEvent('data', packet);
-      });
+      this.#handleEvent('data', packet);
+    });
   }
 
   #sendQueue = [];
 
   /** @type {SendPacket} Send a custom packet */
   send(t, p = []) {
-    const msg = JSON.stringify({ m: t, p });
-    this.#sendQueue.push(`~m~${msg.length}~m~${msg}`);
+    this.#sendQueue.push(protocol.formatWSPacket({ m: t, p }));
     this.sendQueue();
   }
 

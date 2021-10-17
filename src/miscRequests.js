@@ -1,5 +1,7 @@
 const https = require('https');
 
+const PineIndicator = require('./classes/PineIndicator');
+
 const indicators = ['Recommend.Other', 'Recommend.All', 'Recommend.MA'];
 const indicList = [];
 
@@ -132,7 +134,7 @@ module.exports = {
   },
 
   /**
-   * @typedef {Object} SearchResult
+   * @typedef {Object} SearchMarketResult
    * @property {string} id
    * @property {string} exchange
    * @property {string} fullExchange
@@ -147,9 +149,9 @@ module.exports = {
    * Find a symbol
    * @param {string} search Keywords
    * @param {'stock' | 'futures' | 'forex' | 'cfd' | 'crypto' | 'index' | 'economic'} [filter]
-   * @returns {Promise<SearchResult[]>} Search results
+   * @returns {Promise<SearchMarketResult[]>} Search results
    */
-  async search(search, filter = '') {
+  async searchMarket(search, filter = '') {
     const data = await request({
       host: 'symbol-search.tradingview.com',
       path: `/symbol_search/?text=${search.replace(/ /g, '%20')}&type=${filter}`,
@@ -179,7 +181,7 @@ module.exports = {
   },
 
   /**
-   * @typedef {Object} IndicatorResult
+   * @typedef {Object} SearchIndicatorResult
    * @property {string} id Script ID
    * @property {string} version Script version
    * @property {string} name Script complete name
@@ -188,12 +190,13 @@ module.exports = {
    * @property {string | ''} source Script source (if available)
    * @property {'study' | 'strategy'} type Script type (study / strategy)
    * @property {'open_source' | 'closed_source' | 'invite_only' | 'other'} access Script access type
+   * @property {() => Promise<Indicator>} get Get the full indicator informations
    */
 
   /**
    * Find an indicator
    * @param {string} search Keywords
-   * @returns {Promise<IndicatorResult[]>} Search results
+   * @returns {Promise<SearchIndicatorResult[]>} Search results
    */
   async searchIndicator(search = '') {
     if (!indicList.length) {
@@ -230,6 +233,9 @@ module.exports = {
         access: 'closed_source',
         source: '',
         type: (ind.extra && ind.extra.kind) ? ind.extra.kind : 'study',
+        get() {
+          return module.exports.getIndicator(ind.scriptIdPart, ind.version);
+        },
       })),
 
       ...data.results.map((ind) => ({
@@ -244,42 +250,20 @@ module.exports = {
         access: ['open_source', 'closed_source', 'invite_only'][ind.access - 1] || 'other',
         source: ind.scriptSource,
         type: (ind.extra && ind.extra.kind) ? ind.extra.kind : 'study',
+        get() {
+          return module.exports.getIndicator(ind.scriptIdPart, ind.version);
+        },
       })),
     ];
   },
 
   /**
-   * @typedef {Object} indicatorInput
-   * @property {string} name
-   * @property {string} inline Inline name
-   * @property { 'text' | 'source' | 'integer' | 'float' | 'resolution' | 'bool' } type
-   * @property {string | number | boolean} value
-   * @property {string | number | boolean} defVal
-   * @property {boolean} hidden
-   * @property {boolean} isFake
-   * @property {string[]} [options]
-   */
-
-  /**
-   * @typedef {Object} Indicator
-   * @property {string} pineId Indicator ID
-   * @property {string} pineVersion Indicator version
-   * @property {string} description Indicator description
-   * @property {string} shortDescription Indicator short description
-   * @property {string} typeID Indicator script type ID
-   * @property {Object<string, indicatorInput>} inputs Indicator inputs
-   * @property {Object<string, string>} plots Indicator plots
-   * @property {string} script Indicator script
-   */
-
-  /**
    * Get an indicator
    * @param {string} id Indicator ID (Like: PUB;XXXXXXXXXXXXXXXXXXXXX)
    * @param {'last' | string} [version] Wanted version of the indicator
-   * @param {'study' | 'strategy'} [type] Script type
-   * @returns {Promise<Indicator>} Indicator
+   * @returns {Promise<PineIndicator>} Indicator
    */
-  async getIndicator(id, version = 'last', settings = [], type = 'study') {
+  async getIndicator(id, version = 'last') {
     const indicID = id.replace(/ |%/g, '%25');
 
     let data = await request({
@@ -294,7 +278,6 @@ module.exports = {
     }
 
     if (!data.success || !data.result.metaInfo || !data.result.metaInfo.inputs) {
-      console.error(data);
       throw new Error('Inexistent or unsupported indicator');
     }
 
@@ -302,18 +285,17 @@ module.exports = {
 
     data.result.metaInfo.inputs.forEach((input) => {
       if (['text', 'pineId', 'pineVersion'].includes(input.id)) return;
-      const inline = input.inline || input.name.replace(/ /g, '_').replace(/[^a-zA-Z0-9_]/g, '');
-
-      const i = parseInt(input.id.replace(/[^0-9]/g, ''), 10);
 
       inputs[input.id] = {
         name: input.name,
+        inline: input.inline || input.name.replace(/ /g, '_').replace(/[^a-zA-Z0-9_]/g, ''),
+        internalID: input.internalID,
+        tooltip: input.tooltip,
+
         type: input.type,
-        value: settings[input.internalID] ?? settings[i] ?? input.defval,
-        defVal: input.defval,
-        hidden: !!input.isHidden,
+        value: input.defval,
+        isHidden: !!input.isHidden,
         isFake: !!input.isFake,
-        inline,
       };
 
       if (input.options) inputs[input.id].options = input.options;
@@ -325,19 +307,15 @@ module.exports = {
       plots[plotId] = data.result.metaInfo.styles[plotId].title.replace(/ /g, '_').replace(/[^a-zA-Z0-9_]/g, '');
     });
 
-    return {
+    return new PineIndicator({
       pineId: indicID,
       pineVersion: version,
       description: data.result.metaInfo.description,
       shortDescription: data.result.metaInfo.shortDescription,
-      typeID: {
-        study: 'Script@tv-scripting-101!',
-        strategy: 'StrategyScript@tv-scripting-101!',
-      }[type] || type,
       inputs,
       plots,
       script: data.result.ilTemplate,
-    };
+    });
   },
 
   /**

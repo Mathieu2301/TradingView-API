@@ -2,12 +2,12 @@ const { genSessionID } = require('../utils');
 
 const quoteMarketConstructor = require('./market');
 
-/** @typedef {Object<string, Function[]>} SymbolList */
+/** @typedef {Object<string, Function[]>} SymbolListeners */
 
 /**
  * @typedef {Object} QuoteSessionBridge
  * @prop {string} sessionID
- * @prop {SymbolList} symbols
+ * @prop {SymbolListeners} symbolListeners
  * @prop {import('../client').SendPacket} send
 */
 
@@ -52,37 +52,48 @@ function getQuoteFields(fieldsType) {
 }
 
 /**
- * @typedef {Object} quoteSessionOptions Quote Session options
- * @prop {'all' | 'price'} [fields] Asked quote fields
- * @prop {quoteField[]} [customFields] List of asked quote fields
- */
-
-/**
  * @param {import('../client').ClientBridge} client
  */
 module.exports = (client) => class QuoteSession {
   #sessionID = genSessionID('qs');
 
+  /** Parent client */
   #client = client;
 
-  /** @type {SymbolList} */
-  #symbols = {};
+  /** @type {SymbolListeners} */
+  #symbolListeners = {};
+
+  /**
+   * @typedef {Object} quoteSessionOptions Quote Session options
+   * @prop {'all' | 'price'} [fields] Asked quote fields
+   * @prop {quoteField[]} [customFields] List of asked quote fields
+   */
 
   /**
    * @param {quoteSessionOptions} options Quote settings options
    */
-  constructor(options) {
+  constructor(options = {}) {
     this.#client.sessions[this.#sessionID] = {
       type: 'quote',
       onData: (packet) => {
-        console.log('[QUOTE SESSION] DATA', packet);
+        console.log('§90§30§102 QUOTE SESSION §0 DATA', packet);
 
-        if (packet.type === 'quote_completed' && this.#symbols[packet.data]) {
-          this.#symbols[packet.data].forEach((h) => h(packet));
+        if (packet.type === 'quote_completed') {
+          const symbol = packet.data[1];
+          if (!this.#symbolListeners[symbol]) {
+            this.#client.send('quote_remove_symbols', [this.#sessionID, symbol]);
+            return;
+          }
+          this.#symbolListeners[symbol].forEach((h) => h(packet));
         }
 
-        if (packet.type === 'qsd' && this.#symbols[packet.data.n]) {
-          this.#symbols[packet.data.n].forEach((h) => h(packet));
+        if (packet.type === 'qsd') {
+          const symbol = packet.data[1].n;
+          if (!this.#symbolListeners[symbol]) {
+            this.#client.send('quote_remove_symbols', [this.#sessionID, symbol]);
+            return;
+          }
+          this.#symbolListeners[symbol].forEach((h) => h(packet));
         }
       },
     };
@@ -99,7 +110,7 @@ module.exports = (client) => class QuoteSession {
   /** @type {QuoteSessionBridge} */
   #quoteSession = {
     sessionID: this.#sessionID,
-    symbols: this.#symbols,
+    symbolListeners: this.#symbolListeners,
     send: (t, p) => this.#client.send(t, p),
   };
 
@@ -108,8 +119,6 @@ module.exports = (client) => class QuoteSession {
 
   /** Delete the quote session */
   delete() {
-    this.#quoteSession.send('quote_delete_session', [
-      this.#quoteSession.sessionID,
-    ]);
+    this.#client.send('quote_delete_session', [this.#sessionID]);
   }
 };

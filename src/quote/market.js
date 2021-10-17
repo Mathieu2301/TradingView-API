@@ -1,16 +1,18 @@
 /**
- * @typedef { 'loaded' | 'data' | 'error' } MarketEvent
+ * @typedef {'loaded' | 'data' | 'error'} MarketEvent
  */
 
 /**
  * @param {import('./session').QuoteSessionBridge} quoteSession
  */
 module.exports = (quoteSession) => class QuoteMarket {
-  #symbolList = quoteSession.symbols;
+  #symbolListeners = quoteSession.symbolListeners;
 
   #symbol;
 
   #symbolListenerID = 0;
+
+  #lastData = {};
 
   #callbacks = {
     loaded: [],
@@ -19,8 +21,6 @@ module.exports = (quoteSession) => class QuoteMarket {
     event: [],
     error: [],
   };
-
-  #lastData = {};
 
   /**
    * @param {MarketEvent} ev Client event
@@ -42,35 +42,34 @@ module.exports = (quoteSession) => class QuoteMarket {
   constructor(symbol) {
     this.#symbol = symbol;
 
-    if (!this.#symbolList[symbol]) {
-      this.#symbolList[symbol] = [];
+    if (!this.#symbolListeners[symbol]) {
+      this.#symbolListeners[symbol] = [];
       quoteSession.send('quote_add_symbols', [
         quoteSession.sessionID,
         symbol,
       ]);
     }
-    this.#symbolListenerID = this.#symbolList[symbol].length;
+    this.#symbolListenerID = this.#symbolListeners[symbol].length;
 
-    this.#symbolList[symbol][this.#symbolListenerID] = (packet) => {
-      console.log('[MARKET] DATA', packet);
+    this.#symbolListeners[symbol][this.#symbolListenerID] = (packet) => {
+      console.log('§90§30§105 MARKET §0 DATA', packet);
 
-      if (packet.type === 'qsd' && packet.data.s === 'ok') {
+      if (packet.type === 'qsd' && packet.data[1].s === 'ok') {
         this.#lastData = {
           ...this.#lastData,
-          ...packet.data.v,
+          ...packet.data[1].v,
         };
         this.#handleEvent('data', this.#lastData);
-        return;
-      }
-
-      if (packet.type === 'qsd' && packet.data.s === 'error') {
-        this.#handleError('Market error', packet.data);
         return;
       }
 
       if (packet.type === 'quote_completed') {
         this.#handleEvent('loaded');
         return;
+      }
+
+      if (packet.type === 'qsd' && packet.data[1].s === 'error') {
+        this.#handleError('Market error', packet.data);
       }
     };
   }
@@ -113,12 +112,12 @@ module.exports = (quoteSession) => class QuoteMarket {
 
   /** Close this listener */
   close() {
-    if (this.#symbolList[this.#symbol].length <= 1) {
+    if (this.#symbolListeners[this.#symbol].length <= 1) {
       quoteSession.send('quote_remove_symbols', [
         quoteSession.sessionID,
         this.#symbol,
       ]);
     }
-    delete this.#symbolList[this.#symbol][this.#symbolListenerID];
+    delete this.#symbolListeners[this.#symbol][this.#symbolListenerID];
   }
 };
