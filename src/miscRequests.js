@@ -190,7 +190,7 @@ module.exports = {
    * @property {string | ''} source Script source (if available)
    * @property {'study' | 'strategy'} type Script type (study / strategy)
    * @property {'open_source' | 'closed_source' | 'invite_only' | 'other'} access Script access type
-   * @property {() => Promise<Indicator>} get Get the full indicator informations
+   * @property {() => Promise<PineIndicator>} get Get the full indicator informations
    */
 
   /**
