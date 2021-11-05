@@ -2,6 +2,35 @@ const { genSessionID } = require('../utils');
 
 const studyConstructor = require('./study');
 
+/**
+ * @typedef {'HeikinAshi' | 'Renko' | 'LineBreak' | 'Kagi'} ChartType Custom chart type
+ */
+
+const ChartTypes = {
+  HeikinAshi: 'BarSetHeikenAshi@tv-basicstudies-60!',
+  Renko: 'BarSetRenko@tv-prostudies-40!',
+  LineBreak: 'BarSetPriceBreak@tv-prostudies-34!',
+  Kagi: 'BarSetKagi@tv-prostudies-34!',
+  PointAndFigure: 'BarSetPnF@tv-prostudies-34!',
+  Range: 'BarSetRange@tv-basicstudies-72!',
+};
+
+/**
+ * @typedef {Object} ChartInputs Custom chart type
+ * @prop {number} [atrLength] Renko/Kagi/PointAndFigure ATR length
+ * @prop {'open' | 'high' | 'low' | 'close' | 'hl2'
+ *  | 'hlc3' | 'ohlc4'} [source] Renko/LineBreak/Kagi source
+ * @prop {'ATR' | string} [style] Renko/Kagi/PointAndFigure style
+ * @prop {number} [boxSize] Renko/PointAndFigure box size
+ * @prop {number} [reversalAmount] Kagi/PointAndFigure reversal amount
+ * @prop {'Close'} [sources] Renko/PointAndFigure sources
+ * @prop {boolean} [wicks] Renko wicks
+ * @prop {number} [lb] LineBreak Line break
+ * @prop {boolean} [oneStepBackBuilding] PointAndFigure oneStepBackBuilding
+ * @prop {boolean} [phantomBars] Range phantom bars
+ * @prop {boolean} [range] Range range
+ */
+
 /** @typedef {Object<string, Function[]>} StudyListeners */
 
 /**
@@ -213,17 +242,37 @@ module.exports = (client) => class ChartSession {
   /**
    * Set the chart market
    * @param {string} symbol Market symbol
-   * @param {Object} [options] Market options
+   * @param {Object} [options] Chart options
    * @param {'splits' | 'dividends'} [options.adjustment] Market adjustment
+   * @param {'regular' | 'extended'} [options.session] Chart session
+   * @param {'EUR' | 'USD' | string} [options.currency] Chart currency
+   * @param {ChartType} [options.type] Chart custom type
+   * @param {ChartInputs} [options.inputs] Chart custom inputs
    * @param {string} [options.series] Series ID (Default: 'sds_sym_1')
    */
   setMarket(symbol, options = {}) {
     this.#periods = {};
 
+    const symbolInit = {
+      symbol: symbol || 'BTCEUR',
+      adjustment: options.adjustment || 'splits',
+      session: options.session || 'regular',
+    };
+
+    if (options.currency) symbolInit['currency-id'] = options.currency;
+
+    const chartInit = (options.type && ChartTypes[options.type]) ? {} : symbolInit;
+
+    if (options.type && ChartTypes[options.type]) {
+      chartInit.symbol = symbolInit;
+      chartInit.type = ChartTypes[options.type];
+      chartInit.inputs = { ...options.inputs };
+    }
+
     this.#client.send('resolve_symbol', [
       this.#sessionID,
       options.series || 'sds_sym_1',
-      `={"symbol":"${symbol || 'BTCEUR'}","adjustment":"${options.adjustment || 'splits'}","session":"regular"}`,
+      `=${JSON.stringify(chartInit)}`,
     ]);
   }
 
