@@ -3,7 +3,7 @@ const https = require('https');
 const PineIndicator = require('./classes/PineIndicator');
 
 const indicators = ['Recommend.Other', 'Recommend.All', 'Recommend.MA'];
-const indicList = [];
+const builtInIndicList = [];
 
 /**
  * @param {https.RequestOptions} options HTTPS Request options
@@ -189,7 +189,8 @@ module.exports = {
    * @property {string} image Image ID https://tradingview.com/i/${image}
    * @property {string | ''} source Script source (if available)
    * @property {'study' | 'strategy'} type Script type (study / strategy)
-   * @property {'open_source' | 'closed_source' | 'invite_only' | 'other'} access Script access type
+   * @property {'open_source' | 'closed_source' | 'invite_only'
+   *  | 'private' | 'other'} access Script access type
    * @property {() => Promise<PineIndicator>} get Get the full indicator informations
    */
 
@@ -199,9 +200,9 @@ module.exports = {
    * @returns {Promise<SearchIndicatorResult[]>} Search results
    */
   async searchIndicator(search = '') {
-    if (!indicList.length) {
+    if (!builtInIndicList.length) {
       await Promise.all(['standard', 'candlestick', 'fundamental'].map(async (type) => {
-        indicList.push(...await request({
+        builtInIndicList.push(...await request({
           host: 'pine-facade.tradingview.com',
           path: `/pine-facade/list/?filter=${type}`,
         }));
@@ -218,7 +219,7 @@ module.exports = {
     }
 
     return [
-      ...indicList.filter((i) => (
+      ...builtInIndicList.filter((i) => (
         norm(i.scriptName).includes(norm(search))
         || norm(i.extra.shortDescription).includes(norm(search))
       )).map((ind) => ({
@@ -375,6 +376,49 @@ module.exports = {
               joinDate: new Date(/"date_joined":"(.*?)"/.exec(rs)[1] || 0),
             });
           } else err(new Error('Wrong or expired sessionid'));
+        });
+
+        res.on('error', err);
+      }).end();
+    });
+  },
+
+  /**
+   * Get user's private indicators from a 'sessionid' cookie
+   * @param {string} session User 'sessionid' cookie
+   * @returns {Promise<SearchIndicatorResult[]>} Search results
+   */
+  async getPrivateIndicators(session) {
+    return new Promise((cb, err) => {
+      https.get('https://pine-facade.tradingview.com/pine-facade/list?filter=saved', {
+        headers: { cookie: `sessionid=${session}` },
+      }, (res) => {
+        let rs = '';
+        res.on('data', (d) => { rs += d; });
+        res.on('end', async () => {
+          try {
+            rs = JSON.parse(rs);
+          } catch (error) {
+            err(new Error('Can\'t parse private indicator list'));
+            return;
+          }
+
+          cb(rs.map((ind) => ({
+            id: ind.scriptIdPart,
+            version: ind.version,
+            name: ind.scriptName,
+            author: {
+              id: -1,
+              username: '@ME@',
+            },
+            image: ind.imageUrl,
+            access: 'private',
+            source: ind.scriptSource,
+            type: (ind.extra && ind.extra.kind) ? ind.extra.kind : 'study',
+            get() {
+              return module.exports.getIndicator(ind.scriptIdPart, ind.version);
+            },
+          })));
         });
 
         res.on('error', err);
