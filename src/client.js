@@ -154,7 +154,7 @@ module.exports = class Client {
     if (!this.isOpen) return;
 
     protocol.parseWSPacket(str).forEach((packet) => {
-      console.log('§90§30§107 CLIENT §0 PACKET', packet);
+      if (global.TW_DEBUG) console.log('§90§30§107 CLIENT §0 PACKET', packet);
       if (typeof packet === 'number') { // Ping
         this.#ws.send(protocol.formatWSPacket(`~h~${packet}`));
         this.#handleEvent('ping', packet);
@@ -209,12 +209,15 @@ module.exports = class Client {
   /**
    * @typedef {Object} ClientOptions
    * @prop {string} [token] User auth token (in 'sessionid' cookie)
+   * @prop {boolean} [DEBUG] Enable debug mode
    */
 
   /** Client object
    * @param {ClientOptions} clientOptions TradingView client options
    */
   constructor(clientOptions = {}) {
+    if (clientOptions.DEBUG) global.TW_DEBUG = clientOptions.DEBUG;
+
     this.#ws = new WebSocket('wss://widgetdata.tradingview.com/socket.io/websocket', {
       origin: 'https://s.tradingview.com',
     });
@@ -222,6 +225,8 @@ module.exports = class Client {
     if (clientOptions.token) {
       misc.getUser(clientOptions.token).then((user) => {
         this.send('set_auth_token', [user.authToken]);
+      }).catch((err) => {
+        this.#handleError('Credentials error:', err.message);
       });
     } else this.send('set_auth_token', ['unauthorized_user_token']);
 

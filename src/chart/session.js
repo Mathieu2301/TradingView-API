@@ -3,7 +3,8 @@ const { genSessionID } = require('../utils');
 const studyConstructor = require('./study');
 
 /**
- * @typedef {'HeikinAshi' | 'Renko' | 'LineBreak' | 'Kagi'} ChartType Custom chart type
+ * @typedef {'HeikinAshi' | 'Renko' | 'LineBreak' | 'Kagi' | 'PointAndFigure'
+ *  | 'Range'} ChartType Custom chart type
  */
 
 const ChartTypes = {
@@ -63,7 +64,7 @@ const ChartTypes = {
  * @prop {string} session-display Session display (ex: '24x7')
  *
  * @typedef {Object} MarketInfos
- * @prop {string} series_id            Used series (ex: 'sds_sym_1')
+ * @prop {string} series_id            Used series (ex: 'ser_1')
  * @prop {string} base_currency        Base currency (ex: 'BTC')
  * @prop {string} base_currency_id     Base currency ID (ex: 'XTVCBTC')
  * @prop {string} name                 Market short name (ex: 'BTCEUR')
@@ -129,6 +130,17 @@ module.exports = (client) => class ChartSession {
     return Object.values(this.#periods).sort((a, b) => b.time - a.time);
   }
 
+  /**
+   * Current market infos
+   * @type {MarketInfos}
+   */
+  #infos = {};
+
+  /** @return {MarketInfos} Current market infos */
+  get infos() {
+    return this.#infos;
+  }
+
   #callbacks = {
     seriesLoaded: [],
     symbolLoaded: [],
@@ -156,7 +168,7 @@ module.exports = (client) => class ChartSession {
     this.#client.sessions[this.#sessionID] = {
       type: 'chart',
       onData: (packet) => {
-        console.log('§90§30§106 CHART SESSION §0 DATA', packet);
+        if (global.TW_DEBUG) console.log('§90§30§106 CHART SESSION §0 DATA', packet);
 
         if (typeof packet.data[1] === 'string' && this.#studyListeners[packet.data[1]]) {
           this.#studyListeners[packet.data[1]](packet);
@@ -164,10 +176,12 @@ module.exports = (client) => class ChartSession {
         }
 
         if (packet.type === 'symbol_resolved') {
-          this.#handleEvent('symbolLoaded', {
+          this.#infos = {
             series_id: packet.data[1],
             ...packet.data[2],
-          });
+          };
+
+          this.#handleEvent('symbolLoaded');
           return;
         }
 
@@ -204,7 +218,7 @@ module.exports = (client) => class ChartSession {
         }
 
         if (packet.type === 'series_error') {
-          this.#handleError('Series error:', packet.data);
+          this.#handleError('Series error:', packet.data[3]);
           return;
         }
 
@@ -218,37 +232,45 @@ module.exports = (client) => class ChartSession {
     this.#client.send('chart_create_session', [this.#sessionID]);
   }
 
-  #series = []
+  #seriesCreated = false;
+
+  #currentSeries = 0;
 
   /**
    * @param {import('../types').TimeFrame} timeframe Chart period timeframe
    * @param {number} [range] Number of loaded periods/candles (Default: 100)
-   * @param {string} [ID] Series ID (Default: 'sds_sym_1')
    */
-  setSeries(timeframe = '240', range = 100, ID = 'sds_sym_1') {
+  setSeries(timeframe = '240', range = 100) {
+    if (!this.#currentSeries) {
+      this.#handleError('Please set the market before setting series');
+      return;
+    }
+
     this.#periods = {};
-    this.#client.send(`${this.#series.includes(ID) ? 'modify' : 'create'}_series`, [
+
+    this.#client.send(`${this.#seriesCreated ? 'modify' : 'create'}_series`, [
       this.#sessionID,
       '$prices',
       's1',
-      ID,
+      `ser_${this.#currentSeries}`,
       timeframe,
-      !this.#series.includes(ID) ? range : '',
+      !this.#seriesCreated ? range : '',
     ]);
 
-    if (!this.#series.includes(ID)) this.#series.push(ID);
+    this.#seriesCreated = true;
   }
 
   /**
    * Set the chart market
    * @param {string} symbol Market symbol
    * @param {Object} [options] Chart options
+   * @param {import('../types').TimeFrame} [options.timeframe] Chart period timeframe
+   * @param {number} [options.range] Number of loaded periods/candles (Default: 100)
    * @param {'splits' | 'dividends'} [options.adjustment] Market adjustment
    * @param {'regular' | 'extended'} [options.session] Chart session
    * @param {'EUR' | 'USD' | string} [options.currency] Chart currency
    * @param {ChartType} [options.type] Chart custom type
    * @param {ChartInputs} [options.inputs] Chart custom inputs
-   * @param {string} [options.series] Series ID (Default: 'sds_sym_1')
    */
   setMarket(symbol, options = {}) {
     this.#periods = {};
@@ -256,8 +278,9 @@ module.exports = (client) => class ChartSession {
     const symbolInit = {
       symbol: symbol || 'BTCEUR',
       adjustment: options.adjustment || 'splits',
-      session: options.session || 'regular',
     };
+
+    if (options.session) symbolInit.session = options.session;
 
     if (options.currency) symbolInit['currency-id'] = options.currency;
 
@@ -269,11 +292,15 @@ module.exports = (client) => class ChartSession {
       chartInit.inputs = { ...options.inputs };
     }
 
+    this.#currentSeries += 1;
+
     this.#client.send('resolve_symbol', [
       this.#sessionID,
-      options.series || 'sds_sym_1',
+      `ser_${this.#currentSeries}`,
       `=${JSON.stringify(chartInit)}`,
     ]);
+
+    this.setSeries(options.timeframe, options.range);
   }
 
   /**
@@ -295,7 +322,7 @@ module.exports = (client) => class ChartSession {
 
   /**
    * When a symbol is loaded
-   * @param {(marketInfos: MarketInfos) => void} cb
+   * @param {() => void} cb
    * @event
    */
   onSymbolLoaded(cb) {

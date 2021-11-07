@@ -52,7 +52,7 @@ module.exports = (quoteSession) => class QuoteMarket {
     this.#symbolListenerID = this.#symbolListeners[symbol].length;
 
     this.#symbolListeners[symbol][this.#symbolListenerID] = (packet) => {
-      console.log('§90§30§105 MARKET §0 DATA', packet);
+      if (global.TW_DEBUG) console.log('§90§30§105 MARKET §0 DATA', packet);
 
       if (packet.type === 'qsd' && packet.data[1].s === 'ok') {
         this.#lastData = {

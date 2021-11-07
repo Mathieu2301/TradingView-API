@@ -173,7 +173,7 @@ module.exports = (chartSession) => class ChartStudy {
     this.options = options;
 
     this.#studyListeners[this.#studID] = async (packet) => {
-      console.log('§90§30§105 STUDY §0 DATA', packet);
+      if (global.TW_DEBUG) console.log('§90§30§105 STUDY §0 DATA', packet);
 
       if (packet.type === 'study_completed') {
         this.#handleEvent('studyCompleted');

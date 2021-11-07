@@ -76,7 +76,7 @@ module.exports = (client) => class QuoteSession {
     this.#client.sessions[this.#sessionID] = {
       type: 'quote',
       onData: (packet) => {
-        console.log('§90§30§102 QUOTE SESSION §0 DATA', packet);
+        if (global.TW_DEBUG) console.log('§90§30§102 QUOTE SESSION §0 DATA', packet);
 
         if (packet.type === 'quote_completed') {
           const symbol = packet.data[1];
