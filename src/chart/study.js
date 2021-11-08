@@ -121,7 +121,7 @@ module.exports = (chartSession) => class ChartStudy {
 
   /** @return {{}[]} List of periods values */
   get periods() {
-    return Object.values(this.#periods).sort((a, b) => b.time - a.time);
+    return Object.values(this.#periods).sort((a, b) => b.$time - a.$time);
   }
 
   /** @type {StrategyReport} */
