@@ -254,7 +254,7 @@ module.exports = (client) => class ChartSession {
       's1',
       `ser_${this.#currentSeries}`,
       timeframe,
-      !this.#seriesCreated ? range : '',
+      this.#seriesCreated ? '' : range,
     ]);
 
     this.#seriesCreated = true;

@@ -190,7 +190,7 @@ module.exports = (chartSession) => class ChartStudy {
 
             p.v.forEach((plot, i) => {
               const plotName = (i === 0 ? '$time' : this.options.plots[`plot_${i - 1}`]);
-              if (!period[plotName]) period[plotName] = plot;
+              if (plotName && !period[plotName]) period[plotName] = plot;
               else period[`plot_${i - 1}`] = plot;
             });
 
