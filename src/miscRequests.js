@@ -279,7 +279,7 @@ module.exports = {
     }
 
     if (!data.success || !data.result.metaInfo || !data.result.metaInfo.inputs) {
-      throw new Error('Inexistent or unsupported indicator');
+      throw new Error(`Inexistent or unsupported indicator: "${data.reason}"`);
     }
 
     const inputs = {};
@@ -305,7 +305,26 @@ module.exports = {
     const plots = {};
 
     Object.keys(data.result.metaInfo.styles).forEach((plotId) => {
-      plots[plotId] = data.result.metaInfo.styles[plotId].title.replace(/ /g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+      const plotTitle = data
+        .result
+        .metaInfo
+        .styles[plotId]
+        .title
+        .replace(/ /g, '_')
+        .replace(/[^a-zA-Z0-9_]/g, '');
+
+      const titles = Object.values(plots);
+
+      if (titles.includes(plotTitle)) {
+        let i = 2;
+        while (titles.includes(`${plotTitle}_${i}`)) i += 1;
+        plots[plotId] = `${plotTitle}_${i}`;
+      } else plots[plotId] = plotTitle;
+    });
+
+    data.result.metaInfo.plots.forEach((plot) => {
+      if (!plot.target) return;
+      plots[plot.id] = `${plots[plot.target] ?? plot.target}_${plot.type}`;
     });
 
     return new PineIndicator({
