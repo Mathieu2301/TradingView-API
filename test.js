@@ -7,7 +7,7 @@ const TradingView = require('./main');
 
 const log = (...msg) => console.log('§90§30§103 TEST §0', ...msg);
 
-const client = new TradingView.Client();
+const client = new TradingView.Client({ DEBUG: true });
 
 client.onEvent((event, data) => {
   log('EVENT:', event, data);
@@ -39,8 +39,8 @@ const chart = new client.Session.Chart();
 chart.setMarket('COINBASE:BTCEUR');
 chart.setSeries('60');
 
-chart.onSymbolLoaded((market) => {
-  log('Market loaded:', market.full_name);
+chart.onSymbolLoaded(() => {
+  log('Market loaded:', chart.infos.full_name);
 });
 
 chart.onError((...err) => {
@@ -49,6 +49,7 @@ chart.onError((...err) => {
 
 chart.onUpdate(() => {
   const last = chart.periods[0];
+  if (!last) return;
   log(`Market last period: ${last.close}`);
 });
 
@@ -108,7 +109,7 @@ TradingView.getIndicator('STD;Supertrend%Strategy').then((indicator) => {
       log('Last trade:', SuperTrend.strategyReport.trades[0]);
       // Do something...
 
-      // // Remove SuperTrend stratefgy from the chart
+      // // Remove SuperTrend strategy from the chart
       // SuperTrend.remove();
     }
   });
