@@ -38,6 +38,7 @@ const ChartTypes = {
  * @typedef {Object} ChartSessionBridge
  * @prop {string} sessionID
  * @prop {StudyListeners} studyListeners
+ * @prop {Object<number, number>} indexes
  * @prop {import('../client').SendPacket} send
 */
 
@@ -192,6 +193,7 @@ module.exports = (client) => class ChartSession {
               if (!periods || !periods.s) return;
 
               periods.s.forEach((p) => {
+                [this.#chartSession.indexes[p.i]] = p.v;
                 this.#periods[p.v[0]] = {
                   time: p.v[0],
                   open: p.v[1],
@@ -351,6 +353,7 @@ module.exports = (client) => class ChartSession {
   #chartSession = {
     sessionID: this.#sessionID,
     studyListeners: this.#studyListeners,
+    indexes: {},
     send: (t, p) => this.#client.send(t, p),
   };
 

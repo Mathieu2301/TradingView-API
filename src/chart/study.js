@@ -1,5 +1,6 @@
 const { genSessionID } = require('../utils');
 const { parseCompressed } = require('../protocol');
+const graphicParser = require('./graphicParser');
 
 const PineIndicator = require('../classes/PineIndicator');
 
@@ -124,6 +125,33 @@ module.exports = (chartSession) => class ChartStudy {
     return Object.values(this.#periods).sort((a, b) => b.$time - a.$time);
   }
 
+  /**
+   * List of graphic xPos indexes
+   * @type {number[]}
+   */
+  #indexes = [];
+
+  /**
+   * Table of graphic drawings indexed by type and ID
+   * @type {Object<string, Object<number, {}>>}
+   */
+  #graphic = {};
+
+  /**
+   * Table of graphic drawings indexed by type
+   * @return {import('./graphicParser').GraphicData}
+   */
+  get graphic() {
+    const translator = {};
+
+    Object.keys(chartSession.indexes)
+      .sort((a, b) => chartSession.indexes[b] - chartSession.indexes[a])
+      .forEach((r, n) => { translator[r] = n; });
+
+    const indexes = this.#indexes.map((i) => translator[i]);
+    return graphicParser(this.#graphic, indexes);
+  }
+
   /** @type {StrategyReport} */
   #strategyReport = {
     trades: [],
@@ -203,6 +231,43 @@ module.exports = (chartSession) => class ChartStudy {
         if (data.ns && data.ns.d) {
           const parsed = JSON.parse(data.ns.d);
 
+          if (parsed.graphicsCmds) {
+            if (parsed.graphicsCmds.erase) {
+              parsed.graphicsCmds.erase.forEach((instruction) => {
+                console.log('Erase', instruction);
+                if (instruction.action === 'all') {
+                  if (!instruction.type) {
+                    Object.keys(this.#graphic).forEach((drawType) => {
+                      this.#graphic[drawType] = {};
+                    });
+                  } else this.#graphic[instruction.type] = {};
+                  return;
+                }
+
+                if (instruction.action === 'one') {
+                  this.#graphic[instruction.type][instruction.id] = {};
+                }
+                // Can an 'instruction' contains other things ?
+              });
+            }
+
+            if (parsed.graphicsCmds.create) {
+              Object.keys(parsed.graphicsCmds.create).forEach((drawType) => {
+                if (!this.#graphic[drawType]) this.#graphic[drawType] = {};
+                parsed.graphicsCmds.create[drawType].forEach((group) => {
+                  group.data.forEach((item) => {
+                    this.#graphic[drawType][item.id] = item;
+                  });
+                });
+              });
+            }
+
+            console.log('graphicsCmds', Object.keys(parsed.graphicsCmds));
+            // Can 'graphicsCmds' contains other things ?
+
+            changes.push('graphic');
+          }
+
           if (parsed.data && parsed.data.report && parsed.data.report.performance) {
             this.#strategyReport.performance = parsed.data.report.performance;
             changes.push('perfReport');
@@ -247,6 +312,10 @@ module.exports = (chartSession) => class ChartStudy {
 
             changes.push('fullReport');
           }
+        }
+
+        if (data.ns.indexes && typeof data.ns.indexes === 'object') {
+          this.#indexes = data.ns.indexes;
         }
 
         this.#handleEvent('update', changes);
