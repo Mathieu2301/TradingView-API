@@ -39,7 +39,7 @@ module.exports = class Client {
   #logged = false;
 
   /** If the client is logged in */
-  get logged() {
+  get isLogged() {
     return this.#logged;
   }
 
@@ -200,7 +200,7 @@ module.exports = class Client {
 
   /** Send all waiting packets */
   sendQueue() {
-    while (this.isOpen && this.#sendQueue.length > 0) {
+    while (this.isOpen && this.#logged && this.#sendQueue.length > 0) {
       const packet = this.#sendQueue.shift();
       this.#ws.send(packet);
     }
@@ -224,11 +224,23 @@ module.exports = class Client {
 
     if (clientOptions.token) {
       misc.getUser(clientOptions.token).then((user) => {
-        this.send('set_auth_token', [user.authToken]);
+        this.#sendQueue.unshift(protocol.formatWSPacket({
+          m: 'set_auth_token',
+          p: [user.authToken],
+        }));
+        this.#logged = true;
+        this.sendQueue();
       }).catch((err) => {
         this.#handleError('Credentials error:', err.message);
       });
-    } else this.send('set_auth_token', ['unauthorized_user_token']);
+    } else {
+      this.#sendQueue.unshift(protocol.formatWSPacket({
+        m: 'set_auth_token',
+        p: ['unauthorized_user_token'],
+      }));
+      this.#logged = true;
+      this.sendQueue();
+    }
 
     this.#ws.on('open', () => {
       this.#handleEvent('connected');
