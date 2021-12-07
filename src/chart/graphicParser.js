@@ -26,7 +26,7 @@
  * @prop {GraphicTable[]} tables List of tables drawings
  * @prop {GraphicHorizline[]} horizlines List of horizontal line drawings
  * @prop {GraphicPolygon[]} polygons List of polygon drawings
- * @prop {GraphicHist[]} hist List of hist drawings
+ * @prop {GraphicHist[]} hists List of hist drawings
  */
 
 /**
@@ -61,7 +61,7 @@ module.exports = function graphicParse(rawGraphic = {}, indexes = []) {
       ...p,
     })),
 
-    hist: Object.values(rawGraphic.hhists ?? {}).map((h) => ({
+    hists: Object.values(rawGraphic.hhists ?? {}).map((h) => ({
       ...h,
     })),
 
