@@ -10,7 +10,7 @@ const TradingView = require('../main');
 const client = new TradingView.Client({
   /* Token is only required if you want to use intraday
     timeframes (if you have a paid TradingView account) */
-  // token: 'YOUR_SESSION_TOKEN',
+  token: process.argv[2],
 });
 
 const chart = new client.Session.Chart();

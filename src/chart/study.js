@@ -3,28 +3,33 @@ const { parseCompressed } = require('../protocol');
 const graphicParser = require('./graphicParser');
 
 const PineIndicator = require('../classes/PineIndicator');
+const BuiltInIndicator = require('../classes/BuiltInIndicator');
 
 /**
  * Get pine inputs
- * @param {PineIndicator} options
+ * @param {PineIndicator | BuiltInIndicator} options
  */
-function getPineInputs(options) {
-  const pineInputs = { text: options.script };
+function getInputs(options) {
+  if (options instanceof PineIndicator) {
+    const pineInputs = { text: options.script };
 
-  if (options.pineId) pineInputs.pineId = options.pineId;
-  if (options.pineVersion) pineInputs.pineVersion = options.pineVersion;
+    if (options.pineId) pineInputs.pineId = options.pineId;
+    if (options.pineVersion) pineInputs.pineVersion = options.pineVersion;
 
-  Object.keys(options.inputs).forEach((inputID) => {
-    const input = options.inputs[inputID];
+    Object.keys(options.inputs).forEach((inputID) => {
+      const input = options.inputs[inputID];
 
-    pineInputs[inputID] = {
-      v: input.value,
-      f: input.isFake,
-      t: input.type,
-    };
-  });
+      pineInputs[inputID] = {
+        v: input.value,
+        f: input.isFake,
+        t: input.type,
+      };
+    });
 
-  return pineInputs;
+    return pineInputs;
+  }
+
+  return options.options;
 }
 
 /**
@@ -187,18 +192,16 @@ module.exports = (chartSession) => class ChartStudy {
   }
 
   /**
-   * @param {PineIndicator} options Indicator options
-   * @param {'Script@tv-scripting-101!'
-   *  | 'StrategyScript@tv-scripting-101!'} [type] Indicator custom type
+   * @param {PineIndicator | BuiltInIndicator} indicator Indicator object instance
    */
-  constructor(options, type = 'Script@tv-scripting-101!') {
-    if (!(options instanceof PineIndicator)) {
-      throw new Error(`Study options must be an instance of PineIndicator.
+  constructor(indicator) {
+    if (!(indicator instanceof PineIndicator) && !(indicator instanceof BuiltInIndicator)) {
+      throw new Error(`Indicator argument must be an instance of PineIndicator or BuiltInIndicator.
       Please use 'TradingView.getIndicator(...)' function.`);
     }
 
-    /** @type {PineIndicator} Indicator options */
-    this.options = options;
+    /** @type {PineIndicator | BuiltInIndicator} Indicator instance */
+    this.instance = indicator;
 
     this.#studyListeners[this.#studID] = async (packet) => {
       if (global.TW_DEBUG) console.log('§90§30§105 STUDY §0 DATA', packet);
@@ -217,7 +220,11 @@ module.exports = (chartSession) => class ChartStudy {
             const period = {};
 
             p.v.forEach((plot, i) => {
-              const plotName = (i === 0 ? '$time' : this.options.plots[`plot_${i - 1}`]);
+              if (!this.instance.plots) {
+                period[i === 0 ? '$time' : `plot_${i - 1}`] = plot;
+                return;
+              }
+              const plotName = (i === 0 ? '$time' : this.instance.plots[`plot_${i - 1}`]);
               if (plotName && !period[plotName]) period[plotName] = plot;
               else period[`plot_${i - 1}`] = plot;
             });
@@ -234,7 +241,7 @@ module.exports = (chartSession) => class ChartStudy {
           if (parsed.graphicsCmds) {
             if (parsed.graphicsCmds.erase) {
               parsed.graphicsCmds.erase.forEach((instruction) => {
-                console.log('Erase', instruction);
+                // console.log('Erase', instruction);
                 if (instruction.action === 'all') {
                   if (!instruction.type) {
                     Object.keys(this.#graphic).forEach((drawType) => {
@@ -332,27 +339,27 @@ module.exports = (chartSession) => class ChartStudy {
       `${this.#studID}`,
       'st1',
       '$prices',
-      type,
-      getPineInputs(this.options),
+      this.instance.type,
+      getInputs(this.instance),
     ]);
   }
 
   /**
-   * @param {PineIndicator} options Indicator options
+   * @param {PineIndicator | BuiltInIndicator} indicator Indicator instance
    */
-  setIndicator(options) {
-    if (!(options instanceof PineIndicator)) {
-      throw new Error(`Study options must be an instance of PineIndicator.
+  setIndicator(indicator) {
+    if (!(indicator instanceof PineIndicator) && !(indicator instanceof BuiltInIndicator)) {
+      throw new Error(`Indicator argument must be an instance of PineIndicator or BuiltInIndicator.
       Please use 'TradingView.getIndicator(...)' function.`);
     }
 
-    this.options = options;
+    this.instance = indicator;
 
     chartSession.send('modify_study', [
       chartSession.sessionID,
       `${this.#studID}`,
       'st1',
-      getPineInputs(this.options),
+      getInputs(this.instance),
     ]);
   }
 

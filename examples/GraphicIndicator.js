@@ -2,8 +2,8 @@ const TradingView = require('../main');
 
 /*
   This example tests an indicator that sends
-  its data in a particular way such as
-  'lines', 'labels', 'boxes' and 'tables'
+  graphic data such as 'lines', 'labels',
+  'boxes', 'tables', 'polygons', etc...
 */
 
 const client = new TradingView.Client();
@@ -26,7 +26,7 @@ TradingView.getIndicator('USER;8bbd8017fd3e4881bf91f4fea5e3d538').then((indic) =
   });
 
   STD.onUpdate((changes) => {
-    STD.graphic;
+    // STD.graphic;
     console.log('Update:', changes);
   });
 });

@@ -22,8 +22,15 @@
  * @property {string} script Indicator script
  */
 
+/**
+ * @typedef {'Script@tv-scripting-101!'
+ *  | 'StrategyScript@tv-scripting-101!'} IndicatorType Indicator type
+ */
 module.exports = class PineIndicator {
   #options;
+
+  /** @type {IndicatorType} */
+  #type = 'Script@tv-scripting-101!';
 
   /** @param {Indicator} options Indicator */
   constructor(options) {
@@ -58,6 +65,19 @@ module.exports = class PineIndicator {
   /** @return {Object<string, string>} Indicator plots */
   get plots() {
     return this.#options.plots;
+  }
+
+  /** @return {IndicatorType} Indicator script */
+  get type() {
+    return this.#type;
+  }
+
+  /**
+   * Set the indicator type
+   * @param {IndicatorType} type Indicator type
+   */
+  setType(type = 'Script@tv-scripting-101!') {
+    this.#type = type;
   }
 
   /** @return {string} Indicator script */
