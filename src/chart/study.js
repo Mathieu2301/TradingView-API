@@ -247,12 +247,12 @@ module.exports = (chartSession) => class ChartStudy {
                     Object.keys(this.#graphic).forEach((drawType) => {
                       this.#graphic[drawType] = {};
                     });
-                  } else this.#graphic[instruction.type] = {};
+                  } else delete this.#graphic[instruction.type];
                   return;
                 }
 
                 if (instruction.action === 'one') {
-                  this.#graphic[instruction.type][instruction.id] = {};
+                  delete this.#graphic[instruction.type][instruction.id];
                 }
                 // Can an 'instruction' contains other things ?
               });
@@ -269,7 +269,7 @@ module.exports = (chartSession) => class ChartStudy {
               });
             }
 
-            console.log('graphicsCmds', Object.keys(parsed.graphicsCmds));
+            // console.log('graphicsCmds', Object.keys(parsed.graphicsCmds));
             // Can 'graphicsCmds' contains other things ?
 
             changes.push('graphic');

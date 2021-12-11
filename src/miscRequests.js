@@ -328,8 +328,8 @@ module.exports = {
     });
 
     return new PineIndicator({
-      pineId: indicID,
-      pineVersion: version,
+      pineId: data.result.metaInfo.scriptIdPart || indicID,
+      pineVersion: data.result.metaInfo.pine.version || version,
       description: data.result.metaInfo.description,
       shortDescription: data.result.metaInfo.shortDescription,
       inputs,
