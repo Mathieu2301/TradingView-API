@@ -22,8 +22,8 @@ const defaultValues = {
     volume: 'Up/Down',
     vaVolume: 70,
     subscribeRealtime: false,
-    // first_bar_time: 0000000000000,
-    // last_bar_time: 0000000000000,
+    first_bar_time: NaN,
+    last_bar_time: Date.now(),
   },
   'VbPFixed@tv-volumebyprice-53!': {
     rowsLayout: 'Number Of Rows',
@@ -31,8 +31,8 @@ const defaultValues = {
     volume: 'Up/Down',
     vaVolume: 70,
     subscribeRealtime: false,
-    // first_bar_time: 0000000000000,
-    // last_bar_time: 0000000000000,
+    first_bar_time: NaN,
+    last_bar_time: Date.now(),
   },
   'VbPSessions@tv-volumebyprice-53': {
     rowsLayout: 'Number Of Rows',
@@ -49,8 +49,8 @@ const defaultValues = {
     volume: 'Up/Down',
     vaVolume: 70,
     subscribeRealtime: false,
-    // first_visible_bar_time: 0000000000000,
-    // last_visible_bar_time: 0000000000000,
+    first_visible_bar_time: NaN,
+    last_visible_bar_time: Date.now(),
   },
   'VbPVisible@tv-volumebyprice-53': {
     rowsLayout: 'Number Of Rows',
@@ -58,8 +58,8 @@ const defaultValues = {
     volume: 'Up/Down',
     vaVolume: 70,
     subscribeRealtime: false,
-    // first_visible_bar_time: 0000000000000,
-    // last_visible_bar_time: 0000000000000,
+    first_visible_bar_time: NaN,
+    last_visible_bar_time: Date.now(),
   },
 };
 
@@ -87,15 +87,33 @@ module.exports = class BuiltInIndicator {
     if (!type) throw new Error(`Wrong buit-in indicator type "${type}".`);
 
     this.#type = type;
-    if (defaultValues[type]) this.#options = defaultValues[type];
+    if (defaultValues[type]) this.#options = { ...defaultValues[type] };
   }
 
   /**
    * Set an option
    * @param {BuiltInIndicatorOption} key The option you want to change
    * @param {*} value The new value of the property
+   * @param {boolean} FORCE Ignore type and key verifications
    */
-  setOption(key, value) {
+  setOption(key, value, FORCE = false) {
+    if (FORCE) {
+      this.#options[key] = value;
+      return;
+    }
+
+    if (defaultValues[this.#type] && defaultValues[this.#type][key] !== undefined) {
+      const requiredType = typeof defaultValues[this.#type][key];
+      const valType = typeof value;
+      if (requiredType !== valType) {
+        throw new Error(`Wrong '${key}' value type '${valType}' (must be '${requiredType}')`);
+      }
+    }
+
+    if (defaultValues[this.#type] && defaultValues[this.#type][key] === undefined) {
+      throw new Error(`Option '${key}' is denied with '${this.#type}' indicator`);
+    }
+
     this.#options[key] = value;
   }
 };

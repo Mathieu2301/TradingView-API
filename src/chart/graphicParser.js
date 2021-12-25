@@ -41,7 +41,7 @@
  */
 
 /**
- * @typedef {Object} GraphicHist
+ * @typedef {Object} GraphicHorizHist
  * @prop {number} id Drawing ID
  * @prop {number} priceLow Low Y position
  * @prop {number} priceHigh High Y position
@@ -56,9 +56,9 @@
  * @prop {GraphicLine[]} lines List of lines drawings
  * @prop {GraphicBox[]} boxes List of boxes drawings
  * @prop {GraphicTable[]} tables List of tables drawings
- * @prop {GraphicHorizline[]} horizlines List of horizontal line drawings
- * @prop {GraphicPolygon[]} polygons List of polygon drawings
- * @prop {GraphicHist[]} hists List of hist drawings
+ * @prop {GraphicPolygon[]} polygons List of polygons drawings
+ * @prop {GraphicHorizHist[]} horizHists List of horizontal histograms drawings
+ * @prop {GraphicHorizline[]} horizLines List of horizontal lines drawings
  */
 
 /**
@@ -85,7 +85,7 @@ module.exports = function graphicParse(rawGraphic = {}, indexes = []) {
       ...t,
     })),
 
-    horizlines: Object.values(rawGraphic.horizlines ?? {}).map((h) => ({
+    horizLines: Object.values(rawGraphic.horizlines ?? {}).map((h) => ({
       ...h,
       startIndex: indexes[h.startIndex],
       endIndex: indexes[h.endIndex],
@@ -99,12 +99,12 @@ module.exports = function graphicParse(rawGraphic = {}, indexes = []) {
       })),
     })),
 
-    hists: Object.values(rawGraphic.hhists ?? {}).map((h) => ({
+    horizHists: Object.values(rawGraphic.hhists ?? {}).map((h) => ({
       ...h,
       firstBarTime: indexes[h.firstBarTime],
       lastBarTime: indexes[h.lastBarTime],
     })),
 
-    raw: rawGraphic,
+    raw: () => rawGraphic,
   };
 };

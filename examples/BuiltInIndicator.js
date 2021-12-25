@@ -5,7 +5,11 @@ const TradingView = require('../main');
   like volume-based indicators
 */
 
-if (!process.argv[2]) throw Error('Please specify your \'sessionid\' cookie');
+const volumeProfile = new TradingView.BuiltInIndicator('VbPFixed@tv-basicstudies-139!');
+
+if (!process.argv[2] && volumeProfile.type !== 'VbPFixed@tv-basicstudies-139!') {
+  throw Error('Please specify your \'sessionid\' cookie');
+}
 
 const client = new TradingView.Client({
   token: process.argv[2],
@@ -17,17 +21,13 @@ chart.setMarket('BINANCE:BTCEUR', {
   range: 1,
 });
 
-const volumeProfile = new TradingView.BuiltInIndicator('VbPSessions@tv-volumebyprice-53');
-
-/* Required for other volume-based built-in indicators */
-// volumeProfile.setOption('first_bar_time', 1639080000000);
-// volumeProfile.setOption('last_bar_time', 1639328400000);
-// volumeProfile.setOption('first_visible_bar_time', 1639080000000);
-// volumeProfile.setOption('last_visible_bar_time', 1639328400000);
+/* Required or not, depending on the indicator */
+volumeProfile.setOption('first_bar_time', Date.now() - 10 ** 8);
+// volumeProfile.setOption('first_visible_bar_time', Date.now() - 10 ** 8);
 
 const VOL = new chart.Study(volumeProfile);
 VOL.onUpdate(() => {
-  VOL.graphic.hists
+  VOL.graphic.horizHists
     .filter((h) => h.lastBarTime === 0) // We only keep recent volume infos
     .sort((a, b) => b.priceHigh - a.priceHigh)
     .forEach((h) => {
