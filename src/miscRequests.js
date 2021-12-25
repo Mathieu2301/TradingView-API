@@ -1,7 +1,9 @@
 const https = require('https');
 
+const PineIndicator = require('./classes/PineIndicator');
+
 const indicators = ['Recommend.Other', 'Recommend.All', 'Recommend.MA'];
-const indicList = [];
+const builtInIndicList = [];
 
 /**
  * @param {https.RequestOptions} options HTTPS Request options
@@ -132,7 +134,7 @@ module.exports = {
   },
 
   /**
-   * @typedef {Object} SearchResult
+   * @typedef {Object} SearchMarketResult
    * @property {string} id
    * @property {string} exchange
    * @property {string} fullExchange
@@ -147,9 +149,9 @@ module.exports = {
    * Find a symbol
    * @param {string} search Keywords
    * @param {'stock' | 'futures' | 'forex' | 'cfd' | 'crypto' | 'index' | 'economic'} [filter]
-   * @returns {Promise<SearchResult[]>} Search results
+   * @returns {Promise<SearchMarketResult[]>} Search results
    */
-  async search(search, filter = '') {
+  async searchMarket(search, filter = '') {
     const data = await request({
       host: 'symbol-search.tradingview.com',
       path: `/symbol_search/?text=${search.replace(/ /g, '%20')}&type=${filter}`,
@@ -179,7 +181,7 @@ module.exports = {
   },
 
   /**
-   * @typedef {Object} IndicatorResult
+   * @typedef {Object} SearchIndicatorResult
    * @property {string} id Script ID
    * @property {string} version Script version
    * @property {string} name Script complete name
@@ -187,18 +189,20 @@ module.exports = {
    * @property {string} image Image ID https://tradingview.com/i/${image}
    * @property {string | ''} source Script source (if available)
    * @property {'study' | 'strategy'} type Script type (study / strategy)
-   * @property {'open_source' | 'closed_source' | 'invite_only' | 'other'} access Script access type
+   * @property {'open_source' | 'closed_source' | 'invite_only'
+   *  | 'private' | 'other'} access Script access type
+   * @property {() => Promise<PineIndicator>} get Get the full indicator informations
    */
 
   /**
    * Find an indicator
    * @param {string} search Keywords
-   * @returns {Promise<IndicatorResult[]>} Search results
+   * @returns {Promise<SearchIndicatorResult[]>} Search results
    */
   async searchIndicator(search = '') {
-    if (!indicList.length) {
+    if (!builtInIndicList.length) {
       await Promise.all(['standard', 'candlestick', 'fundamental'].map(async (type) => {
-        indicList.push(...await request({
+        builtInIndicList.push(...await request({
           host: 'pine-facade.tradingview.com',
           path: `/pine-facade/list/?filter=${type}`,
         }));
@@ -215,7 +219,7 @@ module.exports = {
     }
 
     return [
-      ...indicList.filter((i) => (
+      ...builtInIndicList.filter((i) => (
         norm(i.scriptName).includes(norm(search))
         || norm(i.extra.shortDescription).includes(norm(search))
       )).map((ind) => ({
@@ -230,6 +234,9 @@ module.exports = {
         access: 'closed_source',
         source: '',
         type: (ind.extra && ind.extra.kind) ? ind.extra.kind : 'study',
+        get() {
+          return module.exports.getIndicator(ind.scriptIdPart, ind.version);
+        },
       })),
 
       ...data.results.map((ind) => ({
@@ -244,42 +251,20 @@ module.exports = {
         access: ['open_source', 'closed_source', 'invite_only'][ind.access - 1] || 'other',
         source: ind.scriptSource,
         type: (ind.extra && ind.extra.kind) ? ind.extra.kind : 'study',
+        get() {
+          return module.exports.getIndicator(ind.scriptIdPart, ind.version);
+        },
       })),
     ];
   },
 
   /**
-   * @typedef {Object} indicatorInput
-   * @property {string} name
-   * @property {string} inline Inline name
-   * @property { 'text' | 'source' | 'integer' | 'float' | 'resolution' | 'bool' } type
-   * @property {string | number | boolean} value
-   * @property {string | number | boolean} defVal
-   * @property {boolean} hidden
-   * @property {boolean} isFake
-   * @property {string[]} [options]
-   */
-
-  /**
-   * @typedef {Object} Indicator
-   * @property {string} pineId Indicator ID
-   * @property {string} pineVersion Indicator version
-   * @property {string} description Indicator description
-   * @property {string} shortDescription Indicator short description
-   * @property {string} typeID Indicator script type ID
-   * @property {Object<string, indicatorInput>} inputs Indicator inputs
-   * @property {Object<string, string>} plots Indicator plots
-   * @property {string} script Indicator script
-   */
-
-  /**
    * Get an indicator
    * @param {string} id Indicator ID (Like: PUB;XXXXXXXXXXXXXXXXXXXXX)
    * @param {'last' | string} [version] Wanted version of the indicator
-   * @param {'study' | 'strategy'} [type] Script type
-   * @returns {Promise<Indicator>} Indicator
+   * @returns {Promise<PineIndicator>} Indicator
    */
-  async getIndicator(id, version = 'last', settings = [], type = 'study') {
+  async getIndicator(id, version = 'last') {
     const indicID = id.replace(/ |%/g, '%25');
 
     let data = await request({
@@ -294,26 +279,24 @@ module.exports = {
     }
 
     if (!data.success || !data.result.metaInfo || !data.result.metaInfo.inputs) {
-      console.error(data);
-      throw new Error('Inexistent or unsupported indicator');
+      throw new Error(`Inexistent or unsupported indicator: "${data.reason}"`);
     }
 
     const inputs = {};
 
     data.result.metaInfo.inputs.forEach((input) => {
       if (['text', 'pineId', 'pineVersion'].includes(input.id)) return;
-      const inline = input.inline || input.name.replace(/ /g, '_').replace(/[^a-zA-Z0-9_]/g, '');
-
-      const i = parseInt(input.id.replace(/[^0-9]/g, ''), 10);
 
       inputs[input.id] = {
         name: input.name,
+        inline: input.inline || input.name.replace(/ /g, '_').replace(/[^a-zA-Z0-9_]/g, ''),
+        internalID: input.internalID,
+        tooltip: input.tooltip,
+
         type: input.type,
-        value: settings[input.internalID] ?? settings[i] ?? input.defval,
-        defVal: input.defval,
-        hidden: !!input.isHidden,
+        value: input.defval,
+        isHidden: !!input.isHidden,
         isFake: !!input.isFake,
-        inline,
       };
 
       if (input.options) inputs[input.id].options = input.options;
@@ -322,22 +305,37 @@ module.exports = {
     const plots = {};
 
     Object.keys(data.result.metaInfo.styles).forEach((plotId) => {
-      plots[plotId] = data.result.metaInfo.styles[plotId].title.replace(/ /g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+      const plotTitle = data
+        .result
+        .metaInfo
+        .styles[plotId]
+        .title
+        .replace(/ /g, '_')
+        .replace(/[^a-zA-Z0-9_]/g, '');
+
+      const titles = Object.values(plots);
+
+      if (titles.includes(plotTitle)) {
+        let i = 2;
+        while (titles.includes(`${plotTitle}_${i}`)) i += 1;
+        plots[plotId] = `${plotTitle}_${i}`;
+      } else plots[plotId] = plotTitle;
     });
 
-    return {
-      pineId: indicID,
-      pineVersion: version,
+    data.result.metaInfo.plots.forEach((plot) => {
+      if (!plot.target) return;
+      plots[plot.id] = `${plots[plot.target] ?? plot.target}_${plot.type}`;
+    });
+
+    return new PineIndicator({
+      pineId: data.result.metaInfo.scriptIdPart || indicID,
+      pineVersion: data.result.metaInfo.pine.version || version,
       description: data.result.metaInfo.description,
       shortDescription: data.result.metaInfo.shortDescription,
-      typeID: {
-        study: 'Script@tv-scripting-101!',
-        strategy: 'StrategyScript@tv-scripting-101!',
-      }[type] || type,
       inputs,
       plots,
       script: data.result.ilTemplate,
-    };
+    });
   },
 
   /**
@@ -397,6 +395,49 @@ module.exports = {
               joinDate: new Date(/"date_joined":"(.*?)"/.exec(rs)[1] || 0),
             });
           } else err(new Error('Wrong or expired sessionid'));
+        });
+
+        res.on('error', err);
+      }).end();
+    });
+  },
+
+  /**
+   * Get user's private indicators from a 'sessionid' cookie
+   * @param {string} session User 'sessionid' cookie
+   * @returns {Promise<SearchIndicatorResult[]>} Search results
+   */
+  async getPrivateIndicators(session) {
+    return new Promise((cb, err) => {
+      https.get('https://pine-facade.tradingview.com/pine-facade/list?filter=saved', {
+        headers: { cookie: `sessionid=${session}` },
+      }, (res) => {
+        let rs = '';
+        res.on('data', (d) => { rs += d; });
+        res.on('end', async () => {
+          try {
+            rs = JSON.parse(rs);
+          } catch (error) {
+            err(new Error('Can\'t parse private indicator list'));
+            return;
+          }
+
+          cb(rs.map((ind) => ({
+            id: ind.scriptIdPart,
+            version: ind.version,
+            name: ind.scriptName,
+            author: {
+              id: -1,
+              username: '@ME@',
+            },
+            image: ind.imageUrl,
+            access: 'private',
+            source: ind.scriptSource,
+            type: (ind.extra && ind.extra.kind) ? ind.extra.kind : 'study',
+            get() {
+              return module.exports.getIndicator(ind.scriptIdPart, ind.version);
+            },
+          })));
         });
 
         res.on('error', err);
