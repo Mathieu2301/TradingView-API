@@ -53,7 +53,7 @@ const ChartTypes = {
  * @prop {number} close Period close value
  * @prop {number} max Period max value
  * @prop {number} min Period min value
- * @prop {number} change Period change absolute value
+ * @prop {number} volume Period volume value
  */
 
 /**
@@ -91,7 +91,7 @@ const ChartTypes = {
  * @prop {number} minmove2             Minimum move value 2
  * @prop {string} timezone             Used timezone
  * @prop {boolean} is_replayable       If the replay mode is available
- * @prop {boolean} has_adjustment      If the adjustment mode is enabled ????
+ * @prop {boolean} has_adjustment      If the adjustment mode is enabled
  * @prop {boolean} has_extended_hours  Has extended hours
  * @prop {string} bar_source           Bar source
  * @prop {string} bar_transform        Bar transform
@@ -200,7 +200,7 @@ module.exports = (client) => class ChartSession {
                   close: p.v[4],
                   max: p.v[2],
                   min: p.v[3],
-                  change: Math.round(p.v[5] * 100) / 100,
+                  volume: Math.round(p.v[5] * 100) / 100,
                 };
               });
 
@@ -241,12 +241,15 @@ module.exports = (client) => class ChartSession {
   /**
    * @param {import('../types').TimeFrame} timeframe Chart period timeframe
    * @param {number} [range] Number of loaded periods/candles (Default: 100)
+   * @param {number} [reference] Reference candle timestamp (Default is now)
    */
-  setSeries(timeframe = '240', range = 100) {
+  setSeries(timeframe = '240', range = 100, reference = null) {
     if (!this.#currentSeries) {
       this.#handleError('Please set the market before setting series');
       return;
     }
+
+    const calcRange = !reference ? range : ['bar_count', reference, range];
 
     this.#periods = {};
 
@@ -256,7 +259,7 @@ module.exports = (client) => class ChartSession {
       's1',
       `ser_${this.#currentSeries}`,
       timeframe,
-      this.#seriesCreated ? '' : range,
+      this.#seriesCreated ? '' : calcRange,
     ]);
 
     this.#seriesCreated = true;
@@ -268,6 +271,7 @@ module.exports = (client) => class ChartSession {
    * @param {Object} [options] Chart options
    * @param {import('../types').TimeFrame} [options.timeframe] Chart period timeframe
    * @param {number} [options.range] Number of loaded periods/candles (Default: 100)
+   * @param {number} [options.to] Last candle timestamp (Default is now)
    * @param {'splits' | 'dividends'} [options.adjustment] Market adjustment
    * @param {'regular' | 'extended'} [options.session] Chart session
    * @param {'EUR' | 'USD' | string} [options.currency] Chart currency
@@ -302,7 +306,7 @@ module.exports = (client) => class ChartSession {
       `=${JSON.stringify(chartInit)}`,
     ]);
 
-    this.setSeries(options.timeframe, options.range);
+    this.setSeries(options.timeframe, options.range, options.to);
   }
 
   /**
