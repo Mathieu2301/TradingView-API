@@ -13,8 +13,8 @@ chart.setMarket('BINANCE:BTCEUR', {
   timeframe: 'W',
 });
 
-// TradingView.getIndicator('PUB;5xi4DbWeuIQrU0Fx6ZKiI2odDvIW9q2j').then((indic) => {
-TradingView.getIndicator('USER;8bbd8017fd3e4881bf91f4fea5e3d538').then((indic) => {
+// TradingView.getIndicator('USER;01efac32df544348810bc843a7515f36').then((indic) => {
+TradingView.getIndicator('PUB;5xi4DbWeuIQrU0Fx6ZKiI2odDvIW9q2j').then((indic) => {
   const STD = new chart.Study(indic);
 
   STD.onError((...err) => {
@@ -25,19 +25,10 @@ TradingView.getIndicator('USER;8bbd8017fd3e4881bf91f4fea5e3d538').then((indic) =
     console.log('STD Loaded !');
   });
 
-  STD.onUpdate((changes) => {
-    // STD.graphic;
-    console.log('Update:', changes);
+  STD.onUpdate(() => {
+    console.log(STD.graphic);
+    // console.log('Tables:', changes, STD.graphic.tables);
+    // console.log('Cells', STD.graphic.tables[0].cells());
+    client.end();
   });
 });
-
-setInterval(() => {
-  chart.fetchMore(100);
-}, 2000);
-
-setTimeout(() => {
-  console.log('Setting timeframe to: \'D\'');
-  chart.setSeries('D');
-}, 5000);
-
-chart.onUpdate(() => console.log(chart.periods.length));
