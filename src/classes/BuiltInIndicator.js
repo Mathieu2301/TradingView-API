@@ -1,5 +1,6 @@
 /**
- * @typedef {'VbPFixed@tv-basicstudies-139!'
+ * @typedef {'Volume@tv-basicstudies-144'
+ *  | 'VbPFixed@tv-basicstudies-139!'
  *  | 'VbPFixed@tv-volumebyprice-53!'
  *  | 'VbPSessions@tv-volumebyprice-53'
  *  | 'VbPSessionsRough@tv-volumebyprice-53!'
@@ -16,6 +17,10 @@
  */
 
 const defaultValues = {
+  'Volume@tv-basicstudies-144': {
+    length: 20,
+    col_prev_close: false,
+  },
   'VbPFixed@tv-basicstudies-139!': {
     rowsLayout: 'Number Of Rows',
     rows: 24,
