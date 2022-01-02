@@ -60,8 +60,9 @@ const ChartTypes = {
  * @typedef {Object} Subsession
  * @prop {string} id Subsession ID (ex: 'regular')
  * @prop {string} description Subsession description (ex: 'Regular')
- * @prop {string} privat If private
+ * @prop {boolean} private If private
  * @prop {string} session Session (ex: '24x7')
+ * @prop {string} session-correction Session correction
  * @prop {string} session-display Session display (ex: '24x7')
  *
  * @typedef {Object} MarketInfos
