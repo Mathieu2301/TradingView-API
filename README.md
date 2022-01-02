@@ -9,7 +9,7 @@ Get realtime market prices and indicator values from Tradingview !
 - [x] Unlimited simultaneous indicators
 - [x] Realtime
 - [x] Get TradingView's technical analysis
-- [ ] Get values from a specific date range
+- [x] Get values from a specific date range
 - [ ] TradingView socket server emulation
 - [ ] Interract with public chats
 - [ ] Get Screener top values
