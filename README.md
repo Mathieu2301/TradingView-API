@@ -27,8 +27,13 @@ Get realtime market prices and indicator values from Tradingview !
 ___
 ## Installation
 
-```
+Stable version:
+```ruby
 npm i @mathieuc/tradingview
+```
+Last version:
+```ruby
+npm i github:Mathieu2301/TradingView-API
 ```
 
 ## Examples
