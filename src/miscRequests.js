@@ -1,42 +1,11 @@
 const https = require('https');
+const request = require('./request');
 
+const PinePermManager = require('./classes/PinePermManager');
 const PineIndicator = require('./classes/PineIndicator');
 
 const indicators = ['Recommend.Other', 'Recommend.All', 'Recommend.MA'];
 const builtInIndicList = [];
-
-/**
- * @param {https.RequestOptions} options HTTPS Request options
- * @param {boolean} [raw] Get raw or JSON data
- * @param {string} [content] Request body content
- * @returns {Promise<string | object | array>} Result
- */
-function request(options = {}, raw = false, content = '') {
-  return new Promise((cb, err) => {
-    const req = https.request(options, (res) => {
-      let data = '';
-      res.on('data', (c) => { data += c; });
-      res.on('end', () => {
-        if (raw) {
-          cb(data);
-          return;
-        }
-
-        try {
-          data = JSON.parse(data);
-        } catch (error) {
-          err(new Error('Can\'t parse server response'));
-          return;
-        }
-
-        cb(data);
-      });
-    });
-
-    req.on('error', err);
-    req.end(content);
-  });
-}
 
 async function fetchScanData(tickers = [], type = '', columns = []) {
   let data = await request({
@@ -436,6 +405,9 @@ module.exports = {
             type: (ind.extra && ind.extra.kind) ? ind.extra.kind : 'study',
             get() {
               return module.exports.getIndicator(ind.scriptIdPart, ind.version);
+            },
+            getManager() {
+              return new PinePermManager(ind.scriptIdPart);
             },
           })));
         });
