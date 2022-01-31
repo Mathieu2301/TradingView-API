@@ -4,12 +4,7 @@
   "description": "Tradingview instant stocks API, indicator alerts, trading bot, and more !",
   "main": "main.js",
   "scripts": {
-    "test-prices": "node ./tests/prices.js",
-    "test-analysis": "node ./tests/analysis.js",
-    "test-indicator": "node ./tests/indicator.js",
-    "test-manual-alerts": "node ./tests/alerts/manualAlert.js",
-    "test-strat-alerts": "node ./tests/alerts/strategyAlert.js",
-    "test": "npm run test-prices"
+    "test": "node test"
   },
   "repository": {
     "type": "git",
