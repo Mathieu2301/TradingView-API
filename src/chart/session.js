@@ -113,7 +113,14 @@ const ChartTypes = {
  * @param {import('../client').ClientBridge} client
  */
 module.exports = (client) => class ChartSession {
-  #sessionID = genSessionID('cs');
+  #chartSessionID = genSessionID('cs');
+
+  #replaySessionID = genSessionID('rs');
+
+  #replayMode = false;
+
+  /** @type {Object<string, (): any>} */
+  #replayOKCB = {}
 
   /** Parent client */
   #client = client;
@@ -148,6 +155,11 @@ module.exports = (client) => class ChartSession {
     symbolLoaded: [],
     update: [],
 
+    replayLoaded: [],
+    replayPoint: [],
+    replayResolution: [],
+    replayEnd: [],
+
     event: [],
     error: [],
   };
@@ -167,7 +179,7 @@ module.exports = (client) => class ChartSession {
   }
 
   constructor() {
-    this.#client.sessions[this.#sessionID] = {
+    this.#client.sessions[this.#chartSessionID] = {
       type: 'chart',
       onData: (packet) => {
         if (global.TW_DEBUG) console.log('§90§30§106 CHART SESSION §0 DATA', packet);
@@ -188,7 +200,10 @@ module.exports = (client) => class ChartSession {
         }
 
         if (['timescale_update', 'du'].includes(packet.type)) {
+          const changes = [];
+
           Object.keys(packet.data[1]).forEach((k) => {
+            changes.push(k);
             if (k === '$prices') {
               const periods = packet.data[1].$prices;
               if (!periods || !periods.s) return;
@@ -211,7 +226,7 @@ module.exports = (client) => class ChartSession {
             if (this.#studyListeners[k]) this.#studyListeners[k](packet);
           });
 
-          this.#handleEvent('update');
+          this.#handleEvent('update', changes);
           return;
         }
 
@@ -232,7 +247,47 @@ module.exports = (client) => class ChartSession {
       },
     };
 
-    this.#client.send('chart_create_session', [this.#sessionID]);
+    this.#client.sessions[this.#replaySessionID] = {
+      type: 'replay',
+      onData: (packet) => {
+        if (global.TW_DEBUG) console.log('§90§30§106 REPLAY SESSION §0 DATA', packet);
+
+        if (packet.type === 'replay_ok') {
+          if (this.#replayOKCB[packet.data[1]]) {
+            this.#replayOKCB[packet.data[1]]();
+            delete this.#replayOKCB[packet.data[1]];
+          }
+          return;
+        }
+
+        if (packet.type === 'replay_instance_id') {
+          this.#handleEvent('replayLoaded', packet.data[1]);
+          return;
+        }
+
+        if (packet.type === 'replay_point') {
+          this.#handleEvent('replayPoint', packet.data[1]);
+          return;
+        }
+
+        if (packet.type === 'replay_resolutions') {
+          this.#handleEvent('replayResolution', packet.data[1], packet.data[2]);
+          return;
+        }
+
+        if (packet.type === 'replay_data_end') {
+          this.#handleEvent('replayEnd');
+          return;
+        }
+
+        if (packet.type === 'critical_error') {
+          const [, name, description] = packet.data;
+          this.#handleError('Critical error:', name, description);
+        }
+      },
+    };
+
+    this.#client.send('chart_create_session', [this.#chartSessionID]);
   }
 
   #seriesCreated = false;
@@ -255,7 +310,7 @@ module.exports = (client) => class ChartSession {
     this.#periods = {};
 
     this.#client.send(`${this.#seriesCreated ? 'modify' : 'create'}_series`, [
-      this.#sessionID,
+      this.#chartSessionID,
       '$prices',
       's1',
       `ser_${this.#currentSeries}`,
@@ -278,9 +333,15 @@ module.exports = (client) => class ChartSession {
    * @param {'EUR' | 'USD' | string} [options.currency] Chart currency
    * @param {ChartType} [options.type] Chart custom type
    * @param {ChartInputs} [options.inputs] Chart custom inputs
+   * @param {number} [options.replay] Replay mode starting point (Timestamp)
    */
   setMarket(symbol, options = {}) {
     this.#periods = {};
+
+    if (this.#replayMode) {
+      this.#replayMode = false;
+      this.#client.send('replay_delete_session', [this.#replaySessionID]);
+    }
 
     const symbolInit = {
       symbol: symbol || 'BTCEUR',
@@ -288,21 +349,40 @@ module.exports = (client) => class ChartSession {
     };
 
     if (options.session) symbolInit.session = options.session;
-
     if (options.currency) symbolInit['currency-id'] = options.currency;
 
-    const chartInit = (options.type && ChartTypes[options.type]) ? {} : symbolInit;
+    if (options.replay) {
+      this.#replayMode = true;
+      this.#client.send('replay_create_session', [this.#replaySessionID]);
 
-    if (options.type && ChartTypes[options.type]) {
+      this.#client.send('replay_add_series', [
+        this.#replaySessionID,
+        'req_replay_addseries',
+        `=${JSON.stringify(symbolInit)}`,
+        options.timeframe,
+      ]);
+
+      this.#client.send('replay_reset', [
+        this.#replaySessionID,
+        'req_replay_reset',
+        options.replay,
+      ]);
+    }
+
+    const complex = (options.type && ChartTypes[options.type]) || options.replay;
+    const chartInit = complex ? {} : symbolInit;
+
+    if (complex) {
+      if (options.replay) chartInit.replay = this.#replaySessionID;
       chartInit.symbol = symbolInit;
-      chartInit.type = ChartTypes[options.type];
-      chartInit.inputs = { ...options.inputs };
+      if (options.type) chartInit.type = ChartTypes[options.type];
+      if (options.inputs) chartInit.inputs = { ...options.inputs };
     }
 
     this.#currentSeries += 1;
 
     this.#client.send('resolve_symbol', [
-      this.#sessionID,
+      this.#chartSessionID,
       `ser_${this.#currentSeries}`,
       `=${JSON.stringify(chartInit)}`,
     ]);
@@ -316,7 +396,7 @@ module.exports = (client) => class ChartSession {
    */
   setTimezone(timezone) {
     this.#periods = {};
-    this.#client.send('switch_timezone', [this.#sessionID, timezone]);
+    this.#client.send('switch_timezone', [this.#chartSessionID, timezone]);
   }
 
   /**
@@ -324,7 +404,60 @@ module.exports = (client) => class ChartSession {
    * @param {number} number Number of additional periods/candles you want to fetch
    */
   fetchMore(number = 1) {
-    this.#client.send('request_more_data', [this.#sessionID, '$prices', number]);
+    this.#client.send('request_more_data', [this.#chartSessionID, '$prices', number]);
+  }
+
+  /**
+   * Fetch x additional previous periods/candles values
+   * @param {number} number Number of additional periods/candles you want to fetch
+   * @returns {Promise} Raise when the data has been fetched
+   */
+  replayStep(number = 1) {
+    return new Promise((cb) => {
+      if (!this.#replayMode) {
+        this.#handleError('No replay session');
+        return;
+      }
+
+      const reqID = genSessionID('rsq_step');
+      this.#client.send('replay_step', [this.#replaySessionID, reqID, number]);
+      this.#replayOKCB[reqID] = () => { cb(); };
+    });
+  }
+
+  /**
+   * Start fetching a new period/candle every x ms
+   * @param {number} interval Number of additional periods/candles you want to fetch
+   * @returns {Promise} Raise when the replay mode starts
+   */
+  replayStart(interval = 1000) {
+    return new Promise((cb) => {
+      if (!this.#replayMode) {
+        this.#handleError('No replay session');
+        return;
+      }
+
+      const reqID = genSessionID('rsq_start');
+      this.#client.send('replay_start', [this.#replaySessionID, reqID, interval]);
+      this.#replayOKCB[reqID] = () => { cb(); };
+    });
+  }
+
+  /**
+   * Stop fetching a new period/candle every x ms
+   * @returns {Promise} Raise when the replay mode stops
+   */
+  replayStop() {
+    return new Promise((cb) => {
+      if (!this.#replayMode) {
+        this.#handleError('No replay session');
+        return;
+      }
+
+      const reqID = genSessionID('rsq_stop');
+      this.#client.send('replay_stop', [this.#replaySessionID, reqID]);
+      this.#replayOKCB[reqID] = () => { cb(); };
+    });
   }
 
   /**
@@ -338,11 +471,50 @@ module.exports = (client) => class ChartSession {
 
   /**
    * When a chart update happens
-   * @param {() => void} cb
+   * @param {(changes: ('$prices' | string)[]) => void} cb
    * @event
    */
   onUpdate(cb) {
     this.#callbacks.update.push(cb);
+  }
+
+  /**
+   * When the replay session is ready
+   * @param {() => void} cb
+   * @event
+   */
+  onReplayLoaded(cb) {
+    this.#callbacks.replayLoaded.push(cb);
+  }
+
+  /**
+   * When the replay session has new resolution
+   * @param {(
+   *   timeframe: import('../types').TimeFrame,
+   *   index: number,
+   * ) => void} cb
+   * @event
+   */
+  onReplayResolution(cb) {
+    this.#callbacks.replayResolution.push(cb);
+  }
+
+  /**
+   * When the replay session ends
+   * @param {() => void} cb
+   * @event
+   */
+  onReplayEnd(cb) {
+    this.#callbacks.replayEnd.push(cb);
+  }
+
+  /**
+   * When the replay session cursor has moved
+   * @param {(index: number) => void} cb
+   * @event
+   */
+  onReplayPoint(cb) {
+    this.#callbacks.replayPoint.push(cb);
   }
 
   /**
@@ -356,7 +528,7 @@ module.exports = (client) => class ChartSession {
 
   /** @type {ChartSessionBridge} */
   #chartSession = {
-    sessionID: this.#sessionID,
+    sessionID: this.#chartSessionID,
     studyListeners: this.#studyListeners,
     indexes: {},
     send: (t, p) => this.#client.send(t, p),
@@ -366,7 +538,9 @@ module.exports = (client) => class ChartSession {
 
   /** Delete the chart session */
   delete() {
-    this.#client.send('quote_delete_session', [this.#sessionID]);
-    delete this.#client.sessions[this.#sessionID];
+    if (this.#replayMode) this.#client.send('replay_delete_session', [this.#replaySessionID]);
+    this.#client.send('chart_delete_session', [this.#chartSessionID]);
+    delete this.#client.sessions[this.#chartSessionID];
+    this.#replayMode = false;
   }
 };
