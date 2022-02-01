@@ -369,14 +369,14 @@ module.exports = (client) => class ChartSession {
       ]);
     }
 
-    const complex = (options.type && ChartTypes[options.type]) || options.replay;
+    const complex = options.type || options.replay;
     const chartInit = complex ? {} : symbolInit;
 
     if (complex) {
       if (options.replay) chartInit.replay = this.#replaySessionID;
       chartInit.symbol = symbolInit;
-      if (options.type) chartInit.type = ChartTypes[options.type];
-      if (options.inputs) chartInit.inputs = { ...options.inputs };
+      chartInit.type = ChartTypes[options.type];
+      if (options.type) chartInit.inputs = { ...options.inputs };
     }
 
     this.#currentSeries += 1;

@@ -273,7 +273,7 @@ module.exports = class Client {
    */
   end() {
     return new Promise((cb) => {
-      this.#ws.close();
+      if (this.#ws.readyState) this.#ws.close();
       cb();
     });
   }

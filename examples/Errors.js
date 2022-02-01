@@ -61,7 +61,7 @@ const tests = [
       timeframe: '20', // Set a custom timeframe
       /*
         Timeframe '20' isn't available because we are
-        not logged in as a premium TradingView user
+        not logged in as a premium TradingView account
       */
     });
   },
@@ -140,14 +140,8 @@ const tests = [
   },
 ];
 
-let i = 0;
-const execTest = () => {
-  if (tests[i + 1]) {
-    tests[(i += 1) - 1](execTest);
-  } else {
-    tests[(i += 1) - 1](() => {
-      console.log(`\nTests ${i}/${i} done !`);
-    });
-  }
-};
-execTest();
+(async () => {
+  // eslint-disable-next-line no-restricted-syntax, no-await-in-loop
+  for (const t of tests) await new Promise(t);
+  console.log(`\nTests ${tests.length}/${tests.length} done !`);
+})();

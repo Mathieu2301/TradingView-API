@@ -5,10 +5,10 @@ const TradingView = require('../main');
   all user's private indicators
 */
 
+if (!process.argv[2]) throw Error('Please specify your \'sessionid\' cookie');
+
 const client = new TradingView.Client({
-  /* Token is only needed if at least one indicator is
-    PRIVATE (if you have a paid TradingView account) */
-  token: 'YOUR_SESSION_ID_COOKIE',
+  token: process.argv[2],
 });
 
 const chart = new client.Session.Chart();
@@ -16,7 +16,7 @@ chart.setMarket('BINANCE:BTCEUR', {
   timeframe: 'D',
 });
 
-TradingView.getPrivateIndicators('YOUR_SESSION_ID_COOKIE').then((indicList) => {
+TradingView.getPrivateIndicators(process.argv[2]).then((indicList) => {
   indicList.forEach(async (indic) => {
     const privateIndic = await indic.get();
     console.log('Loading indicator', indic.name, '...');

@@ -17,6 +17,7 @@ const chart = new client.Session.Chart();
 
 chart.onError((...err) => {
   console.log('Chart error:', ...err);
+  process.exit(1);
 });
 
 chart.onUpdate(() => {
