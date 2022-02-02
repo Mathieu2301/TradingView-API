@@ -120,5 +120,6 @@ module.exports = (client) => class QuoteSession {
   /** Delete the quote session */
   delete() {
     this.#client.send('quote_delete_session', [this.#sessionID]);
+    delete this.#client.sessions[this.#sessionID];
   }
 };
