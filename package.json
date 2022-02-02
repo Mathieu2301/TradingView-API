@@ -1,6 +1,6 @@
 {
   "name": "@mathieuc/tradingview",
-  "version": "3.0.1",
+  "version": "3.2.0",
   "description": "Tradingview instant stocks API, indicator alerts, trading bot, and more !",
   "main": "main.js",
   "scripts": {
@@ -9,6 +9,9 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Mathieu2301/TradingView-API.git"
+  },
+  "engines": {
+    "node": ">=14.0.0"
   },
   "keywords": [
     "tradingwiew",
