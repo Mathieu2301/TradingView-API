@@ -6,6 +6,9 @@ const JSZip = require('jszip');
  * @prop {[session: string, {}]} [p] Packet data
  */
 
+const cleanerRgx = /~h~/g;
+const splitterRgx = /~m~[0-9]{1,}~m~/g;
+
 module.exports = {
   /**
    * Parse websocket packet
@@ -13,7 +16,7 @@ module.exports = {
    * @returns {TWPacket[]} TradingView packets
    */
   parseWSPacket(str) {
-    return str.replace(/~h~/g, '').split(/~m~[0-9]{1,}~m~/g)
+    return str.replace(cleanerRgx, '').split(splitterRgx)
       .map((p) => {
         if (!p) return false;
         try {
