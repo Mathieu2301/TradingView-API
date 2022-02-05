@@ -35,80 +35,80 @@ function getInputs(options) {
 /**
  * @typedef {Object} TradeReport Trade report
 
- * @property {Object} entry Trade entry
- * @property {string} entry.name Trade name
- * @property {'long' | 'short'} entry.type Entry type (long/short)
- * @property {number} entry.value Entry price value
- * @property {number} entry.time Entry timestamp
+ * @prop {Object} entry Trade entry
+ * @prop {string} entry.name Trade name
+ * @prop {'long' | 'short'} entry.type Entry type (long/short)
+ * @prop {number} entry.value Entry price value
+ * @prop {number} entry.time Entry timestamp
 
- * @property {Object} exit Trade exit
- * @property {'' | string} exit.name Trade name ('' if false exit)
- * @property {number} exit.value Exit price value
- * @property {number} exit.time Exit timestamp
+ * @prop {Object} exit Trade exit
+ * @prop {'' | string} exit.name Trade name ('' if false exit)
+ * @prop {number} exit.value Exit price value
+ * @prop {number} exit.time Exit timestamp
 
- * @property {number} quantity Trade quantity
- * @property {RelAbsValue} profit Trade profit
- * @property {RelAbsValue} cumulative Trade cummulative profit
- * @property {RelAbsValue} runup Trade run-up
- * @property {RelAbsValue} drawdown Trade drawdown
+ * @prop {number} quantity Trade quantity
+ * @prop {RelAbsValue} profit Trade profit
+ * @prop {RelAbsValue} cumulative Trade cummulative profit
+ * @prop {RelAbsValue} runup Trade run-up
+ * @prop {RelAbsValue} drawdown Trade drawdown
  */
 
 /**
  * @typedef {Object} PerfReport
- * @property {number} avgBarsInTrade Average bars in trade
- * @property {number} avgBarsInWinTrade Average bars in winning trade
- * @property {number} avgBarsInLossTrade Average bars in losing trade
- * @property {number} avgTrade Average trade gain
- * @property {number} avgTradePercent Average trade performace
- * @property {number} avgLosTrade Average losing trade gain
- * @property {number} avgLosTradePercent Average losing trade performace
- * @property {number} avgWinTrade Average winning trade gain
- * @property {number} avgWinTradePercent Average winning trade performace
- * @property {number} commissionPaid Commission paid
- * @property {number} grossLoss Gross loss value
- * @property {number} grossLossPercent Gross loss percent
- * @property {number} grossProfit Gross profit
- * @property {number} grossProfitPercent Gross profit percent
- * @property {number} largestLosTrade Largest losing trade gain
- * @property {number} largestLosTradePercent Largent losing trade performance (percentage)
- * @property {number} largestWinTrade Largest winning trade gain
- * @property {number} largestWinTradePercent Largest winning trade performance (percentage)
- * @property {number} marginCalls Margin calls
- * @property {number} maxContractsHeld Max Contracts Held
- * @property {number} netProfit Net profit
- * @property {number} netProfitPercent Net performance (percentage)
- * @property {number} numberOfLosingTrades Number of losing trades
- * @property {number} numberOfWiningTrades Number of winning trades
- * @property {number} percentProfitable Strategy winrate
- * @property {number} profitFactor Profit factor
- * @property {number} ratioAvgWinAvgLoss Ratio Average Win / Average Loss
- * @property {number} totalOpenTrades Total open trades
- * @property {number} totalTrades Total trades
+ * @prop {number} avgBarsInTrade Average bars in trade
+ * @prop {number} avgBarsInWinTrade Average bars in winning trade
+ * @prop {number} avgBarsInLossTrade Average bars in losing trade
+ * @prop {number} avgTrade Average trade gain
+ * @prop {number} avgTradePercent Average trade performace
+ * @prop {number} avgLosTrade Average losing trade gain
+ * @prop {number} avgLosTradePercent Average losing trade performace
+ * @prop {number} avgWinTrade Average winning trade gain
+ * @prop {number} avgWinTradePercent Average winning trade performace
+ * @prop {number} commissionPaid Commission paid
+ * @prop {number} grossLoss Gross loss value
+ * @prop {number} grossLossPercent Gross loss percent
+ * @prop {number} grossProfit Gross profit
+ * @prop {number} grossProfitPercent Gross profit percent
+ * @prop {number} largestLosTrade Largest losing trade gain
+ * @prop {number} largestLosTradePercent Largent losing trade performance (percentage)
+ * @prop {number} largestWinTrade Largest winning trade gain
+ * @prop {number} largestWinTradePercent Largest winning trade performance (percentage)
+ * @prop {number} marginCalls Margin calls
+ * @prop {number} maxContractsHeld Max Contracts Held
+ * @prop {number} netProfit Net profit
+ * @prop {number} netProfitPercent Net performance (percentage)
+ * @prop {number} numberOfLosingTrades Number of losing trades
+ * @prop {number} numberOfWiningTrades Number of winning trades
+ * @prop {number} percentProfitable Strategy winrate
+ * @prop {number} profitFactor Profit factor
+ * @prop {number} ratioAvgWinAvgLoss Ratio Average Win / Average Loss
+ * @prop {number} totalOpenTrades Total open trades
+ * @prop {number} totalTrades Total trades
 */
 
 /**
  * @typedef {Object} StrategyReport
- * @property {'EUR' | 'USD' | 'JPY' | '' | 'CHF'} [currency] Selected currency
- * @property {TradeReport[]} trades Trade list starting by the last
- * @property {Object} history History Chart value
- * @property {number[]} [history.buyHold] Buy hold values
- * @property {number[]} [history.buyHoldPercent] Buy hold percent values
- * @property {number[]} [history.drawDown] Drawdown values
- * @property {number[]} [history.drawDownPercent] Drawdown percent values
- * @property {number[]} [history.equity] Equity values
- * @property {number[]} [history.equityPercent] Equity percent values
- * @property {Object} performance Strategy performance
- * @property {PerfReport} [performance.all] Strategy long/short performances
- * @property {PerfReport} [performance.long] Strategy long performances
- * @property {PerfReport} [performance.short] Strategy short performances
- * @property {number} [performance.buyHoldReturn] Strategy Buy & Hold Return
- * @property {number} [performance.buyHoldReturnPercent] Strategy Buy & Hold Return percent
- * @property {number} [performance.maxDrawDown] Strategy max drawdown
- * @property {number} [performance.maxDrawDownPercent] Strategy max drawdown percent
- * @property {number} [performance.openPL] Strategy Open P&L (Profit And Loss)
- * @property {number} [performance.openPLPercent] Strategy Open P&L (Profit And Loss) percent
- * @property {number} [performance.sharpeRatio] Strategy Sharpe Ratio
- * @property {number} [performance.sortinoRatio] Strategy Sortino Ratio
+ * @prop {'EUR' | 'USD' | 'JPY' | '' | 'CHF'} [currency] Selected currency
+ * @prop {TradeReport[]} trades Trade list starting by the last
+ * @prop {Object} history History Chart value
+ * @prop {number[]} [history.buyHold] Buy hold values
+ * @prop {number[]} [history.buyHoldPercent] Buy hold percent values
+ * @prop {number[]} [history.drawDown] Drawdown values
+ * @prop {number[]} [history.drawDownPercent] Drawdown percent values
+ * @prop {number[]} [history.equity] Equity values
+ * @prop {number[]} [history.equityPercent] Equity percent values
+ * @prop {Object} performance Strategy performance
+ * @prop {PerfReport} [performance.all] Strategy long/short performances
+ * @prop {PerfReport} [performance.long] Strategy long performances
+ * @prop {PerfReport} [performance.short] Strategy short performances
+ * @prop {number} [performance.buyHoldReturn] Strategy Buy & Hold Return
+ * @prop {number} [performance.buyHoldReturnPercent] Strategy Buy & Hold Return percent
+ * @prop {number} [performance.maxDrawDown] Strategy max drawdown
+ * @prop {number} [performance.maxDrawDownPercent] Strategy max drawdown percent
+ * @prop {number} [performance.openPL] Strategy Open P&L (Profit And Loss)
+ * @prop {number} [performance.openPLPercent] Strategy Open P&L (Profit And Loss) percent
+ * @prop {number} [performance.sharpeRatio] Strategy Sharpe Ratio
+ * @prop {number} [performance.sortinoRatio] Strategy Sortino Ratio
  */
 
 /**

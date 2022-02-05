@@ -1,6 +1,8 @@
 /**
  * @typedef {string} MarketSymbol Market symbol (like: 'BTCEUR' or 'KRAKEN:BTCEUR')
- *
+ */
+
+/**
  * @typedef {'Etc/UTC' | 'exchange'
  * | 'Pacific/Honolulu' | 'America/Juneau' | 'America/Los_Angeles'
  * | 'America/Phoenix' | 'America/Vancouver' | 'US/Mountain'
@@ -23,7 +25,9 @@
  * | 'Asia/Taipei' | 'Asia/Seoul' | 'Asia/Tokyo' | 'Australia/Brisbane'
  * | 'Australia/Adelaide' | 'Australia/Sydney' | 'Pacific/Norfolk'
  * | 'Pacific/Auckland' | 'Pacific/Fakaofo' | 'Pacific/Chatham'} Timezone (Chart) timezone
- *
+ */
+
+/**
  * @typedef {'1' | '3' | '5' | '15' | '30'
  * | '45' | '60' | '120' | '180' | '240'
  * | '1D' | '1W' | '1M' | 'D' | 'W' | 'M'} TimeFrame

@@ -64,7 +64,9 @@ const ChartTypes = {
  * @prop {string} session Session (ex: '24x7')
  * @prop {string} session-correction Session correction
  * @prop {string} session-display Session display (ex: '24x7')
- *
+ */
+
+/**
  * @typedef {Object} MarketInfos
  * @prop {string} series_id            Used series (ex: 'ser_1')
  * @prop {string} base_currency        Base currency (ex: 'BTC')

@@ -68,6 +68,7 @@ const defaultValues = {
   },
 };
 
+/** @class */
 module.exports = class BuiltInIndicator {
   /** @type {BuiltInIndicatorType} */
   #type;

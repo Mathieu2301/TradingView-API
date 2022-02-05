@@ -26,6 +26,8 @@
  * @typedef {'Script@tv-scripting-101!'
  *  | 'StrategyScript@tv-scripting-101!'} IndicatorType Indicator type
  */
+
+/** @class */
 module.exports = class PineIndicator {
   #options;
 

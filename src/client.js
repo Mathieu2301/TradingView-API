@@ -15,9 +15,10 @@ const chartSessionGenerator = require('./chart/session');
 /** @typedef {Object<string, Session>} SessionList Session list */
 
 /**
- * @typedef {(t: string, p: []) => null} SendPacket Send a custom packet
+ * @callback SendPacket Send a custom packet
  * @param {string} t Packet type
  * @param {string[]} p Packet data
+ * @returns {void}
 */
 
 /**
@@ -33,6 +34,7 @@ const chartSessionGenerator = require('./chart/session');
  * } ClientEvent
  */
 
+/** @class */
 module.exports = class Client {
   #ws;
 
@@ -79,7 +81,7 @@ module.exports = class Client {
   /**
    * When client is connected
    * @param {() => void} cb Callback
-   * @event
+   * @event onConnected
    */
   onConnected(cb) {
     this.#callbacks.connected.push(cb);
@@ -88,7 +90,7 @@ module.exports = class Client {
   /**
    * When client is disconnected
    * @param {() => void} cb Callback
-   * @event
+   * @event onDisconnected
    */
   onDisconnected(cb) {
     this.#callbacks.disconnected.push(cb);
@@ -105,10 +107,12 @@ module.exports = class Client {
    * @prop {string} javastudies Javastudies
    * @prop {number} auth_scheme_vsn Auth scheme type
    * @prop {string} via Socket IP
+   */
 
+  /**
    * When client is logged
    * @param {(SocketSession: SocketSession) => void} cb Callback
-   * @event
+   * @event onLogged
    */
   onLogged(cb) {
     this.#callbacks.logged.push(cb);
@@ -117,7 +121,7 @@ module.exports = class Client {
   /**
    * When server is pinging the client
    * @param {(i: number) => void} cb Callback
-   * @event
+   * @event onPing
    */
   onPing(cb) {
     this.#callbacks.ping.push(cb);
@@ -126,7 +130,7 @@ module.exports = class Client {
   /**
    * When unparsed data is received
    * @param {(...{}) => void} cb Callback
-   * @event
+   * @event onData
    */
   onData(cb) {
     this.#callbacks.data.push(cb);
@@ -135,7 +139,7 @@ module.exports = class Client {
   /**
    * When a client error happens
    * @param {(...{}) => void} cb Callback
-   * @event
+   * @event onError
    */
   onError(cb) {
     this.#callbacks.error.push(cb);
@@ -144,7 +148,7 @@ module.exports = class Client {
   /**
    * When a client event happens
    * @param {(...{}) => void} cb Callback
-   * @event
+   * @event onEvent
    */
   onEvent(cb) {
     this.#callbacks.event.push(cb);

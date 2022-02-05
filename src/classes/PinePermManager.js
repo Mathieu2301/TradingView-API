@@ -10,6 +10,7 @@ const FormData = require('../FormData');
  * @prop {string} created Authorization creation date
  */
 
+/** @class */
 class PinePermManager {
   sessionId;
 

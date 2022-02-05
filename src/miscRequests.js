@@ -28,11 +28,17 @@ async function fetchScanData(tickers = [], type = '', columns = []) {
   return data;
 }
 
+/** @typedef {number} advice */
+
 /**
- * @typedef {number} advice
- *
- * @typedef {{ Other: advice, All: advice, MA: advice }} Period
- *
+ * @typedef {{
+ *   Other: advice,
+ *   All: advice,
+ *   MA: advice
+ * }} Period
+ */
+
+/**
  * @typedef {{
  *  '1': Period,
  *  '5': Period,
@@ -41,21 +47,25 @@ async function fetchScanData(tickers = [], type = '', columns = []) {
  *  '240': Period,
  *  '1D': Period,
  *  '1W': Period,
- *  '1M': Period,
+ *  '1M': Period
  * }} Periods
- *
+ */
+
+/**
  * @typedef {string | 'forex' | 'crypto'
  * | 'america' | 'australia' | 'canada' | 'egypt'
  * | 'germany' | 'india' | 'israel' | 'italy'
  * | 'luxembourg' | 'poland' | 'sweden' | 'turkey'
- * | 'uk' | 'vietnam'} screener
+ * | 'uk' | 'vietnam'} Screener
  * You can use `getScreener(exchange)` function for non-forex and non-crypto markets.
  */
 
 module.exports = {
   /**
+   * Get a screener from an exchange
+   * @function getScreener
    * @param {string} exchange Example: BINANCE, EURONEXT, NASDAQ
-   * @returns {screener}
+   * @returns {Screener}
   */
   getScreener(exchange) {
     const e = exchange.toUpperCase();
@@ -78,7 +88,8 @@ module.exports = {
 
   /**
    * Get technical analysis
-   * @param {screener} screener
+   * @function getTA
+   * @param {Screener} screener Market screener
    * @param {string} id Full market id (Example: COINBASE:BTCEUR)
    * @returns {Promise<Periods>} results
    */
@@ -104,20 +115,24 @@ module.exports = {
 
   /**
    * @typedef {Object} SearchMarketResult
-   * @property {string} id
-   * @property {string} exchange
-   * @property {string} fullExchange
-   * @property {string} screener
-   * @property {string} symbol
-   * @property {string} description
-   * @property {string} type
-   * @property {() => Promise<Periods>} getTA
+   * @prop {string} id Market full symbol
+   * @prop {string} exchange Market exchange name
+   * @prop {string} fullExchange Market exchange full name
+   * @prop {Screener | 'forex' | 'crypto'} screener Market screener
+   * @prop {string} symbol Market symbol
+   * @prop {string} description Market name
+   * @prop {string} type Market type
+   * @prop {() => Promise<Periods>} getTA Get market technical analysis
    */
 
   /**
    * Find a symbol
+   * @function searchMarket
    * @param {string} search Keywords
-   * @param {'stock' | 'futures' | 'forex' | 'cfd' | 'crypto' | 'index' | 'economic'} [filter]
+   * @param {'stock'
+   *  | 'futures' | 'forex' | 'cfd'
+   *  | 'crypto' | 'index' | 'economic'
+   * } [filter] Caterogy filter
    * @returns {Promise<SearchMarketResult[]>} Search results
    */
   async searchMarket(search, filter = '') {
@@ -151,20 +166,21 @@ module.exports = {
 
   /**
    * @typedef {Object} SearchIndicatorResult
-   * @property {string} id Script ID
-   * @property {string} version Script version
-   * @property {string} name Script complete name
-   * @property {{ id: number, username: string }} author Author user ID
-   * @property {string} image Image ID https://tradingview.com/i/${image}
-   * @property {string | ''} source Script source (if available)
-   * @property {'study' | 'strategy'} type Script type (study / strategy)
-   * @property {'open_source' | 'closed_source' | 'invite_only'
+   * @prop {string} id Script ID
+   * @prop {string} version Script version
+   * @prop {string} name Script complete name
+   * @prop {{ id: number, username: string }} author Author user ID
+   * @prop {string} image Image ID https://tradingview.com/i/${image}
+   * @prop {string | ''} source Script source (if available)
+   * @prop {'study' | 'strategy'} type Script type (study / strategy)
+   * @prop {'open_source' | 'closed_source' | 'invite_only'
    *  | 'private' | 'other'} access Script access type
-   * @property {() => Promise<PineIndicator>} get Get the full indicator informations
+   * @prop {() => Promise<PineIndicator>} get Get the full indicator informations
    */
 
   /**
    * Find an indicator
+   * @function searchIndicator
    * @param {string} search Keywords
    * @returns {Promise<SearchIndicatorResult[]>} Search results
    */
@@ -229,6 +245,7 @@ module.exports = {
 
   /**
    * Get an indicator
+   * @function getIndicator
    * @param {string} id Indicator ID (Like: PUB;XXXXXXXXXXXXXXXXXXXXX)
    * @param {'last' | string} [version] Wanted version of the indicator
    * @returns {Promise<PineIndicator>} Indicator
@@ -309,25 +326,26 @@ module.exports = {
 
   /**
    * @typedef {Object} User Instance of User
-   * @property {number} id User ID
-   * @property {string} username User username
-   * @property {string} firstName User first name
-   * @property {string} lastName User last name
-   * @property {number} reputation User reputation
-   * @property {number} following Number of following accounts
-   * @property {number} followers Number of followers
-   * @property {Object} notifications User's notifications
-   * @property {number} notifications.user User notifications
-   * @property {number} notifications.following Notification from following accounts
-   * @property {string} session User session
-   * @property {string} sessionHash User session hash
-   * @property {string} privateChannel User private channel
-   * @property {string} authToken User auth token
-   * @property {Date} joinDate Account creation date
+   * @prop {number} id User ID
+   * @prop {string} username User username
+   * @prop {string} firstName User first name
+   * @prop {string} lastName User last name
+   * @prop {number} reputation User reputation
+   * @prop {number} following Number of following accounts
+   * @prop {number} followers Number of followers
+   * @prop {Object} notifications User's notifications
+   * @prop {number} notifications.user User notifications
+   * @prop {number} notifications.following Notification from following accounts
+   * @prop {string} session User session
+   * @prop {string} sessionHash User session hash
+   * @prop {string} privateChannel User private channel
+   * @prop {string} authToken User auth token
+   * @prop {Date} joinDate Account creation date
    */
 
   /**
-   * Get a token for an user from a 'sessionid' cookie
+   * Get an user from a 'sessionid' cookie
+   * @function getUser
    * @param {string} session User 'sessionid' cookie
    * @param {string} [location] Auth page location (For france: https://fr.tradingview.com/)
    * @returns {Promise<User>} Token
@@ -373,6 +391,7 @@ module.exports = {
 
   /**
    * Get user's private indicators from a 'sessionid' cookie
+   * @function getPrivateIndicators
    * @param {string} session User 'sessionid' cookie
    * @returns {Promise<SearchIndicatorResult[]>} Search results
    */
@@ -420,12 +439,13 @@ module.exports = {
   /**
    * User credentials
    * @typedef {Object} UserCredentials
-   * @property {number} id User ID
-   * @property {string} session User session ('sessionid' cookie)
+   * @prop {number} id User ID
+   * @prop {string} session User session ('sessionid' cookie)
    */
 
   /**
    * Get a chart token from a layout ID and the user credentials if the layout is not public
+   * @function getChartToken
    * @param {string} layout The layout ID found in the layout URL (Like: 'XXXXXXXX')
    * @param {UserCredentials} [credentials] User credentials (id + session)
    * @returns {Promise<string>} Token
@@ -448,32 +468,33 @@ module.exports = {
 
   /**
    * @typedef {Object} DrawingPoint Drawing poitn
-   * @property {number} time_t Point X time position
-   * @property {number} price Point Y price position
-   * @property {number} offset Point offset
+   * @prop {number} time_t Point X time position
+   * @prop {number} price Point Y price position
+   * @prop {number} offset Point offset
    */
 
   /**
    * @typedef {Object} Drawing
-   * @property {string} id Drawing ID (Like: 'XXXXXX')
-   * @property {string} symbol Layout market symbol (Like: 'BINANCE:BUCEUR')
-   * @property {string} ownerSource Owner user ID (Like: 'XXXXXX')
-   * @property {string} serverUpdateTime Drawing last update timestamp
-   * @property {string} currencyId Currency ID (Like: 'EUR')
-   * @property {any} unitId Unit ID
-   * @property {string} type Drawing type
-   * @property {DrawingPoint[]} points List of drawing points
-   * @property {number} zorder Drawing Z order
-   * @property {string} linkKey Drawing link key
-   * @property {Object} state Drawing state
+   * @prop {string} id Drawing ID (Like: 'XXXXXX')
+   * @prop {string} symbol Layout market symbol (Like: 'BINANCE:BUCEUR')
+   * @prop {string} ownerSource Owner user ID (Like: 'XXXXXX')
+   * @prop {string} serverUpdateTime Drawing last update timestamp
+   * @prop {string} currencyId Currency ID (Like: 'EUR')
+   * @prop {any} unitId Unit ID
+   * @prop {string} type Drawing type
+   * @prop {DrawingPoint[]} points List of drawing points
+   * @prop {number} zorder Drawing Z order
+   * @prop {string} linkKey Drawing link key
+   * @prop {Object} state Drawing state
    */
 
   /**
    * Get a chart token from a layout ID and the user credentials if the layout is not public
+   * @function getDrawings
    * @param {string} layout The layout ID found in the layout URL (Like: 'XXXXXXXX')
    * @param {string | ''} [symbol] Market filter (Like: 'BINANCE:BTCEUR')
    * @param {UserCredentials} [credentials] User credentials (id + session)
-   * @param {number} [chartID = 1] Chart ID
+   * @param {number} [chartID] Chart ID
    * @returns {Promise<Drawing[]>} Drawings
    */
   async getDrawings(layout, symbol = '', credentials = {}, chartID = 1) {

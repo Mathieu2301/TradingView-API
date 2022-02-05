@@ -12,6 +12,7 @@ const splitterRgx = /~m~[0-9]{1,}~m~/g;
 module.exports = {
   /**
    * Parse websocket packet
+   * @function parseWSPacket
    * @param {string} str Websocket raw data
    * @returns {TWPacket[]} TradingView packets
    */
@@ -31,6 +32,7 @@ module.exports = {
 
   /**
    * Format websocket packet
+   * @function formatWSPacket
    * @param {TWPacket} packet TradingView packet
    * @returns {string} Websocket raw data
    */
@@ -43,6 +45,7 @@ module.exports = {
 
   /**
    * Parse compressed data
+   * @function parseCompressed
    * @param {string} data Compressed data
    * @returns {Promise<{}>} Parsed data
    */

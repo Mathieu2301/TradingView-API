@@ -1,4 +1,10 @@
 module.exports = {
+  /**
+   * Generates a session id
+   * @function genSessionID
+   * @param {String} type Session type
+   * @returns {string}
+   */
   genSessionID(type = 'xs') {
     let r = '';
     const c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
