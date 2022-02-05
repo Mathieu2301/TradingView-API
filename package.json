@@ -35,6 +35,6 @@
     "eslint": "^7.25.0",
     "eslint-config-airbnb-base": "^14.2.1",
     "eslint-plugin-import": "^2.22.1",
-    "jsdoc-to-markdown": "^7.1.0"
+    "jsdoc-to-markdown": "^7.1.1"
   }
 }
