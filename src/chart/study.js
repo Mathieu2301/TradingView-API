@@ -16,11 +16,11 @@ function getInputs(options) {
     if (options.pineId) pineInputs.pineId = options.pineId;
     if (options.pineVersion) pineInputs.pineVersion = options.pineVersion;
 
-    Object.keys(options.inputs).forEach((inputID) => {
+    Object.keys(options.inputs).forEach((inputID, n) => {
       const input = options.inputs[inputID];
 
       pineInputs[inputID] = {
-        v: input.value,
+        v: (input.type !== 'color') ? input.value : n,
         f: input.isFake,
         t: input.type,
       };

@@ -4,7 +4,9 @@
  * @property {string} inline Input inline name
  * @property {string} [internalID] Input internal ID
  * @property {string} [tooltip] Input tooltip
- * @property {'text' | 'source' | 'integer' | 'float' | 'resolution' | 'bool'} type Input type
+ * @property {'text' | 'source' | 'integer'
+ *  | 'float' | 'resolution' | 'bool' | 'color'
+ * } type Input type
  * @property {string | number | boolean} value Input default value
  * @property {boolean} isHidden If the input is hidden
  * @property {boolean} isFake If the input is fake
@@ -115,12 +117,8 @@ module.exports = class PineIndicator {
         text: 'String',
       };
 
-      if (
-        (input.type === 'bool' && typeof value !== 'boolean')
-        || (input.type === 'integer' && typeof value !== 'number')
-        || (input.type === 'float' && typeof value !== 'number')
-        || (input.type === 'text' && typeof value !== 'string')
-      ) {
+      // eslint-disable-next-line valid-typeof
+      if (types[input.type] && typeof value !== types[input.type].toLowerCase()) {
         throw new Error(`Input '${input.name}' (${propI}) must be a ${types[input.type]} !`);
       }
 
