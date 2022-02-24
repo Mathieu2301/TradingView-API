@@ -47,6 +47,8 @@ npm i github:Mathieu2301/TradingView-API
 ## Examples
 You can find all the examples and snippets in `./examples` folder.
 
+## Before opening an issue
+Please look at examples and previously resolved issues before opening a new one. I can't help everyone (especially for questions that are not library related but JavaScript related). Thank you for your understanding.
 ___
 ## Problems
  If you have errors in console or unwanted behavior,
