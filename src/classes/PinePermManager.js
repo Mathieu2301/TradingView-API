@@ -40,7 +40,7 @@ class PinePermManager {
    * @returns {AuthorizationUser[]}
    */
   async getUsers(limit = 10, order = '-created') {
-    const data = await request({
+    const { data } = await request({
       method: 'POST',
       host: 'www.tradingview.com',
       path: `/pine_perm/list_users/?limit=${limit}&order_by=${order}`,
@@ -70,7 +70,7 @@ class PinePermManager {
       formData.append('expiration', expiration.toString());
     }
 
-    const data = await request({
+    const { data } = await request({
       method: 'POST',
       host: 'www.tradingview.com',
       path: '/pine_perm/add/',
@@ -99,7 +99,7 @@ class PinePermManager {
       formData.append('expiration', expiration.toISOString());
     }
 
-    const data = await request({
+    const { data } = await request({
       method: 'POST',
       host: 'www.tradingview.com',
       path: '/pine_perm/modify_user_expiration/',
@@ -124,7 +124,7 @@ class PinePermManager {
     formData.append('pine_id', this.pineId);
     formData.append('username_recip', username);
 
-    const data = await request({
+    const { data } = await request({
       method: 'POST',
       host: 'www.tradingview.com',
       path: '/pine_perm/remove/',

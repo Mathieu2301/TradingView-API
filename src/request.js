@@ -4,7 +4,7 @@ const https = require('https');
  * @param {https.RequestOptions} options HTTPS Request options
  * @param {boolean} [raw] Get raw or JSON data
  * @param {string} [content] Request body content
- * @returns {Promise<string | object | array>} Result
+ * @returns {Promise<{ data: (string | object | array), cookies: string[] }>} Result
  */
 function request(options = {}, raw = false, content = '') {
   return new Promise((cb, err) => {
@@ -13,7 +13,7 @@ function request(options = {}, raw = false, content = '') {
       res.on('data', (c) => { data += c; });
       res.on('end', () => {
         if (raw) {
-          cb(data);
+          cb({ data, cookies: res.headers.cookie });
           return;
         }
 
@@ -25,7 +25,7 @@ function request(options = {}, raw = false, content = '') {
           return;
         }
 
-        cb(data);
+        cb({ data, cookies: res.headers['set-cookie'] });
       });
     });
 

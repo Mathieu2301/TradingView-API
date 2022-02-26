@@ -7,7 +7,7 @@ const TradingView = require('../main');
 
 const volumeProfile = new TradingView.BuiltInIndicator('VbPFixed@tv-basicstudies-139!');
 
-if (!process.argv[2] && volumeProfile.type !== 'VbPFixed@tv-basicstudies-139!') {
+if (!process.argv[2] && !['VbPFixed@tv-basicstudies-139!', 'Volume@tv-basicstudies-144'].includes(volumeProfile.type)) {
   throw Error('Please specify your \'sessionid\' cookie');
 }
 

@@ -1,5 +1,7 @@
+const os = require('os');
 const https = require('https');
 const request = require('./request');
+const FormData = require('./FormData');
 
 const PinePermManager = require('./classes/PinePermManager');
 const PineIndicator = require('./classes/PineIndicator');
@@ -8,7 +10,7 @@ const indicators = ['Recommend.Other', 'Recommend.All', 'Recommend.MA'];
 const builtInIndicList = [];
 
 async function fetchScanData(tickers = [], type = '', columns = []) {
-  let data = await request({
+  let { data } = await request({
     method: 'POST',
     hostname: 'scanner.tradingview.com',
     path: `/${type}/scan`,
@@ -136,7 +138,7 @@ module.exports = {
    * @returns {Promise<SearchMarketResult[]>} Search results
    */
   async searchMarket(search, filter = '') {
-    const data = await request({
+    const { data } = await request({
       host: 'symbol-search.tradingview.com',
       path: `/symbol_search/?text=${search.replace(/ /g, '%20')}&type=${filter}`,
       origin: 'https://www.tradingview.com',
@@ -187,14 +189,14 @@ module.exports = {
   async searchIndicator(search = '') {
     if (!builtInIndicList.length) {
       await Promise.all(['standard', 'candlestick', 'fundamental'].map(async (type) => {
-        builtInIndicList.push(...await request({
+        builtInIndicList.push(...(await request({
           host: 'pine-facade.tradingview.com',
           path: `/pine-facade/list/?filter=${type}`,
-        }));
+        })).data);
       }));
     }
 
-    const data = await request({
+    const { data } = await request({
       host: 'www.tradingview.com',
       path: `/pubscripts-suggest-json/?search=${search.replace(/ /g, '%20')}`,
     });
@@ -253,7 +255,7 @@ module.exports = {
   async getIndicator(id, version = 'last') {
     const indicID = id.replace(/ |%/g, '%25');
 
-    let data = await request({
+    let { data } = await request({
       host: 'pine-facade.tradingview.com',
       path: `/pine-facade/translate/${indicID}/${version}`,
     }, true);
@@ -344,7 +346,55 @@ module.exports = {
    */
 
   /**
-   * Get an user from a 'sessionid' cookie
+   * Get user and sessionid from username/email and password
+   * @function loginUser
+   * @param {string} username User username/email
+   * @param {string} password User password
+   * @param {boolean} [remember] Remember the session (default: false)
+   * @param {string} [UA] Custom UserAgent
+   * @returns {Promise<User>} Token
+   */
+  async loginUser(username, password, remember = true, UA = 'TWAPI/3.0') {
+    const formData = new FormData();
+    formData.append('username', username);
+    formData.append('password', password);
+    if (remember) formData.append('remember', 'on');
+
+    const { data, cookies } = await request({
+      method: 'POST',
+      host: 'www.tradingview.com',
+      path: '/accounts/signin/',
+      headers: {
+        referer: 'https://www.tradingview.com',
+        'Content-Type': `multipart/form-data; boundary=${formData.boundary}`,
+        'User-agent': `${UA} (${os.version()}; ${os.platform()}; ${os.arch()})`,
+      },
+    }, false, formData.toString());
+
+    if (data.error) throw new Error(data.error);
+
+    const cookie = cookies.find((c) => c.includes('sessionid='));
+    const session = (cookie.match(/sessionid=(.*?);/) ?? [])[1];
+
+    return {
+      id: data.user.id,
+      username: data.user.username,
+      firstName: data.user.first_name,
+      lastName: data.user.last_name,
+      reputation: data.user.reputation,
+      following: data.user.following,
+      followers: data.user.followers,
+      notifications: data.user.notification_count,
+      session,
+      sessionHash: data.user.session_hash,
+      privateChannel: data.user.private_channel,
+      authToken: data.user.auth_token,
+      joinDate: new Date(data.user.date_joined),
+    };
+  },
+
+  /**
+   * Get user from 'sessionid' cookie
    * @function getUser
    * @param {string} session User 'sessionid' cookie
    * @param {string} [location] Auth page location (For france: https://fr.tradingview.com/)
@@ -455,7 +505,7 @@ module.exports = {
     const userID = creds ? credentials.id : -1;
     const session = creds ? credentials.session : null;
 
-    const data = await request({
+    const { data } = await request({
       host: 'www.tradingview.com',
       path: `/chart-token/?image_url=${layout}&user_id=${userID}`,
       headers: { cookie: session ? `sessionid=${session}` : '' },
@@ -502,7 +552,7 @@ module.exports = {
     const creds = credentials.id && credentials.session;
     const session = creds ? credentials.session : null;
 
-    const data = await request({
+    const { data } = await request({
       host: 'charts-storage.tradingview.com',
       path: `/charts-storage/layout/${layout}/sources?chart_id=${chartID
       }&jwt=${chartToken}${symbol ? `&symbol=${symbol}` : ''}`,
