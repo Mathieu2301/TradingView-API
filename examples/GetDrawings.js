@@ -14,8 +14,8 @@ if (!process.argv[2]) throw Error('Please specify a layoutID');
 TradingView.getDrawings(process.argv[2], null, {
   session: process.argv[3],
   id: process.argv[4],
-}).then((chartToken) => {
-  console.log(`Found ${chartToken.length} drawings:`, chartToken.map((d) => ({
+}).then((drawings) => {
+  console.log(`Found ${drawings.length} drawings:`, drawings.map((d) => ({
     id: d.id,
     symbol: d.symbol,
     type: d.type,
