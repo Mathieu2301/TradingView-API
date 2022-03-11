@@ -13,7 +13,7 @@ function request(options = {}, raw = false, content = '') {
       res.on('data', (c) => { data += c; });
       res.on('end', () => {
         if (raw) {
-          cb({ data, cookies: res.headers.cookie });
+          cb({ data, cookies: res.headers['set-cookie'] });
           return;
         }
 
