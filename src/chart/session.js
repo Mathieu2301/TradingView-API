@@ -122,7 +122,7 @@ module.exports = (client) => class ChartSession {
   #replayMode = false;
 
   /** @type {Object<string, (): any>} */
-  #replayOKCB = {}
+  #replayOKCB = {};
 
   /** Parent client */
   #client = client;
