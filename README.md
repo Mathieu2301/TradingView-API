@@ -9,8 +9,6 @@
 
 Get realtime market prices and indicator values from Tradingview !
 
-[![Open in Visual Studio Code](https://open.vscode.dev/badges/open-in-vscode.svg)](https://open.vscode.dev/Mathieu2301/TradingView-API)
-
 ## Features
 - [x] Premium features
 - [x] Automatically backtest many strategies and try many settings in a very little time
