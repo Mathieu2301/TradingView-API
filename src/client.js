@@ -207,6 +207,7 @@ module.exports = class Client {
     while (this.isOpen && this.#logged && this.#sendQueue.length > 0) {
       const packet = this.#sendQueue.shift();
       this.#ws.send(packet);
+      if (global.TW_DEBUG) console.log('§90§30§107 > §0', packet);
     }
   }
 
@@ -222,7 +223,7 @@ module.exports = class Client {
   constructor(clientOptions = {}) {
     if (clientOptions.DEBUG) global.TW_DEBUG = clientOptions.DEBUG;
 
-    this.#ws = new WebSocket('wss://widgetdata.tradingview.com/socket.io/websocket', {
+    this.#ws = new WebSocket('wss://data.tradingview.com/socket.io/websocket', {
       origin: 'https://s.tradingview.com',
     });
 

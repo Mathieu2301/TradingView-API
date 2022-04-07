@@ -10,6 +10,7 @@
 Get realtime market prices and indicator values from Tradingview !
 
 ## Features
+
 - [x] Premium features
 - [x] Automatically backtest many strategies and try many settings in a very little time
 - [x] Get drawings you made on your chart
@@ -27,6 +28,7 @@ Get realtime market prices and indicator values from Tradingview !
 - IF YOU WANT A FEATURE, ASK ME !
 
 ## Possibilities
+
 - Trading bot
 - Discord alerts
 - Hard backtest
@@ -34,23 +36,31 @@ Get realtime market prices and indicator values from Tradingview !
 - Free replay mode for all timeframes
 
 ___
+
 ## Installation
 
 Stable version:
+
 ```ruby
 npm i @mathieuc/tradingview
 ```
+
 Last version:
+
 ```ruby
 npm i github:Mathieu2301/TradingView-API
 ```
 
 ## Examples
+
 You can find all the examples and snippets in `./examples` folder.
 
 ## Before opening an issue
+
 Please look at examples and previously resolved issues before opening a new one. I can't help everyone (especially for questions that are not library related but JavaScript related). Thank you for your understanding.
 ___
+
 ## Problems
+
  If you have errors in console or unwanted behavior,
  please create an issue [here](https://github.com/Mathieu2301/Tradingview-API/issues).
