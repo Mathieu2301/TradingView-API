@@ -1,3 +1,4 @@
+/* eslint-disable no-continue */
 /* eslint-disable no-await-in-loop */
 /* eslint-disable import/no-dynamic-require */
 /* eslint-disable no-restricted-syntax */
@@ -37,6 +38,7 @@ function success() {
   console.info('§90§30§104 ==== Starting tests ==== §0');
 
   for (const file of fs.readdirSync('./tests').filter((f) => f.endsWith('.js'))) {
+    if (process.argv[2] && !file.startsWith(process.argv[2])) continue;
     const test = require(`./tests/${file}`);
     const name = file.replace(/\.js/g, '');
     TESTS[name] = { errors: 0, warnings: 0 };

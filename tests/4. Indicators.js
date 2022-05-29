@@ -65,9 +65,10 @@ module.exports = async (log, success, warn, err, cb) => {
 
       QTY += 10;
       log('TRY WITH', QTY, '%');
-      indicator.setOption('default_qty_value', QTY);
-
-      SuperTrend.setIndicator(indicator);
+      setTimeout(() => {
+        indicator.setOption('default_qty_value', QTY);
+        SuperTrend.setIndicator(indicator);
+      }, 1000);
     });
   });
 
