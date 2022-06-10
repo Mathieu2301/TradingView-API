@@ -275,10 +275,12 @@ module.exports = {
     data.result.metaInfo.inputs.forEach((input) => {
       if (['text', 'pineId', 'pineVersion'].includes(input.id)) return;
 
+      const inlineName = input.name.replace(/ /g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+
       inputs[input.id] = {
         name: input.name,
-        inline: input.inline || input.name.replace(/ /g, '_').replace(/[^a-zA-Z0-9_]/g, ''),
-        internalID: input.internalID,
+        inline: input.inline || inlineName,
+        internalID: input.internalID || inlineName,
         tooltip: input.tooltip,
 
         type: input.type,
