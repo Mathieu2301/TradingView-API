@@ -215,6 +215,7 @@ module.exports = class Client {
    * @typedef {Object} ClientOptions
    * @prop {string} [token] User auth token (in 'sessionid' cookie)
    * @prop {boolean} [DEBUG] Enable debug mode
+   * @prop {'data' | 'prodata' | 'widgetdata'} [server] Server type
    */
 
   /** Client object
@@ -223,7 +224,8 @@ module.exports = class Client {
   constructor(clientOptions = {}) {
     if (clientOptions.DEBUG) global.TW_DEBUG = clientOptions.DEBUG;
 
-    this.#ws = new WebSocket('wss://data.tradingview.com/socket.io/websocket', {
+    const server = clientOptions.server || 'data';
+    this.#ws = new WebSocket(`wss://${server}.tradingview.com/socket.io/websocket`, {
       origin: 'https://s.tradingview.com',
     });
 
