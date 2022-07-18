@@ -32,6 +32,27 @@ function getInputs(options) {
   return options.options;
 }
 
+const parseTrades = (trades) => trades.reverse().map((t) => ({
+  entry: {
+    name: t.e.c,
+    type: (t.e.tp[0] === 's' ? 'short' : 'long'),
+    value: t.e.p,
+    time: t.e.tm,
+  },
+  exit: {
+    name: t.x.c,
+    value: t.x.p,
+    time: t.x.tm,
+  },
+  quantity: t.q,
+  profit: t.tp,
+  cumulative: t.cp,
+  runup: t.rn,
+  drawdown: t.dd,
+}));
+
+// const historyParser = (history) => history.reverse().map((h) => ({
+
 /**
  * @typedef {Object} TradeReport Trade report
 
@@ -87,8 +108,18 @@ function getInputs(options) {
 */
 
 /**
+ * @typedef {Object} FromTo
+ * @prop {number} from From timestamp
+ * @prop {number} to To timestamp
+ */
+
+/**
  * @typedef {Object} StrategyReport
  * @prop {'EUR' | 'USD' | 'JPY' | '' | 'CHF'} [currency] Selected currency
+ * @prop {Object} [settings] Backtester settings
+ * @prop {Object} [settings.dateRange] Backtester date range
+ * @prop {FromTo} [settings.dateRange.backtest] Date range for backtest
+ * @prop {FromTo} [settings.dateRange.trade] Date range for trade
  * @prop {TradeReport[]} trades Trade list starting by the last
  * @prop {Object} history History Chart value
  * @prop {number[]} [history.buyHold] Buy hold values
@@ -275,60 +306,45 @@ module.exports = (chartSession) => class ChartStudy {
             changes.push('graphic');
           }
 
-          if (parsed.data && parsed.data.report && parsed.data.report.performance) {
-            this.#strategyReport.performance = parsed.data.report.performance;
-            changes.push('perfReport');
-          }
+          const updateStrategyReport = (report) => {
+            if (report.currency) {
+              this.#strategyReport.currency = report.currency;
+              changes.push('report.currency');
+            }
 
-          if (parsed.data && parsed.data.report && parsed.data.report.trades) {
-            this.#strategyReport.trades = parsed.data.report.trades;
-            changes.push('tradesReport');
-          }
+            if (report.settings) {
+              this.#strategyReport.settings = report.settings;
+              changes.push('report.settings');
+            }
 
-          if (parsed.data && parsed.data.report && parsed.data.report.history) {
-            this.#strategyReport.history = parsed.data.report.history;
-            changes.push('historyReport');
-          }
+            if (report.performance) {
+              this.#strategyReport.performance = report.performance;
+              changes.push('report.perf');
+            }
+
+            if (report.trades) {
+              this.#strategyReport.trades = parseTrades(report.trades);
+              changes.push('report.trades');
+            }
+
+            if (report.equity) {
+              this.#strategyReport.history = {
+                buyHold: report.buyHold,
+                buyHoldPercent: report.buyHoldPercent,
+                drawDown: report.drawDown,
+                drawDownPercent: report.drawDownPercent,
+                equity: report.equity,
+                equityPercent: report.equityPercent,
+              };
+              changes.push('report.history');
+            }
+          };
 
           if (parsed.dataCompressed) {
-            const parsedC = await parseCompressed(parsed.dataCompressed);
-
-            this.#strategyReport = {
-              currency: parsedC.report.currency,
-
-              trades: parsedC.report.trades.reverse().map((t) => ({
-                entry: {
-                  name: t.e.c,
-                  type: (t.e.tp[0] === 's' ? 'short' : 'long'),
-                  value: t.e.p,
-                  time: t.e.tm,
-                },
-                exit: {
-                  name: t.x.c,
-                  value: t.x.p,
-                  time: t.x.tm,
-                },
-                quantity: t.q,
-                profit: t.tp,
-                cumulative: t.cp,
-                runup: t.rn,
-                drawdown: t.dd,
-              })),
-
-              history: {
-                buyHold: parsedC.report.buyHold,
-                buyHoldPercent: parsedC.report.buyHoldPercent,
-                drawDown: parsedC.report.drawDown,
-                drawDownPercent: parsedC.report.drawDownPercent,
-                equity: parsedC.report.equity,
-                equityPercent: parsedC.report.equityPercent,
-              },
-
-              performance: parsedC.report.performance,
-            };
-
-            changes.push('fullReport');
+            updateStrategyReport((await parseCompressed(parsed.dataCompressed)).report);
           }
+
+          if (parsed.data && parsed.data.report) updateStrategyReport(parsed.data.report);
         }
 
         if (data.ns.indexes && typeof data.ns.indexes === 'object') {
@@ -383,8 +399,9 @@ module.exports = (chartSession) => class ChartStudy {
   }
 
   /**
-   * @typedef {
-   *  'plots' | 'perfReport' | 'tradesReport' | 'historyReport' | 'fullReport'
+   * @typedef {'plots' | 'report.currency'
+   *  | 'report.settings' | 'report.perf'
+   *  | 'report.trades' | 'report.history'
    * } UpdateChangeType
    */
 
