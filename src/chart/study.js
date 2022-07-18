@@ -280,6 +280,16 @@ module.exports = (chartSession) => class ChartStudy {
             changes.push('perfReport');
           }
 
+          if (parsed.data && parsed.data.report && parsed.data.report.trades) {
+            this.#strategyReport.trades = parsed.data.report.trades;
+            changes.push('tradesReport');
+          }
+
+          if (parsed.data && parsed.data.report && parsed.data.report.history) {
+            this.#strategyReport.history = parsed.data.report.history;
+            changes.push('historyReport');
+          }
+
           if (parsed.dataCompressed) {
             const parsedC = await parseCompressed(parsed.dataCompressed);
 
@@ -372,7 +382,11 @@ module.exports = (chartSession) => class ChartStudy {
     this.#callbacks.studyCompleted.push(cb);
   }
 
-  /** @typedef {'plots' | 'perfReport' | 'fullReport'} UpdateChangeType */
+  /**
+   * @typedef {
+   *  'plots' | 'perfReport' | 'tradesReport' | 'historyReport' | 'fullReport'
+   * } UpdateChangeType
+   */
 
   /**
    * When an indicator update happens
