@@ -147,6 +147,11 @@ const parseTrades = (trades) => trades.reverse().map((t) => ({
  */
 module.exports = (chartSession) => class ChartStudy {
   #studID = genSessionID('st');
+  
+  /** @return {string} Study ID */
+  get studyId() {
+    return this.#studID
+  }
 
   #studyListeners = chartSession.studyListeners;
 
