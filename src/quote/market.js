@@ -5,11 +5,15 @@
 /**
  * @param {import('./session').QuoteSessionBridge} quoteSession
  */
+
 module.exports = (quoteSession) => class QuoteMarket {
   #symbolListeners = quoteSession.symbolListeners;
 
   #symbol;
+
   #session;
+
+  #symbolKey;
 
   #symbolListenerID = 0;
 
@@ -44,17 +48,19 @@ module.exports = (quoteSession) => class QuoteMarket {
   constructor(symbol, session = 'regular') {
     this.#symbol = symbol;
     this.#session = session;
+    this.#symbolKey = `=${JSON.stringify({ session, symbol })}`
 
-    if (!this.#symbolListeners[symbol]) {
-      this.#symbolListeners[symbol] = [];
+    if (!this.#symbolListeners[this.#symbolKey]) {
+      this.#symbolListeners[this.#symbolKey] = [];
       quoteSession.send('quote_add_symbols', [
         quoteSession.sessionID,
-        `=${JSON.stringify({ session, symbol })}`
+        this.#symbolKey,
       ]);
     }
-    this.#symbolListenerID = this.#symbolListeners[symbol].length;
 
-    this.#symbolListeners[symbol][this.#symbolListenerID] = (packet) => {
+    this.#symbolListenerID = this.#symbolListeners[this.#symbolKey].length;
+
+    this.#symbolListeners[this.#symbolKey][this.#symbolListenerID] = (packet) => {
       if (global.TW_DEBUG) console.log('§90§30§105 MARKET §0 DATA', packet);
 
       if (packet.type === 'qsd' && packet.data[1].s === 'ok') {
@@ -115,12 +121,12 @@ module.exports = (quoteSession) => class QuoteMarket {
 
   /** Close this listener */
   close() {
-    if (this.#symbolListeners[this.#symbol].length <= 1) {
+    if (this.#symbolListeners[this.#symbolKey].length <= 1) {
       quoteSession.send('quote_remove_symbols', [
         quoteSession.sessionID,
-        this.#symbol,
+        this.#symbolKey,
       ]);
     }
-    delete this.#symbolListeners[this.#symbol][this.#symbolListenerID];
+    delete this.#symbolListeners[this.#symbolKey][this.#symbolListenerID];
   }
 };
