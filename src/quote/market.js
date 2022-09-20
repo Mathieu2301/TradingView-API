@@ -9,6 +9,7 @@ module.exports = (quoteSession) => class QuoteMarket {
   #symbolListeners = quoteSession.symbolListeners;
 
   #symbol;
+  #session;
 
   #symbolListenerID = 0;
 
