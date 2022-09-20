@@ -38,15 +38,17 @@ module.exports = (quoteSession) => class QuoteMarket {
 
   /**
    * @param {string} symbol Market symbol (like: 'BTCEUR' or 'KRAKEN:BTCEUR')
+   * @param {string} session Market session (like: 'regular' or 'extended')
    */
-  constructor(symbol) {
+  constructor(symbol, session = 'regular') {
     this.#symbol = symbol;
+    this.#session = session;
 
     if (!this.#symbolListeners[symbol]) {
       this.#symbolListeners[symbol] = [];
       quoteSession.send('quote_add_symbols', [
         quoteSession.sessionID,
-        symbol,
+        `=${JSON.stringify({ session, symbol })}`
       ]);
     }
     this.#symbolListenerID = this.#symbolListeners[symbol].length;
