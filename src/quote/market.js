@@ -48,7 +48,7 @@ module.exports = (quoteSession) => class QuoteMarket {
   constructor(symbol, session = 'regular') {
     this.#symbol = symbol;
     this.#session = session;
-    this.#symbolKey = `=${JSON.stringify({ session, symbol })}`
+    this.#symbolKey = `=${JSON.stringify({ session, symbol })}`;
 
     if (!this.#symbolListeners[this.#symbolKey]) {
       this.#symbolListeners[this.#symbolKey] = [];
