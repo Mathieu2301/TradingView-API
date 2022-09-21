@@ -402,6 +402,7 @@ module.exports = (chartSession) => class ChartStudy {
    * @typedef {'plots' | 'report.currency'
    *  | 'report.settings' | 'report.perf'
    *  | 'report.trades' | 'report.history'
+   *  | 'graphic'
    * } UpdateChangeType
    */
 
