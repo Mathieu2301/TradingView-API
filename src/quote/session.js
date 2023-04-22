@@ -79,21 +79,21 @@ module.exports = (client) => class QuoteSession {
         if (global.TW_DEBUG) console.log('§90§30§102 QUOTE SESSION §0 DATA', packet);
 
         if (packet.type === 'quote_completed') {
-          const symbol = packet.data[1];
-          if (!this.#symbolListeners[symbol]) {
-            this.#client.send('quote_remove_symbols', [this.#sessionID, symbol]);
+          const symbolKey = packet.data[1];
+          if (!this.#symbolListeners[symbolKey]) {
+            this.#client.send('quote_remove_symbols', [this.#sessionID, symbolKey]);
             return;
           }
-          this.#symbolListeners[symbol].forEach((h) => h(packet));
+          this.#symbolListeners[symbolKey].forEach((h) => h(packet));
         }
 
         if (packet.type === 'qsd') {
-          const symbol = packet.data[1].n;
-          if (!this.#symbolListeners[symbol]) {
-            this.#client.send('quote_remove_symbols', [this.#sessionID, symbol]);
+          const symbolKey = packet.data[1].n;
+          if (!this.#symbolListeners[symbolKey]) {
+            this.#client.send('quote_remove_symbols', [this.#sessionID, symbolKey]);
             return;
           }
-          this.#symbolListeners[symbol].forEach((h) => h(packet));
+          this.#symbolListeners[symbolKey].forEach((h) => h(packet));
         }
       },
     };
