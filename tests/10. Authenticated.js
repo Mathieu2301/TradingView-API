@@ -51,13 +51,9 @@ module.exports = async (log, success, warn, err, cb) => {
 
   const checked = new Set();
   async function check(item) {
-    await wait(1000);
-
     checked.add(item);
-    if (checked.size < userIndicators.length + 1) {
-      log('Waiting for', userIndicators.length + 1 - checked.size, 'item(s)...');
-      return;
-    }
+    log('Checked:', [...checked], `(${checked.size}/${userIndicators.length + 1})`);
+    if (checked.size < userIndicators.length + 1) return;
 
     log('Closing client...');
     chart.delete();
@@ -74,7 +70,7 @@ module.exports = async (log, success, warn, err, cb) => {
       price: chart.periods[0].close,
     });
 
-    await check(Symbol('PRICE'));
+    await check(Symbol.for('PRICE'));
   });
 
   await wait(1000);
