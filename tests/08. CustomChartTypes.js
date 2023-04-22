@@ -5,14 +5,12 @@ module.exports = async (log, success, warn, err, cb) => {
 
   client.onError((...error) => {
     err('Client error', error);
-    throw new Error('Client error');
   });
 
   const chart = new client.Session.Chart();
 
   chart.onError((...error) => {
     err('Chart error', error);
-    throw new Error('Chart error');
   });
 
   /* (0s) Heikin Ashi chart */

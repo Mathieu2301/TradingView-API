@@ -5,7 +5,6 @@ module.exports = async (log, success, warn, err, cb) => {
 
   client.onError((...error) => {
     err('Client error', error);
-    throw new Error('Client error');
   });
 
   const chart = new client.Session.Chart();
@@ -17,7 +16,6 @@ module.exports = async (log, success, warn, err, cb) => {
 
   chart.onError((...error) => {
     err('Chart error', error);
-    throw new Error('Chart error');
   });
 
   let interval = NaN;
@@ -43,7 +41,7 @@ module.exports = async (log, success, warn, err, cb) => {
     if (Number.isNaN(interval) && times.length >= 2) interval = intrval;
 
     if (!Number.isNaN(interval) && interval !== intrval) {
-      throw new Error(`Wrong interval: ${intrval} (should be ${interval})`);
+      err(`Wrong interval: ${intrval} (should be ${interval})`);
     }
 
     log('Next ->', times[0]);

@@ -47,17 +47,21 @@ function success() {
   }
 
   console.info('§90§30§104 ==== ALL TESTS DONE ==== §0\n');
+
+  let errored = false;
+
   Object.keys(TESTS).forEach((t) => {
     let color = '2';
     if (TESTS[t].warnings) color = '3';
-    if (TESTS[t].errors) color = '1';
+    if (TESTS[t].errors) {
+      color = '1';
+      errored = true;
+    }
 
     console.info(`§90§30§10${color} ${t} §0 §91E§0: ${TESTS[t].errors}§0 §93W§0: ${TESTS[t].warnings}`);
-    // console.info(` - §91 Errors:§0 ${TESTS[t].errors}`);
-    // console.info(` - §93 Warnings:§0 ${TESTS[t].warnings}`);
   });
 
-  process.exit(0);
+  process.exit(errored ? 1 : 0);
 })();
 
 setTimeout(() => {

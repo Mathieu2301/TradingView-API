@@ -5,7 +5,6 @@ module.exports = async (log, success, warn, err, cb) => {
 
   client.onError((...error) => {
     err('Client error', error);
-    throw new Error('Client error');
   });
 
   const chart = new client.Session.Chart();
@@ -15,7 +14,6 @@ module.exports = async (log, success, warn, err, cb) => {
 
   chart.onError((...error) => {
     err('Chart error', error);
-    throw new Error('Chart error');
   });
 
   TradingView.getIndicator('STD;Supertrend%Strategy').then((indicator) => {
@@ -31,7 +29,6 @@ module.exports = async (log, success, warn, err, cb) => {
 
     SuperTrend.onError((...error) => {
       err('SuperTrend error', error[0]);
-      throw new Error('SuperTrend error');
     });
 
     let QTY = 10;
@@ -81,7 +78,6 @@ module.exports = async (log, success, warn, err, cb) => {
 
     CipherB.onError((...error) => {
       err('MarketCipher B error:', error[0]);
-      throw new Error('MarketCipher B error');
     });
 
     CipherB.onUpdate(() => {

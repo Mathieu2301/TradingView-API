@@ -5,7 +5,6 @@ module.exports = (log, success, warn, err, cb) => {
 
   client.onError((...error) => {
     err('Client error', ...error);
-    throw new Error('Client error');
   });
 
   const quoteSession = new client.Session.Quote({
@@ -38,7 +37,6 @@ module.exports = (log, success, warn, err, cb) => {
     keys.forEach((k) => {
       if (!rsKeys.includes(k)) {
         err(`Missing '${k}' key in`, rsKeys);
-        throw new Error('Missing key');
       }
     });
 
@@ -49,6 +47,5 @@ module.exports = (log, success, warn, err, cb) => {
 
   BTC.onError((...error) => {
     err('BTCEUR ERROR:', error);
-    throw new Error('Missing key');
   });
 };

@@ -11,7 +11,6 @@ module.exports = async (log, success, warn, err, cb) => {
 
   if (markets.length < 10 || indicators.length < 10) {
     err('Not enough results');
-    throw new Error('Not enough results');
   }
 
   cb();
