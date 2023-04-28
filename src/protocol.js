@@ -13,10 +13,12 @@ module.exports = {
   /**
    * Parse websocket packet
    * @function parseWSPacket
-   * @param {string} str Websocket raw data
+   * @param {input} string | Buffer Websocket raw data
    * @returns {TWPacket[]} TradingView packets
    */
-  parseWSPacket(str) {
+  parseWSPacket(input) {
+    // Convert input to a string if it is a buffer
+    const str = (input instanceof Buffer) ? input.toString() : input;
     return str.replace(cleanerRgx, '').split(splitterRgx)
       .map((p) => {
         if (!p) return false;
