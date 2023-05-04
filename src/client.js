@@ -214,6 +214,7 @@ module.exports = class Client {
   /**
    * @typedef {Object} ClientOptions
    * @prop {string} [token] User auth token (in 'sessionid' cookie)
+   * @prop {string} [signature] User auth token signature (in 'sessionid_sign' cookie)
    * @prop {boolean} [DEBUG] Enable debug mode
    * @prop {'data' | 'prodata' | 'widgetdata'} [server] Server type
    */
@@ -230,7 +231,7 @@ module.exports = class Client {
     });
 
     if (clientOptions.token) {
-      misc.getUser(clientOptions.token).then((user) => {
+      misc.getUser(clientOptions.token, clientOptions.signature ? clientOptions.signature : '').then((user) => {
         this.#sendQueue.unshift(protocol.formatWSPacket({
           m: 'set_auth_token',
           p: [user.authToken],
