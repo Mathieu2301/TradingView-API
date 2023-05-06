@@ -4,7 +4,7 @@ const wait = (ms) => new Promise((cb) => { setTimeout(cb, ms); });
 
 module.exports = async (log, success, warn, err, cb) => {
   if (!process.env.SESSION || !process.env.SIGNATURE) {
-    err('No sessionid/signature was provided');
+    warn('No sessionid/signature was provided');
     cb();
     return;
   }
