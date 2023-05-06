@@ -135,6 +135,32 @@ module.exports = async (log, success, warn, err, cb) => {
         next();
       });
     },
+
+    async (next) => { /* Testing "Wrong or expired sessionid/signature" using getUser method */
+      log('Testing "Wrong or expired sessionid/signature" error using getUser method:');
+      try {
+        await TradingView.getUser(process.env.SESSION);
+        err('=> User found !');
+      } catch (error) {
+        success('=> User not found:', error);
+        next();
+      }
+    },
+
+    async (next) => { /* Testing "Wrong or expired sessionid/signature" using client */
+      log('Testing "Wrong or expired sessionid/signature" error using client:');
+
+      log('Creating a new client...');
+      const client2 = new TradingView.Client({
+        token: process.env.SESSION,
+      });
+
+      client2.onError((...error) => {
+        success('=> Client error:', error);
+        client2.end();
+        next();
+      });
+    },
   ];
 
   (async () => {

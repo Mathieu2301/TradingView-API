@@ -231,7 +231,10 @@ module.exports = class Client {
     });
 
     if (clientOptions.token) {
-      misc.getUser(clientOptions.token, clientOptions.signature ? clientOptions.signature : '').then((user) => {
+      misc.getUser(
+        clientOptions.token,
+        clientOptions.signature ? clientOptions.signature : '',
+      ).then((user) => {
         this.#sendQueue.unshift(protocol.formatWSPacket({
           m: 'set_auth_token',
           p: [user.authToken],

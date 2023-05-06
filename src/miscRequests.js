@@ -439,7 +439,7 @@ module.exports = {
               authToken: /"auth_token":"(.*?)"/.exec(rs)[1],
               joinDate: new Date(/"date_joined":"(.*?)"/.exec(rs)[1] || 0),
             });
-          } else err(new Error('Wrong or expired sessionid'));
+          } else err(new Error('Wrong or expired sessionid/signature'));
         });
 
         res.on('error', err);

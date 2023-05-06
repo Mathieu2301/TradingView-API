@@ -7,7 +7,7 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 module.exports = async (log, success, warn, err, cb) => {
   log('Getting user info');
 
-  const userInfos = await TradingView.getUser(process.env.SESSION);
+  const userInfos = await TradingView.getUser(process.env.SESSION, process.env.SIGNATURE);
   if (userInfos && userInfos.id) {
     success('User info:', {
       id: userInfos.id,
@@ -36,6 +36,7 @@ module.exports = async (log, success, warn, err, cb) => {
   log('Creating logged client');
   const client = new TradingView.Client({
     token: process.env.SESSION,
+    signature: process.env.SIGNATURE,
   });
   client.onError((...error) => {
     err('Client error', error);
