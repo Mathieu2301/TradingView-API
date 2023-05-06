@@ -3,6 +3,7 @@ name: Tests
 on:
   push:
   pull_request_target:
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
   schedule:
   - cron: '0 0 * * *'
