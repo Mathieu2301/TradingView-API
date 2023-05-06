@@ -28,8 +28,8 @@ module.exports = async (log, success, warn, err, cb) => {
   await wait(1000);
 
   log('Getting user indicators');
-
   const userIndicators = await TradingView.getPrivateIndicators(process.env.SESSION);
+
   if (userIndicators) {
     if (userIndicators.length === 0) warn('No private indicator found');
     else success('User indicators:', userIndicators.map((i) => i.name));
@@ -42,6 +42,7 @@ module.exports = async (log, success, warn, err, cb) => {
     token: process.env.SESSION,
     signature: process.env.SIGNATURE,
   });
+
   client.onError((...error) => {
     err('Client error', error);
   });
@@ -81,7 +82,6 @@ module.exports = async (log, success, warn, err, cb) => {
   await wait(1000);
 
   log('Loading indicators...');
-
   for (const indic of userIndicators) {
     const privateIndic = await indic.get();
     log(`[${indic.name}] Loading indicator...`);
@@ -97,4 +97,5 @@ module.exports = async (log, success, warn, err, cb) => {
       await check(indic.id);
     });
   }
+  log('Indicators loaded !');
 };
