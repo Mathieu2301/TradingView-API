@@ -177,7 +177,6 @@ module.exports = async (log, success, warn, err, cb) => {
   ];
 
   (async () => {
-    // eslint-disable-next-line no-restricted-syntax, no-await-in-loop
     for (const t of tests) await new Promise(t);
     success(`Crashtests ${tests.length}/${tests.length} done !`);
     cb();

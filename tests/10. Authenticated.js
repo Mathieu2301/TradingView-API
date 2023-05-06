@@ -1,5 +1,3 @@
-/* eslint-disable no-restricted-syntax */
-/* eslint-disable no-await-in-loop */
 const TradingView = require('../main');
 
 const wait = (ms) => new Promise((cb) => { setTimeout(cb, ms); });
