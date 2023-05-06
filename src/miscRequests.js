@@ -375,8 +375,11 @@ module.exports = {
 
     if (data.error) throw new Error(data.error);
 
-    const cookie = cookies.find((c) => c.includes('sessionid='));
-    const session = (cookie.match(/sessionid=(.*?);/) ?? [])[1];
+    const sessionCookie = cookies.find((c) => c.includes('sessionid='));
+    const session = (sessionCookie.match(/sessionid=(.*?);/) ?? [])[1];
+
+    const signCookie = cookies.find((c) => c.includes('sessionid_sign='));
+    const signature = (signCookie.match(/sessionid_sign=(.*?);/) ?? [])[1];
 
     return {
       id: data.user.id,
@@ -388,6 +391,7 @@ module.exports = {
       followers: data.user.followers,
       notifications: data.user.notification_count,
       session,
+      signature,
       sessionHash: data.user.session_hash,
       privateChannel: data.user.private_channel,
       authToken: data.user.auth_token,
@@ -399,19 +403,20 @@ module.exports = {
    * Get user from 'sessionid' cookie
    * @function getUser
    * @param {string} session User 'sessionid' cookie
+   * @param {string} [signature] User 'sessionid_sign' cookie
    * @param {string} [location] Auth page location (For france: https://fr.tradingview.com/)
    * @returns {Promise<User>} Token
    */
-  async getUser(session, location = 'https://www.tradingview.com/') {
+  async getUser(session, signature = '', location = 'https://www.tradingview.com/') {
     return new Promise((cb, err) => {
       https.get(location, {
-        headers: { cookie: `sessionid=${session}` },
+        headers: { cookie: `sessionid=${session}${signature ? `;sessionid_sign=${signature};` : ''}` },
       }, (res) => {
         let rs = '';
         res.on('data', (d) => { rs += d; });
         res.on('end', async () => {
           if (res.headers.location && location !== res.headers.location) {
-            cb(await module.exports.getUser(session, res.headers.location));
+            cb(await module.exports.getUser(session, signature, res.headers.location));
             return;
           }
           if (rs.includes('auth_token')) {
@@ -428,12 +433,13 @@ module.exports = {
                 user: parseFloat(/"notification_count":\{"following":[0-9]*,"user":([0-9]*)/.exec(rs)[1] || 0),
               },
               session,
+              signature,
               sessionHash: /"session_hash":"(.*?)"/.exec(rs)[1],
               privateChannel: /"private_channel":"(.*?)"/.exec(rs)[1],
               authToken: /"auth_token":"(.*?)"/.exec(rs)[1],
               joinDate: new Date(/"date_joined":"(.*?)"/.exec(rs)[1] || 0),
             });
-          } else err(new Error('Wrong or expired sessionid'));
+          } else err(new Error('Wrong or expired sessionid/signature'));
         });
 
         res.on('error', err);
@@ -445,12 +451,13 @@ module.exports = {
    * Get user's private indicators from a 'sessionid' cookie
    * @function getPrivateIndicators
    * @param {string} session User 'sessionid' cookie
+   * @param {string} [signature] User 'sessionid_sign' cookie
    * @returns {Promise<SearchIndicatorResult[]>} Search results
    */
-  async getPrivateIndicators(session) {
+  async getPrivateIndicators(session, signature = '') {
     return new Promise((cb, err) => {
       https.get('https://pine-facade.tradingview.com/pine-facade/list?filter=saved', {
-        headers: { cookie: `sessionid=${session}` },
+        headers: { cookie: `sessionid=${session}${signature ? `;sessionid_sign=${signature};` : ''}` },
       }, (res) => {
         let rs = '';
         res.on('data', (d) => { rs += d; });
@@ -499,18 +506,19 @@ module.exports = {
    * Get a chart token from a layout ID and the user credentials if the layout is not public
    * @function getChartToken
    * @param {string} layout The layout ID found in the layout URL (Like: 'XXXXXXXX')
-   * @param {UserCredentials} [credentials] User credentials (id + session)
+   * @param {UserCredentials} [credentials] User credentials (id + session + [signature])
    * @returns {Promise<string>} Token
    */
   async getChartToken(layout, credentials = {}) {
     const creds = credentials.id && credentials.session;
     const userID = creds ? credentials.id : -1;
     const session = creds ? credentials.session : null;
+    const signature = creds ? credentials.signature : null;
 
     const { data } = await request({
       host: 'www.tradingview.com',
       path: `/chart-token/?image_url=${layout}&user_id=${userID}`,
-      headers: { cookie: session ? `sessionid=${session}` : '' },
+      headers: { cookie: session ? `sessionid=${session}${signature ? `;sessionid_sign=${signature};` : ''}` : '' },
     });
 
     if (!data.token) throw new Error('Wrong layout or credentials');
@@ -545,7 +553,7 @@ module.exports = {
    * @function getDrawings
    * @param {string} layout The layout ID found in the layout URL (Like: 'XXXXXXXX')
    * @param {string | ''} [symbol] Market filter (Like: 'BINANCE:BTCEUR')
-   * @param {UserCredentials} [credentials] User credentials (id + session)
+   * @param {UserCredentials} [credentials] User credentials (id + session + [signature])
    * @param {number} [chartID] Chart ID
    * @returns {Promise<Drawing[]>} Drawings
    */
@@ -553,12 +561,13 @@ module.exports = {
     const chartToken = await module.exports.getChartToken(layout, credentials);
     const creds = credentials.id && credentials.session;
     const session = creds ? credentials.session : null;
+    const signature = creds ? credentials.signature : null;
 
     const { data } = await request({
       host: 'charts-storage.tradingview.com',
       path: `/charts-storage/layout/${layout}/sources?chart_id=${chartID
       }&jwt=${chartToken}${symbol ? `&symbol=${symbol}` : ''}`,
-      headers: { cookie: session ? `sessionid=${session}` : '' },
+      headers: { cookie: session ? `sessionid=${session}${signature ? `;sessionid_sign=${signature};` : ''}` : '' },
     });
 
     if (!data.payload) throw new Error('Wrong layout, user credentials, or chart id.');

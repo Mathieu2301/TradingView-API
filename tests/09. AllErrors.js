@@ -135,10 +135,48 @@ module.exports = async (log, success, warn, err, cb) => {
         next();
       });
     },
+
+    async (next) => { /* Testing "Wrong or expired sessionid/signature" using getUser method */
+      log('Testing "Wrong or expired sessionid/signature" error using getUser method:');
+
+      if (!process.env.SESSION) {
+        warn('=> Skipping test because no sessionid/signature was provided');
+        next();
+        return;
+      }
+
+      try {
+        await TradingView.getUser(process.env.SESSION);
+        err('=> User found !');
+      } catch (error) {
+        success('=> User not found:', error);
+        next();
+      }
+    },
+
+    async (next) => { /* Testing "Wrong or expired sessionid/signature" using client */
+      log('Testing "Wrong or expired sessionid/signature" error using client:');
+
+      if (!process.env.SESSION) {
+        warn('=> Skipping test because no sessionid/signature was provided');
+        next();
+        return;
+      }
+
+      log('Creating a new client...');
+      const client2 = new TradingView.Client({
+        token: process.env.SESSION,
+      });
+
+      client2.onError((...error) => {
+        success('=> Client error:', error);
+        client2.end();
+        next();
+      });
+    },
   ];
 
   (async () => {
-    // eslint-disable-next-line no-restricted-syntax, no-await-in-loop
     for (const t of tests) await new Promise(t);
     success(`Crashtests ${tests.length}/${tests.length} done !`);
     cb();
