@@ -138,6 +138,13 @@ module.exports = async (log, success, warn, err, cb) => {
 
     async (next) => { /* Testing "Wrong or expired sessionid/signature" using getUser method */
       log('Testing "Wrong or expired sessionid/signature" error using getUser method:');
+
+      if (!process.env.SESSION) {
+        warn('=> Skipping test because no sessionid/signature was provided');
+        next();
+        return;
+      }
+
       try {
         await TradingView.getUser(process.env.SESSION);
         err('=> User found !');
@@ -149,6 +156,12 @@ module.exports = async (log, success, warn, err, cb) => {
 
     async (next) => { /* Testing "Wrong or expired sessionid/signature" using client */
       log('Testing "Wrong or expired sessionid/signature" error using client:');
+
+      if (!process.env.SESSION) {
+        warn('=> Skipping test because no sessionid/signature was provided');
+        next();
+        return;
+      }
 
       log('Creating a new client...');
       const client2 = new TradingView.Client({
