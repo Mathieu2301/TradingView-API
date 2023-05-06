@@ -2,7 +2,7 @@
 /* eslint-disable no-await-in-loop */
 const TradingView = require('../main');
 
-const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const wait = (ms) => new Promise((cb) => { setTimeout(cb, ms); });
 
 module.exports = async (log, success, warn, err, cb) => {
   if (!process.env.SESSION || !process.env.SIGNATURE) {

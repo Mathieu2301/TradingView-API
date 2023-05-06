@@ -377,7 +377,7 @@ module.exports = {
 
     const sessionCookie = cookies.find((c) => c.includes('sessionid='));
     const session = (sessionCookie.match(/sessionid=(.*?);/) ?? [])[1];
-    
+
     const signCookie = cookies.find((c) => c.includes('sessionid_sign='));
     const signature = (signCookie.match(/sessionid_sign=(.*?);/) ?? [])[1];
 
