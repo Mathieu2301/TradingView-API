@@ -21,7 +21,10 @@ describe('Simple chart session', async () => {
       timeframe: 'D',
     });
 
-    while (chart.infos.full_name !== 'BINANCE:BTCEUR') await utils.wait(100);
+    while (
+      chart.infos.full_name !== 'BINANCE:BTCEUR'
+      || !chart.periods.length
+    ) await utils.wait(100);
 
     expect(chart.infos.full_name).toBe('BINANCE:BTCEUR');
     expect(
