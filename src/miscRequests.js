@@ -342,6 +342,7 @@ module.exports = {
    * @prop {number} notifications.following Notification from following accounts
    * @prop {string} session User session
    * @prop {string} sessionHash User session hash
+   * @prop {string} signature User session signature
    * @prop {string} privateChannel User private channel
    * @prop {string} authToken User auth token
    * @prop {Date} joinDate Account creation date
