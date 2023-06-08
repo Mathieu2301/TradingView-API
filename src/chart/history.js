@@ -119,31 +119,35 @@ module.exports = (client) => class HistorySession {
    * @param {string} symbol Market symbol
    * @param {number} from Deep backtest starting point (Timestamp)
    * @param {number} to Deep backtest ending point (Timestamp)
-   * @param {PineIndicator} indicatorOptions Indicator options
-   * @param {Object} chartOptions Chart options
-   * @param {import('../types').TimeFrame} [options.timeframe] Chart period timeframe
-   * @param {'splits' | 'dividends'} [chartOptions.adjustment] Market adjustment
-   * @param {'regular' | 'extended'} [chartOptions.session] Chart session
-   * @param {'EUR' | 'USD' | string} [chartOptions.currency] Chart currency
+   * @param {PineIndicator} indicator PineIndicator with options set
+   * @param {Object} options Chart options
+   * @param {import('../types').TimeFrame} [options.timeframe] Chart period timeframe (Default is 5)
+   * @param {number} [options.from] First available timestamp (Default is 2010-01-01)
+   * @param {number} [options.to] Last candle timestamp (Default is now)
+   * @param {'splits' | 'dividends'} [options.adjustment] Market adjustment
+   * @param {'regular' | 'extended'} [options.session] Chart session
+   * @param {'EUR' | 'USD' | string} [options.currency] Chart currency
    */
-    requestHistoryData(symbol, from, to, indicatorOptions, chartOptions) {
+    requestHistoryData(symbol, indicator, options) {
       const symbolInit = {
         symbol: symbol || 'BTCEUR',
-        adjustment: chartOptions.adjustment || 'splits',
+        adjustment: options.adjustment || 'splits',
       };
 
-      if (chartOptions.session) symbolInit.session = chartOptions.session;
-      if (chartOptions.currency) symbolInit['currency-id'] = chartOptions.currency;
+      if (options.session) symbolInit.session = options.session;
+      if (options.currency) symbolInit['currency-id'] = options.currency;
+      const from = options.from || Math.floor(new Date(2010, 1, 1) / 1000);
+      const to = options.to || Math.floor(Date.now() / 1000);
 
       this.#client.send('request_history_data', [
         this.#historySessionID,
         0, // what is this?
         `=${JSON.stringify(symbolInit)}`,
-        chartOptions.timeframe,
+        options.timeframe || '5',
         0, // what is this?
         { from_to: { from, to } },
-        'StrategyScript@tv-scripting-101!',
-        getInputs(indicatorOptions),
+        indicator.type,
+        getInputs(indicator),
         [], // what is this?
       ]);
     }
