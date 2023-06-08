@@ -39,7 +39,7 @@ module.exports = async (log, success, warn, err, cb) => {
   const to = Math.floor(Date.now() / 1000);
 
   log('Running deep backtest....');
-  history.requestHistoryData('AMEX:SPY', from, to, indicator, { timeframe: '5' });
+  history.requestHistoryData('AMEX:SPY', indicator, { timeframe: '5', from, to });
   history.onHistoryLoaded(async () => {
     success('Deep backtest traded from', new Date(history.strategyReport.settings.dateRange.trade.from));
     log('Closing client...');
