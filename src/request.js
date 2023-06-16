@@ -1,4 +1,5 @@
-const https = require('https');
+const https = require('https')
+const proxy = require('./proxy')
 
 /**
  * @param {https.RequestOptions} options HTTPS Request options
@@ -8,30 +9,30 @@ const https = require('https');
  */
 function request(options = {}, raw = false, content = '') {
   return new Promise((cb, err) => {
-    const req = https.request(options, (res) => {
-      let data = '';
-      res.on('data', (c) => { data += c; });
+    const req = https.request({ agent: proxy(), ...options }, (res) => {
+      let data = ''
+      res.on('data', (c) => { data += c })
       res.on('end', () => {
         if (raw) {
-          cb({ data, cookies: res.headers['set-cookie'] });
-          return;
+          cb({ data, cookies: res.headers['set-cookie'] })
+          return
         }
 
         try {
-          data = JSON.parse(data);
+          data = JSON.parse(data)
         } catch (error) {
-          console.log(data);
-          err(new Error('Can\'t parse server response'));
-          return;
+          console.log(data)
+          err(new Error('Can\'t parse server response'))
+          return
         }
 
-        cb({ data, cookies: res.headers['set-cookie'] });
-      });
-    });
+        cb({ data, cookies: res.headers['set-cookie'] })
+      })
+    })
 
-    req.on('error', err);
-    req.end(content);
-  });
+    req.on('error', err)
+    req.end(content)
+  })
 }
 
-module.exports = request;
+module.exports = request

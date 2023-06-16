@@ -26,7 +26,9 @@
   "author": "Mathieu Colmon",
   "license": "ISC",
   "dependencies": {
+    "https-proxy-agent": "^7.0.0",
     "jszip": "^3.7.1",
+    "socks-proxy-agent": "^8.0.1",
     "ws": "^7.4.3"
   },
   "devDependencies": {
