@@ -45,7 +45,7 @@ describe('ReplayMode', () => {
     }
     step();
 
-    chart.onReplayPoint((p) => {
+    chart.onReplayPoint((p: number) => {
       console.log('Last point ->', p);
     });
 
@@ -89,7 +89,7 @@ describe('ReplayMode', () => {
     console.log('Play replay mode');
     await chart.replayStart(200);
 
-    chart.onUpdate((p) => {
+    chart.onUpdate(() => {
       console.log('Point ->', chart.periods[0].time);
     });
 
