@@ -1,6 +1,6 @@
 # TradingView API [![GitHub stars](https://img.shields.io/github/stars/Mathieu2301/TradingView-API.svg?style=social&label=Star&maxAge=2592000)](https://GitHub.com/Mathieu2301/TradingView-API/stargazers/)
 
-[![Tests](https://github.com/Mathieu2301/TradingView-API/actions/workflows/node.js.yml/badge.svg)](https://github.com/Mathieu2301/TradingView-API/actions/workflows/node.js.yml)
+[![Tests](https://github.com/Mathieu2301/TradingView-API/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/Mathieu2301/TradingView-API/actions/workflows/tests.yml)
 [![CodeFactor](https://www.codefactor.io/repository/github/mathieu2301/tradingview-api/badge/main)](https://www.codefactor.io/repository/github/mathieu2301/tradingview-api/overview/main)
 [![GitHub latest commit](https://img.shields.io/github/last-commit/Mathieu2301/TradingView-API)](https://GitHub.com/Mathieu2301/TradingView-API/commit/)
 [![Npm package yearly downloads](https://badgen.net/npm/dt/@mathieuc/tradingview)](https://npmjs.com/@mathieuc/tradingview)
