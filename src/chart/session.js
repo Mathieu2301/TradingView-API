@@ -29,7 +29,7 @@ const ChartTypes = {
  * @prop {number} [lb] LineBreak Line break
  * @prop {boolean} [oneStepBackBuilding] PointAndFigure oneStepBackBuilding
  * @prop {boolean} [phantomBars] Range phantom bars
- * @prop {boolean} [range] Range range
+ * @prop {number} [range] Range range
  */
 
 /** @typedef {Object<string, Function[]>} StudyListeners */

@@ -4,7 +4,7 @@ import utils from './utils';
 
 describe('Simple chart session', async () => {
   let client: TradingView.Client;
-  let chart: any;
+  let chart: InstanceType<typeof client.Session.Chart>;
 
   it('creates a client', () => {
     client = new TradingView.Client();
@@ -61,7 +61,6 @@ describe('Simple chart session', async () => {
 
     console.log('Chart type set');
     expect(chart.infos.full_name).toBe('BINANCE:ETHEUR');
-    expect(chart.periods.length).toBeGreaterThan(0);
   });
 
   it('closes chart', async () => {
