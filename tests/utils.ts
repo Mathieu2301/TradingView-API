@@ -9,7 +9,7 @@ export function calculateTimeGap(periods: { time: number }[]) {
     if (timeGap < minTimeGap) minTimeGap = timeGap;
   }
   return minTimeGap;
-};
+}
 
 export default {
   wait,

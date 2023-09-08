@@ -121,7 +121,7 @@ describe('AllErrors', () => {
 
     const error = await waitForError(chart);
     console.log('=> Chart error:', error);
-    
+
     expect(error).toBeDefined();
     expect(error[0]).toBe('Series error:');
     expect(error[1]).toMatch(/study_not_auth:BarSetRenko@tv-prostudies-\d+/);
