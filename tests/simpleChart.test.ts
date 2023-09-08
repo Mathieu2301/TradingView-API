@@ -61,6 +61,7 @@ describe('Simple chart session', async () => {
 
     console.log('Chart type set');
     expect(chart.infos.full_name).toBe('BINANCE:ETHEUR');
+    expect(chart.periods.length).toBeGreaterThan(0);
   });
 
   it('closes chart', async () => {

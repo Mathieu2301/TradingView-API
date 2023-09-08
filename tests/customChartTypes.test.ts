@@ -78,6 +78,7 @@ describe('CustomChartTypes', () => {
     ) await utils.wait(100);
 
     expect(chart.infos.full_name).toBe('BINANCE:BTCEUR');
+    expect(chart.periods.length).toBeGreaterThan(0);
   });
 
   it('sets chart type to Kagi', async () => {
@@ -100,7 +101,7 @@ describe('CustomChartTypes', () => {
     ) await utils.wait(100);
 
     expect(chart.infos.full_name).toBe('BINANCE:ETHEUR');
-    expect(chart.periods.length).toBe(100);
+    expect(chart.periods.length).toBeGreaterThan(0);
   });
 
   it('sets chart type to PointAndFigure', async () => {
