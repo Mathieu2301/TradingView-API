@@ -20,14 +20,6 @@ describe('Search functions', () => {
 });
 
 describe('Technical Analysis', () => {
-  it('gets TA for BINANCE:BTCUSD', async () => {
-    checkTA(await (await searchMarket('BINANCE:BTCUSD'))[0].getTA());
-  });
-
-  it('gets TA for NASDAQ:AAPL', async () => {
-    checkTA(await (await searchMarket('NASDAQ:AAPL'))[0].getTA());
-  });
-
   function checkTA(ta = {}) {
     expect(ta).toBeDefined();
     for (const period of ['1', '5', '15', '60', '240', '1D', '1W', '1M']) {
@@ -37,4 +29,12 @@ describe('Technical Analysis', () => {
       expect(ta[period].MA).toBeDefined();
     }
   }
+
+  it('gets TA for BINANCE:BTCUSD', async () => {
+    checkTA(await (await searchMarket('BINANCE:BTCUSD'))[0].getTA());
+  });
+
+  it('gets TA for NASDAQ:AAPL', async () => {
+    checkTA(await (await searchMarket('NASDAQ:AAPL'))[0].getTA());
+  });
 });
