@@ -1,10 +1,9 @@
 const TradingView = require('../main');
 
-/*
-  This example tests the searching
-  functions such as 'searchMarket'
-  and 'searchIndicator'
-*/
+/**
+ * This example tests the searching functions such
+ * as 'searchMarket' and 'searchIndicator'
+ */
 
 TradingView.searchMarket('BINANCE:').then((rs) => {
   console.log('Found Markets:', rs);

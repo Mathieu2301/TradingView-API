@@ -1,10 +1,9 @@
 const TradingView = require('../main');
 
-/*
-  This example tests the real replay
-  mode by fetching indicator data and
-  stores it in a 'periods' variable
-*/
+/**
+ * This example tests the real replay mode by fetching
+ * indicator data and stores it in a 'periods' variable
+ */
 
 const config = {
   symbol: 'BINANCE:BTCEUR',

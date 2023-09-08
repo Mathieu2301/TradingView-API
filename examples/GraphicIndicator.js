@@ -1,10 +1,9 @@
 const TradingView = require('../main');
 
-/*
-  This example tests an indicator that sends
-  graphic data such as 'lines', 'labels',
-  'boxes', 'tables', 'polygons', etc...
-*/
+/**
+ * This example tests an indicator that sends graphic data such
+ * as 'lines', 'labels', 'boxes', 'tables', 'polygons', etc...
+ */
 
 const client = new TradingView.Client();
 

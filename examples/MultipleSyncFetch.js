@@ -1,9 +1,8 @@
 const TradingView = require('../main');
 
-/*
-  This examples synchronously
-  fetches data from 3 indicators
-*/
+/**
+ * This examples synchronously fetches data from 3 indicators
+ */
 
 const client = new TradingView.Client();
 const chart = new client.Session.Chart();

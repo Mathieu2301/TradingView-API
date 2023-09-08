@@ -1,8 +1,8 @@
 const TradingView = require('../main');
 
-/*
-  This example tests many types of errors
-*/
+/**
+ * This example tests many types of errors
+ */
 
 const client = new TradingView.Client(); // Creates a websocket client
 
