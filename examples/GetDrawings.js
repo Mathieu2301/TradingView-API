@@ -1,9 +1,8 @@
 const TradingView = require('../main');
 
-/*
-  This example tests the
-  getDrawings function
-*/
+/**
+ * This example tests the getDrawings function
+ */
 
 // First parameter must be the layoutID
 // (if the layout is private) Second parameter must be the sessionid cookie

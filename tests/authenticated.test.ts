@@ -2,19 +2,14 @@ import { describe, it, expect } from 'vitest';
 import TradingView from '../main';
 import utils from './utils';
 
-describe('Authenticated actions', () => {
+const token = process.env.SESSION as string;
+const signature = process.env.SIGNATURE as string;
+
+describe.skipIf(!token || !signature)('Authenticated actions', () => {
   it('gets user info', async () => {
     console.log('Testing getUser method');
 
-    if (!process.env.SESSION || !process.env.SIGNATURE) {
-      console.log('=> Skipping test because SESSION env var is not set');
-      return;
-    }
-
-    const userInfo = await TradingView.getUser(
-      process.env.SESSION as string,
-      process.env.SIGNATURE,
-    );
+    const userInfo = await TradingView.getUser(token, signature);
 
     console.log('User:', {
       id: userInfo.id,
@@ -39,8 +34,8 @@ describe('Authenticated actions', () => {
     expect(userInfo.notifications.user).toBeDefined();
     expect(userInfo.joinDate).toBeDefined();
 
-    expect(userInfo.session).toBe(process.env.SESSION);
-    expect(userInfo.signature).toBe(process.env.SIGNATURE);
+    expect(userInfo.session).toBe(token);
+    expect(userInfo.signature).toBe(signature);
   });
 
   const userIndicators: any[] = [];
@@ -48,12 +43,7 @@ describe('Authenticated actions', () => {
   it('gets user indicators', async () => {
     console.log('Testing getPrivateIndicators method');
 
-    if (!process.env.SESSION || !process.env.SIGNATURE) {
-      console.log('=> Skipping test because SESSION env var is not set');
-      return;
-    }
-
-    userIndicators.push(...await TradingView.getPrivateIndicators(process.env.SESSION));
+    userIndicators.push(...await TradingView.getPrivateIndicators(token));
     console.log('Indicators:', userIndicators.map((i) => i.name));
 
     expect(userIndicators.length).toBeGreaterThan(0);
@@ -61,11 +51,7 @@ describe('Authenticated actions', () => {
 
   it('creates a chart with all user indicators', async () => {
     console.log('Creating logged client');
-    const client = new TradingView.Client({
-      token: process.env.SESSION,
-      signature: process.env.SIGNATURE,
-    });
-
+    const client = new TradingView.Client({ token, signature });
     const chart = new client.Session.Chart();
 
     console.log('Setting market to BINANCE:BTCEUR...');

@@ -1,8 +1,8 @@
 const TradingView = require('../main');
 
-/*
-  This example creates a BTCEUR daily chart
-*/
+/**
+ * This example creates a BTCEUR daily chart
+ */
 
 const client = new TradingView.Client(); // Creates a websocket client
 

@@ -1,11 +1,9 @@
 const TradingView = require('../main');
 
-/*
-  This example creates charts of custom
-  types such as 'HeikinAshi', 'Renko',
-  'LineBreak', 'Kagi', 'PointAndFigure',
-  and 'Range' with default settings
-*/
+/**
+ * This example creates charts of custom types such as 'HeikinAshi', 'Renko',
+ * 'LineBreak', 'Kagi', 'PointAndFigure', and 'Range' with default settings.
+ */
 
 const client = new TradingView.Client({
   /* Token is only required if you want to use intraday

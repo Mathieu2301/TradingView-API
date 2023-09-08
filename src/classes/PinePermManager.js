@@ -1,5 +1,4 @@
-const request = require('../request');
-const FormData = require('../FormData');
+const axios = require('axios');
 
 /**
  * @typedef {Object} AuthorizationUser
@@ -18,14 +17,17 @@ class PinePermManager {
 
   /**
    * Creates a PinePermManager instance
-   * @param {string} sessionId Token from sessionid cookie
+   * @param {string} sessionId Token from `sessionid` cookie
+   * @param {string} signature Signature cookie
    * @param {string} pineId Indicator ID (Like: PUB;XXXXXXXXXXXXXXXXXXXXX)
    */
-  constructor(sessionId, pineId) {
+  constructor(sessionId, signature, pineId) {
     if (!sessionId) throw new Error('Please provide a SessionID');
+    if (!signature) throw new Error('Please provide a Signature');
     if (!pineId) throw new Error('Please provide a PineID');
-    this.pineId = pineId;
     this.sessionId = sessionId;
+    this.signature = signature;
+    this.pineId = pineId;
   }
 
   /**
@@ -40,20 +42,23 @@ class PinePermManager {
    * @returns {AuthorizationUser[]}
    */
   async getUsers(limit = 10, order = '-created') {
-    const { data } = await request({
-      method: 'POST',
-      host: 'www.tradingview.com',
-      path: `/pine_perm/list_users/?limit=${limit}&order_by=${order}`,
-      headers: {
-        origin: 'https://www.tradingview.com',
-        'Content-Type': 'application/x-www-form-urlencoded',
-        cookie: `sessionid=${this.sessionId}`,
-      },
-    }, false, `pine_id=${this.pineId.replace(/;/g, '%3B')}`);
+    try {
+      const { data } = await axios.post(
+        `https://www.tradingview.com/pine_perm/list_users/?limit=${limit}&order_by=${order}`,
+        `pine_id=${this.pineId.replace(/;/g, '%3B')}`,
+        {
+          headers: {
+            origin: 'https://www.tradingview.com',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            cookie: `sessionid=${this.sessionId};sessionid_sign=${this.signature};`,
+          },
+        },
+      );
 
-    if (!data.results) throw new Error('Wrong sessionId or pineId');
-
-    return data.results;
+      return data.results;
+    } catch (e) {
+      throw new Error(e.response.data.detail || 'Wrong credentials or pineId');
+    }
   }
 
   /**
@@ -63,26 +68,31 @@ class PinePermManager {
    * @returns {'ok' | 'exists' | null}
    */
   async addUser(username, expiration = null) {
-    const formData = new FormData();
-    formData.append('pine_id', this.pineId);
-    formData.append('username_recip', username);
-    if (expiration && expiration instanceof Date) {
-      formData.append('expiration', expiration.toString());
+    try {
+      const { data } = await axios.post(
+        'https://www.tradingview.com/pine_perm/add/',
+        `pine_id=${
+          this.pineId.replace(/;/g, '%3B')
+        }&username_recip=${
+          username
+        }${
+          expiration && expiration instanceof Date
+            ? `&expiration=${expiration.toISOString()}`
+            : ''
+        }`,
+        {
+          headers: {
+            origin: 'https://www.tradingview.com',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            cookie: `sessionid=${this.sessionId};sessionid_sign=${this.signature};`,
+          },
+        },
+      );
+
+      return data.status;
+    } catch (e) {
+      throw new Error(e.response.data.detail || 'Wrong credentials or pineId');
     }
-
-    const { data } = await request({
-      method: 'POST',
-      host: 'www.tradingview.com',
-      path: '/pine_perm/add/',
-      headers: {
-        origin: 'https://www.tradingview.com',
-        'Content-Type': `multipart/form-data; boundary=${formData.boundary}`,
-        cookie: `sessionid=${this.sessionId}`,
-      },
-    }, false, formData.toString());
-
-    if (!data.status) throw new Error('Wrong sessionId or pineId');
-    return data.status;
   }
 
   /**
@@ -92,26 +102,31 @@ class PinePermManager {
    * @returns {'ok' | null}
    */
   async modifyExpiration(username, expiration = null) {
-    const formData = new FormData();
-    formData.append('pine_id', this.pineId);
-    formData.append('username_recip', username);
-    if (expiration && expiration instanceof Date) {
-      formData.append('expiration', expiration.toISOString());
+    try {
+      const { data } = await axios.post(
+        'https://www.tradingview.com/pine_perm/modify_user_expiration/',
+        `pine_id=${
+          this.pineId.replace(/;/g, '%3B')
+        }&username_recip=${
+          username
+        }${
+          expiration && expiration instanceof Date
+            ? `&expiration=${expiration.toISOString()}`
+            : ''
+        }`,
+        {
+          headers: {
+            origin: 'https://www.tradingview.com',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            cookie: `sessionid=${this.sessionId};sessionid_sign=${this.signature};`,
+          },
+        },
+      );
+
+      return data.status;
+    } catch (e) {
+      throw new Error(e.response.data.detail || 'Wrong credentials or pineId');
     }
-
-    const { data } = await request({
-      method: 'POST',
-      host: 'www.tradingview.com',
-      path: '/pine_perm/modify_user_expiration/',
-      headers: {
-        origin: 'https://www.tradingview.com',
-        'Content-Type': `multipart/form-data; boundary=${formData.boundary}`,
-        cookie: `sessionid=${this.sessionId}`,
-      },
-    }, false, formData.toString());
-
-    if (!data.status) throw new Error('Wrong sessionId or pineId');
-    return data.status;
   }
 
   /**
@@ -120,23 +135,23 @@ class PinePermManager {
    * @returns {'ok' | null}
    */
   async removeUser(username) {
-    const formData = new FormData();
-    formData.append('pine_id', this.pineId);
-    formData.append('username_recip', username);
+    try {
+      const { data } = await axios.post(
+        'https://www.tradingview.com/pine_perm/remove/',
+        `pine_id=${this.pineId.replace(/;/g, '%3B')}&username_recip=${username}`,
+        {
+          headers: {
+            origin: 'https://www.tradingview.com',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            cookie: `sessionid=${this.sessionId};sessionid_sign=${this.signature};`,
+          },
+        },
+      );
 
-    const { data } = await request({
-      method: 'POST',
-      host: 'www.tradingview.com',
-      path: '/pine_perm/remove/',
-      headers: {
-        origin: 'https://www.tradingview.com',
-        'Content-Type': `multipart/form-data; boundary=${formData.boundary}`,
-        cookie: `sessionid=${this.sessionId}`,
-      },
-    }, false, formData.toString());
-
-    if (!data.status) throw new Error('Wrong sessionId or pineId');
-    return data.status;
+      return data.status;
+    } catch (e) {
+      throw new Error(e.response.data.detail || 'Wrong credentials or pineId');
+    }
   }
 }
 

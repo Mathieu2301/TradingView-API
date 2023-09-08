@@ -1,10 +1,9 @@
 const TradingView = require('../main');
 
-/*
-  This example tests fetching chart
-  data of a number of candles before
-  or after a timestamp
-*/
+/**
+ * This example tests fetching chart data of a number
+ * of candles before or after a timestamp
+ */
 
 const client = new TradingView.Client();
 

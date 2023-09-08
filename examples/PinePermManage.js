@@ -1,15 +1,15 @@
 const { PinePermManager } = require('../main');
 
-/*
-  This example creates a pine
-  permission manager and tests
-  all the available functions
-*/
+/**
+ * This example creates a pine permission manager
+ * and tests all the available functions
+ */
 
 const sessionid = process.argv[2];
-const pineid = process.argv[3];
+const signature = process.argv[3];
+const pineid = process.argv[4];
 
-const manager = new PinePermManager(sessionid, pineid);
+const manager = new PinePermManager(sessionid, signature, pineid);
 
 (async () => {
   console.log('Users:', await manager.getUsers());

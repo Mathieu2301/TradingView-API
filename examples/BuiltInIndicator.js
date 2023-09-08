@@ -1,9 +1,8 @@
 const TradingView = require('../main');
 
-/*
-  This example tests built-in indicators
-  like volume-based indicators
-*/
+/**
+ * This example tests built-in indicators like volume-based indicators
+ */
 
 const volumeProfile = new TradingView.BuiltInIndicator('VbPFixed@tv-basicstudies-139!');
 

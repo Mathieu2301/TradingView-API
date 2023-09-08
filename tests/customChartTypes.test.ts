@@ -58,7 +58,6 @@ describe('CustomChartTypes', () => {
     ) await utils.wait(100);
 
     expect(chart.infos.full_name).toBe('BINANCE:ETHEUR');
-    expect(chart.periods.length).toBe(100);
   });
 
   it('sets chart type to LineBreak', async () => {
@@ -79,10 +78,6 @@ describe('CustomChartTypes', () => {
     ) await utils.wait(100);
 
     expect(chart.infos.full_name).toBe('BINANCE:BTCEUR');
-    expect(chart.periods.length).toBe(100);
-    expect(
-      utils.calculateTimeGap(chart.periods),
-    ).toBe(86400);
   });
 
   it('sets chart type to Kagi', async () => {

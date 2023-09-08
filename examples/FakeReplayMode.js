@@ -1,10 +1,9 @@
 const { Client } = require('../main');
 
-/*
-  This example tests the fake
-  replay mode which works in
-  intraday even with free plan
-*/
+/**
+ * This example tests the fake replay mode which
+ * works in intraday even with free plan
+ */
 
 console.log('----- Testing FakeReplayMode: -----');
 

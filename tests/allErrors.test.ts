@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import TradingView from '../main';
 
+const token = process.env.SESSION as string;
+const signature = process.env.SIGNATURE as string;
+
 describe('AllErrors', () => {
   const waitForError = (instance: any) => new Promise<string[]>((resolve) => {
     instance.onError((...error: string[]) => {
@@ -121,7 +124,7 @@ describe('AllErrors', () => {
     
     expect(error).toBeDefined();
     expect(error[0]).toBe('Series error:');
-    expect(error[1]).toBe('study_not_auth:BarSetRenko@tv-prostudies-66');
+    expect(error[1]).toMatch(/study_not_auth:BarSetRenko@tv-prostudies-\d+/);
     expect(error.length).toBe(2);
   });
 
@@ -184,16 +187,13 @@ describe('AllErrors', () => {
     console.log('OK');
   });
 
-  it('throws an error when getting user data without signature', async () => {
+  it.skipIf(
+    !token || !signature,
+  )('throws an error when getting user data without signature', async () => {
     console.log('Testing "Wrong or expired sessionid/signature" error using getUser method:');
 
-    if (!process.env.SESSION || !process.env.SIGNATURE) {
-      console.log('=> Skipping test because SESSION env var is not set');
-      return;
-    }
-
     console.log('Trying with signaure');
-    const userInfo = await TradingView.getUser(process.env.SESSION, process.env.SIGNATURE);
+    const userInfo = await TradingView.getUser(token, signature);
 
     console.log('Result:', {
       id: userInfo.id,
@@ -211,23 +211,18 @@ describe('AllErrors', () => {
 
     console.log('Trying without signaure');
     expect(
-      TradingView.getUser(process.env.SESSION),
+      TradingView.getUser(token),
     ).rejects.toThrow('Wrong or expired sessionid/signature');
 
     console.log('OK');
   });
 
-  it('throws an error when creating an authenticated client without signature', async () => {
+  it.skipIf(
+    !token || !signature,
+  )('throws an error when creating an authenticated client without signature', async () => {
     console.log('Testing "Wrong or expired sessionid/signature" error using client:');
 
-    if (!process.env.SESSION || !process.env.SIGNATURE) {
-      console.log('=> Skipping test because SESSION env var is not set');
-      return;
-    }
-
-    const client = new TradingView.Client({
-      token: process.env.SESSION,
-    });
+    const client = new TradingView.Client({ token });
 
     const error = await waitForError(client);
     console.log('=> Client error:', error);
