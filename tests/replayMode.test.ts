@@ -89,7 +89,6 @@ describe('ReplayMode', () => {
     console.log('Play replay mode');
     await chart.replayStart(200);
 
-
     chart.onUpdate((p) => {
       console.log('Point ->', chart.periods[0].time);
     });
