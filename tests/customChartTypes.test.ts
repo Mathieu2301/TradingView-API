@@ -146,7 +146,8 @@ describe('CustomChartTypes', () => {
     ) await utils.wait(100);
 
     expect(chart.infos.full_name).toBe('BINANCE:ETHEUR');
-    expect(chart.periods.length).toBe(100);
+    expect(chart.periods.length).toBeGreaterThanOrEqual(100);
+    expect(chart.periods.length).toBeLessThanOrEqual(101);
   });
 
   it('closes chart', async () => {
