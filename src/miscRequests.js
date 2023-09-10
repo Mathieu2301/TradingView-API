@@ -409,8 +409,6 @@ module.exports = {
         firstName: /"first_name":"(.*?)"/.exec(data)?.[1],
         lastName: /"last_name":"(.*?)"/.exec(data)?.[1],
         reputation: parseFloat(/"reputation":(.*?),/.exec(data)?.[1] || 0),
-        following: parseFloat(/,"following":([0-9]*?),/.exec(data)?.[1] || 0),
-        followers: parseFloat(/,"followers":([0-9]*?),/.exec(data)?.[1] || 0),
         notifications: {
           following: parseFloat(/"notification_count":\{"following":([0-9]*),/.exec(data)?.[1] || 0),
           user: parseFloat(/"notification_count":\{"following":[0-9]*,"user":([0-9]*)/.exec(data)?.[1] || 0),
