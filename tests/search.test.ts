@@ -34,7 +34,7 @@ describe('Technical Analysis', () => {
     checkTA(await (await searchMarket('BINANCE:BTCUSD'))[0].getTA());
   });
 
-  it('gets TA for NASDAQ:AAPL', async () => {
-    checkTA(await (await searchMarket('NASDAQ:AAPL'))[0].getTA());
+  it('gets TA for "NASDAQ APPLE"', async () => {
+    checkTA(await (await searchMarket('NASDAQ APPLE'))[0].getTA());
   });
 });

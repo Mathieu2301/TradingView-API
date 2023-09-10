@@ -10,10 +10,9 @@ const builtInIndicList = [];
 
 async function fetchScanData(tickers = [], type = '', columns = []) {
   const { data } = await axios.post(`https://scanner.tradingview.com/${type}/scan`, {
-    validateStatus,
     symbols: { tickers },
     columns,
-  });
+  }, { validateStatus });
 
   return data;
 }
