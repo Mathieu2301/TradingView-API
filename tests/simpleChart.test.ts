@@ -23,7 +23,7 @@ describe('Simple chart session', async () => {
 
     while (
       chart.infos.full_name !== 'BINANCE:BTCEUR'
-      || !chart.periods.length
+      || chart.periods.length < 10
     ) await utils.wait(100);
 
     expect(chart.infos.full_name).toBe('BINANCE:BTCEUR');
@@ -39,7 +39,7 @@ describe('Simple chart session', async () => {
     console.log('Setting timeframe to 15 minutes...');
     chart.setSeries('15');
 
-    while (!chart.periods.length) await utils.wait(100);
+    while (chart.periods.length < 10) await utils.wait(100);
     console.log('Chart timeframe set');
 
     expect(
