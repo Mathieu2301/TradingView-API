@@ -26,6 +26,7 @@ Here is the Telegram group of the library: https://t.me/tradingview_api
 - [x] Get TradingView's technical analysis
 - [x] Replay mode + Fake Replay mode (for free plan)
 - [x] Get values from a specific date range
+- [x] Deep Backtesting (Beta) (Premium only)
 - [ ] TradingView socket server emulation
 - [ ] Interract with public chats
 - [ ] Get Screener top values
