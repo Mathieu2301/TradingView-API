@@ -4,7 +4,7 @@ import utils from './utils';
 
 describe('BuiltInIndicator', () => {
   let client: TradingView.Client;
-  let chart: any;
+  let chart: InstanceType<typeof client.Session.Chart>;
 
   it('creates a client', async () => {
     client = new TradingView.Client();

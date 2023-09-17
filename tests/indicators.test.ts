@@ -33,7 +33,7 @@ describe('Indicators', () => {
   });
 
   let client: TradingView.Client;
-  let chart: any;
+  let chart: InstanceType<typeof client.Session.Chart>;
 
   it('creates a client', async () => {
     client = new TradingView.Client();
@@ -71,16 +71,22 @@ describe('Indicators', () => {
 
         console.log('Performances:', {
           total: {
-            trades: perfReport.all.totalTrades,
-            perf: `${Math.round(perfReport.all.netProfitPercent * 10000) / 100} %`,
+            trades: perfReport?.all?.totalTrades,
+            perf: `${Math.round((
+              perfReport?.all?.netProfitPercent || 0
+            ) * 10000) / 100} %`,
           },
           buy: {
-            trades: perfReport.long.totalTrades,
-            perf: `${Math.round(perfReport.long.netProfitPercent * 10000) / 100} %`,
+            trades: perfReport?.long?.totalTrades,
+            perf: `${Math.round((
+              perfReport?.long?.netProfitPercent || 0
+            ) * 10000) / 100} %`,
           },
           sell: {
-            trades: perfReport.short.totalTrades,
-            perf: `${Math.round(perfReport.short.netProfitPercent * 10000) / 100} %`,
+            trades: perfReport?.short?.totalTrades,
+            perf: `${Math.round((
+              perfReport?.short?.netProfitPercent || 0
+            ) * 10000) / 100} %`,
           },
         });
 
