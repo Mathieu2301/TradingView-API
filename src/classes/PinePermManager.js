@@ -1,4 +1,11 @@
 const axios = require('axios');
+const {
+  tvDomain,
+  tvListUsersUrl,
+  tvAddUserUrl,
+  tvModifyUserUrl,
+  tvRemoveUserUrl,
+} = require('../utils');
 
 /**
  * @typedef {Object} AuthorizationUser
@@ -44,11 +51,11 @@ class PinePermManager {
   async getUsers(limit = 10, order = '-created') {
     try {
       const { data } = await axios.post(
-        `https://www.tradingview.com/pine_perm/list_users/?limit=${limit}&order_by=${order}`,
+        `${tvListUsersUrl}?limit=${limit}&order_by=${order}`,
         `pine_id=${this.pineId.replace(/;/g, '%3B')}`,
         {
           headers: {
-            origin: 'https://www.tradingview.com',
+            origin: tvDomain,
             'Content-Type': 'application/x-www-form-urlencoded',
             cookie: `sessionid=${this.sessionId};sessionid_sign=${this.signature};`,
           },
@@ -70,7 +77,7 @@ class PinePermManager {
   async addUser(username, expiration = null) {
     try {
       const { data } = await axios.post(
-        'https://www.tradingview.com/pine_perm/add/',
+        tvAddUserUrl,
         `pine_id=${
           this.pineId.replace(/;/g, '%3B')
         }&username_recip=${
@@ -82,7 +89,7 @@ class PinePermManager {
         }`,
         {
           headers: {
-            origin: 'https://www.tradingview.com',
+            origin: tvDomain,
             'Content-Type': 'application/x-www-form-urlencoded',
             cookie: `sessionid=${this.sessionId};sessionid_sign=${this.signature};`,
           },
@@ -104,7 +111,7 @@ class PinePermManager {
   async modifyExpiration(username, expiration = null) {
     try {
       const { data } = await axios.post(
-        'https://www.tradingview.com/pine_perm/modify_user_expiration/',
+        tvModifyUserUrl,
         `pine_id=${
           this.pineId.replace(/;/g, '%3B')
         }&username_recip=${
@@ -116,7 +123,7 @@ class PinePermManager {
         }`,
         {
           headers: {
-            origin: 'https://www.tradingview.com',
+            origin: tvDomain,
             'Content-Type': 'application/x-www-form-urlencoded',
             cookie: `sessionid=${this.sessionId};sessionid_sign=${this.signature};`,
           },
@@ -137,11 +144,11 @@ class PinePermManager {
   async removeUser(username) {
     try {
       const { data } = await axios.post(
-        'https://www.tradingview.com/pine_perm/remove/',
+        tvRemoveUserUrl,
         `pine_id=${this.pineId.replace(/;/g, '%3B')}&username_recip=${username}`,
         {
           headers: {
-            origin: 'https://www.tradingview.com',
+            origin: tvDomain,
             'Content-Type': 'application/x-www-form-urlencoded',
             cookie: `sessionid=${this.sessionId};sessionid_sign=${this.signature};`,
           },

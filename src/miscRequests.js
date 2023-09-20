@@ -2,6 +2,12 @@ const os = require('os');
 const axios = require('axios');
 
 const PineIndicator = require('./classes/PineIndicator');
+const {
+  tvDomain,
+  tvFindIndicatorUrl,
+  tvSignInUrl,
+  tvChartTokenUrl,
+} = require('./utils');
 
 const validateStatus = (status) => status < 500;
 
@@ -10,9 +16,9 @@ const builtInIndicList = [];
 
 async function fetchScanData(tickers = [], type = '', columns = []) {
   const { data } = await axios.post(`https://scanner.tradingview.com/${type}/scan`, {
-    symbols: { tickers },
-    columns,
-  }, { validateStatus });
+      symbols: { tickers },
+      columns,
+    }, { validateStatus });
 
   return data;
 }
@@ -130,7 +136,7 @@ module.exports = {
       {
         validateStatus,
         headers: {
-          origin: 'https://www.tradingview.com',
+          origin: tvDomain,
         },
       },
     );
@@ -181,16 +187,16 @@ module.exports = {
   async searchIndicator(search = '') {
     if (!builtInIndicList.length) {
       await Promise.all(['standard', 'candlestick', 'fundamental'].map(async (type) => {
-        const { data } = await axios.get(
-          `https://pine-facade.tradingview.com/pine-facade/list/?filter=${type}`,
-          { validateStatus },
-        );
-        builtInIndicList.push(...data);
-      }));
+          const { data } = await axios.get(
+            `https://pine-facade.tradingview.com/pine-facade/list/?filter=${type}`,
+            { validateStatus },
+          );
+          builtInIndicList.push(...data);
+        }));
     }
 
     const { data } = await axios.get(
-      `https://www.tradingview.com/pubscripts-suggest-json/?search=${search.replace(/ /g, '%20')}`,
+      `${tvFindIndicatorUrl}?search=${search.replace(/ /g, '%20')}`,
       { validateStatus },
     );
 
@@ -200,24 +206,24 @@ module.exports = {
 
     return [
       ...builtInIndicList.filter((i) => (
-        norm(i.scriptName).includes(norm(search))
+            norm(i.scriptName).includes(norm(search))
         || norm(i.extra.shortDescription).includes(norm(search))
-      )).map((ind) => ({
-        id: ind.scriptIdPart,
-        version: ind.version,
-        name: ind.scriptName,
-        author: {
-          id: ind.userId,
-          username: '@TRADINGVIEW@',
-        },
-        image: '',
-        access: 'closed_source',
-        source: '',
-        type: (ind.extra && ind.extra.kind) ? ind.extra.kind : 'study',
-        get() {
-          return module.exports.getIndicator(ind.scriptIdPart, ind.version);
-        },
-      })),
+        )).map((ind) => ({
+          id: ind.scriptIdPart,
+          version: ind.version,
+          name: ind.scriptName,
+          author: {
+            id: ind.userId,
+            username: '@TRADINGVIEW@',
+          },
+          image: '',
+          access: 'closed_source',
+          source: '',
+          type: (ind.extra && ind.extra.kind) ? ind.extra.kind : 'study',
+          get() {
+            return module.exports.getIndicator(ind.scriptIdPart, ind.version);
+          },
+        })),
 
       ...data.results.map((ind) => ({
         id: ind.scriptIdPart,
@@ -346,12 +352,12 @@ module.exports = {
    */
   async loginUser(username, password, remember = true, UA = 'TWAPI/3.0') {
     const { data, headers } = await axios.post(
-      'https://www.tradingview.com/accounts/signin/',
+      tvSignInUrl,
       `username=${username}&password=${password}${remember ? '&remember=on' : ''}`,
       {
         validateStatus,
         headers: {
-          referer: 'https://www.tradingview.com',
+          referer: tvDomain,
           'Content-Type': 'application/x-www-form-urlencoded',
           'User-agent': `${UA} (${os.version()}; ${os.platform()}; ${os.arch()})`,
         },
@@ -394,7 +400,7 @@ module.exports = {
    * @param {string} [location] Auth page location (For france: https://fr.tradingview.com/)
    * @returns {Promise<User>} Token
    */
-  async getUser(session, signature = '', location = 'https://www.tradingview.com/') {
+  async getUser(session, signature = '', location = tvDomain) {
     const { data } = await axios.get(location, {
       validateStatus,
       headers: {
@@ -436,11 +442,11 @@ module.exports = {
    */
   async getPrivateIndicators(session, signature = '') {
     const { data } = await axios.get('https://pine-facade.tradingview.com/pine-facade/list?filter=saved', {
-      validateStatus,
-      headers: {
-        cookie: `sessionid=${session}${signature ? `;sessionid_sign=${signature};` : ''}`,
-      },
-    });
+        validateStatus,
+        headers: {
+          cookie: `sessionid=${session}${signature ? `;sessionid_sign=${signature};` : ''}`,
+        },
+      });
 
     return data.map((ind) => ({
       id: ind.scriptIdPart,
@@ -483,7 +489,7 @@ module.exports = {
     );
 
     const { data } = await axios.get(
-      `https://www.tradingview.com/chart-token/?image_url=${layout}&user_id=${id}`,
+      `${tvChartTokenUrl}?image_url=${layout}&user_id=${id}`,
       {
         validateStatus,
         headers: {
