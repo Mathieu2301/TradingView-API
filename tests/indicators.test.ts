@@ -120,13 +120,13 @@ describe('Indicators', () => {
 
     console.log('MarketCipher B last values:', {
       VWAP: Math.round(lastResult.VWAP * 1000) / 1000,
-      moneyFlow: (lastResult.RSIMFI_Area >= 0) ? 'POSITIVE' : 'NEGATIVE',
+      moneyFlow: (lastResult.rsiMFI >= 0) ? 'POSITIVE' : 'NEGATIVE',
       buyCircle: lastResult.Buy_and_sell_circle && lastResult.VWAP > 0,
       sellCircle: lastResult.Buy_and_sell_circle && lastResult.VWAP < 0,
     });
 
     expect(lastResult.VWAP).toBeTypeOf('number');
-    expect(lastResult.RSIMFI_Area).toBeTypeOf('number');
+    expect(lastResult.rsiMFI).toBeTypeOf('number');
     expect(lastResult.Buy_and_sell_circle).toBeTypeOf('number');
 
     CipherB.remove();
