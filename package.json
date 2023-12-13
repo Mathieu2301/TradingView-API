@@ -2,7 +2,8 @@
   "name": "@mathieuc/tradingview",
   "version": "3.4.2",
   "description": "Tradingview instant stocks API, indicator alerts, trading bot, and more !",
-  "main": "main.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "test": "vitest"
   },
