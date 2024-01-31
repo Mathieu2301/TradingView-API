@@ -1,10 +1,10 @@
-const WebSocket = require('ws');
+const WebSocket = require("ws");
 
-const misc = require('./miscRequests');
-const protocol = require('./protocol');
+const misc = require("./miscRequests");
+const protocol = require("./protocol");
 
-const quoteSessionGenerator = require('./quote/session');
-const chartSessionGenerator = require('./chart/session');
+const quoteSessionGenerator = require("./quote/session");
+const chartSessionGenerator = require("./chart/session");
 
 /**
  * @typedef {Object} Session
@@ -19,7 +19,7 @@ const chartSessionGenerator = require('./chart/session');
  * @param {string} t Packet type
  * @param {string[]} p Packet data
  * @returns {void}
-*/
+ */
 
 /**
  * @typedef {Object} ClientBridge
@@ -75,7 +75,7 @@ module.exports = class Client {
 
   #handleError(...msgs) {
     if (this.#callbacks.error.length === 0) console.error(...msgs);
-    else this.#handleEvent('error', ...msgs);
+    else this.#handleEvent("error", ...msgs);
   }
 
   /**
@@ -158,20 +158,23 @@ module.exports = class Client {
     if (!this.isOpen) return;
 
     protocol.parseWSPacket(str).forEach((packet) => {
-      if (global.TW_DEBUG) console.log('§90§30§107 CLIENT §0 PACKET', packet);
-      if (typeof packet === 'number') { // Ping
+      if (global.TW_DEBUG) console.log("§90§30§107 CLIENT §0 PACKET", packet);
+      if (typeof packet === "number") {
+        // Ping
         this.#ws.send(protocol.formatWSPacket(`~h~${packet}`));
-        this.#handleEvent('ping', packet);
+        this.#handleEvent("ping", packet);
         return;
       }
 
-      if (packet.m === 'protocol_error') { // Error
-        this.#handleError('Client critical error:', packet.p);
+      if (packet.m === "protocol_error") {
+        // Error
+        this.#handleError("Client critical error:", packet.p);
         this.#ws.close();
         return;
       }
 
-      if (packet.m && packet.p) { // Normal packet
+      if (packet.m && packet.p) {
+        // Normal packet
         const parsed = {
           type: packet.m,
           data: packet.p,
@@ -186,11 +189,11 @@ module.exports = class Client {
       }
 
       if (!this.#logged) {
-        this.#handleEvent('logged', packet);
+        this.#handleEvent("logged", packet);
         return;
       }
 
-      this.#handleEvent('data', packet);
+      this.#handleEvent("data", packet);
     });
   }
 
@@ -207,7 +210,7 @@ module.exports = class Client {
     while (this.isOpen && this.#logged && this.#sendQueue.length > 0) {
       const packet = this.#sendQueue.shift();
       this.#ws.send(packet);
-      if (global.TW_DEBUG) console.log('§90§30§107 > §0', packet);
+      if (global.TW_DEBUG) console.log("§90§30§107 > §0", packet);
     }
   }
 
@@ -216,7 +219,7 @@ module.exports = class Client {
    * @prop {string} [token] User auth token (in 'sessionid' cookie)
    * @prop {string} [signature] User auth token signature (in 'sessionid_sign' cookie)
    * @prop {boolean} [DEBUG] Enable debug mode
-   * @prop {'data' | 'prodata' | 'widgetdata'} [server] Server type
+   * @prop {'data' | 'prodata' | 'widgetdata' | 'history-data'} [server] Server type
    */
 
   /** Client object
@@ -225,45 +228,55 @@ module.exports = class Client {
   constructor(clientOptions = {}) {
     if (clientOptions.DEBUG) global.TW_DEBUG = clientOptions.DEBUG;
 
-    const server = clientOptions.server || 'data';
-    this.#ws = new WebSocket(`wss://${server}.tradingview.com/socket.io/websocket?&type=chart`, {
-      origin: 'https://s.tradingview.com',
-    });
+    const server = clientOptions.server || "data";
+    this.#ws = new WebSocket(
+      `wss://${server}.tradingview.com/socket.io/websocket?&type=chart`,
+      {
+        origin: "https://s.tradingview.com",
+      }
+    );
 
     if (clientOptions.token) {
-      misc.getUser(
-        clientOptions.token,
-        clientOptions.signature ? clientOptions.signature : '',
-      ).then((user) => {
-        this.#sendQueue.unshift(protocol.formatWSPacket({
-          m: 'set_auth_token',
-          p: [user.authToken],
-        }));
-        this.#logged = true;
-        this.sendQueue();
-      }).catch((err) => {
-        this.#handleError('Credentials error:', err.message);
-      });
+      misc
+        .getUser(
+          clientOptions.token,
+          clientOptions.signature ? clientOptions.signature : ""
+        )
+        .then((user) => {
+          this.#sendQueue.unshift(
+            protocol.formatWSPacket({
+              m: "set_auth_token",
+              p: [user.authToken],
+            })
+          );
+          this.#logged = true;
+          this.sendQueue();
+        })
+        .catch((err) => {
+          this.#handleError("Credentials error:", err.message);
+        });
     } else {
-      this.#sendQueue.unshift(protocol.formatWSPacket({
-        m: 'set_auth_token',
-        p: ['unauthorized_user_token'],
-      }));
+      this.#sendQueue.unshift(
+        protocol.formatWSPacket({
+          m: "set_auth_token",
+          p: ["unauthorized_user_token"],
+        })
+      );
       this.#logged = true;
       this.sendQueue();
     }
 
-    this.#ws.on('open', () => {
-      this.#handleEvent('connected');
+    this.#ws.on("open", () => {
+      this.#handleEvent("connected");
       this.sendQueue();
     });
 
-    this.#ws.on('close', () => {
+    this.#ws.on("close", () => {
       this.#logged = false;
-      this.#handleEvent('disconnected');
+      this.#handleEvent("disconnected");
     });
 
-    this.#ws.on('message', (data) => this.#parsePacket(data));
+    this.#ws.on("message", (data) => this.#parsePacket(data));
   }
 
   /** @type {ClientBridge} */
