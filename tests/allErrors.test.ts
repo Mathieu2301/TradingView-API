@@ -180,6 +180,7 @@ describe('AllErrors', () => {
           funName: '\'supertrend\'',
         },
         error: 'Error on bar {bar_index}: Invalid value of the \'{nameInvalidValue}\' argument ({length}) in the \'{funName}\' function. It must be {operation} 0.',
+        stack_trace: [{ n: '#main', p: 7 }],
       },
       'undefined',
     ]);
