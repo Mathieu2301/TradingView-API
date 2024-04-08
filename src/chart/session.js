@@ -1,7 +1,6 @@
 const { genSessionID } = require('../utils');
 
-const studyConstructor = require('./study');
-
+const { studyConstructor } = require('./study');
 /**
  * @typedef {'HeikinAshi' | 'Renko' | 'LineBreak' | 'Kagi' | 'PointAndFigure'
  *  | 'Range'} ChartType Custom chart type
