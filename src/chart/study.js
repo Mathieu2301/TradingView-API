@@ -145,7 +145,7 @@ const parseTrades = (trades) => trades.reverse().map((t) => ({
 /**
  * @param {import('./session').ChartSessionBridge} chartSession
  */
-module.exports = (chartSession) => class ChartStudy {
+const studyConstructor = (chartSession) => class ChartStudy {
   #studID = genSessionID('st');
 
   #studyListeners = chartSession.studyListeners;
@@ -432,4 +432,10 @@ module.exports = (chartSession) => class ChartStudy {
     ]);
     delete this.#studyListeners[this.#studID];
   }
+};
+
+module.exports = {
+  getInputs,
+  parseTrades,
+  studyConstructor,
 };
