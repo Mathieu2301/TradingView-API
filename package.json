@@ -4,7 +4,8 @@
   "description": "Tradingview instant stocks API, indicator alerts, trading bot, and more !",
   "main": "main.js",
   "scripts": {
-    "test": "vitest"
+    "test": "vitest",
+    "dts": "npx npm-dts -e main.js generate"
   },
   "repository": {
     "type": "git",
@@ -37,6 +38,8 @@
     "eslint": "^7.25.0",
     "eslint-config-airbnb-base": "^14.2.1",
     "eslint-plugin-import": "^2.22.1",
+    "npm-dts": "^1.3.12",
+    "typescript": "^5.2.2",
     "vitest": "^0.31.1"
   }
 }
