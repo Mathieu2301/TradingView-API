@@ -243,14 +243,21 @@ module.exports = {
    * @function getIndicator
    * @param {string} id Indicator ID (Like: PUB;XXXXXXXXXXXXXXXXXXXXX)
    * @param {'last' | string} [version] Wanted version of the indicator
+   * @param {string} [session] User 'sessionid' cookie
+   * @param {string} [signature] User 'sessionid_sign' cookie
    * @returns {Promise<PineIndicator>} Indicator
    */
-  async getIndicator(id, version = 'last') {
+  async getIndicator(id, version = 'last', session = '', signature = '') {
     const indicID = id.replace(/ |%/g, '%25');
 
     const { data } = await axios.get(
       `https://pine-facade.tradingview.com/pine-facade/translate/${indicID}/${version}`,
-      { validateStatus },
+      {
+        validateStatus,
+        headers: {
+          cookie: `${session ? `sessionid=${session};` : ''}${signature ? `sessionid_sign=${signature};` : ''}`,
+        },
+      },
     );
 
     if (!data.success || !data.result.metaInfo || !data.result.metaInfo.inputs) {
@@ -455,7 +462,12 @@ module.exports = {
       source: ind.scriptSource,
       type: (ind.extra && ind.extra.kind) ? ind.extra.kind : 'study',
       get() {
-        return module.exports.getIndicator(ind.scriptIdPart, ind.version);
+        return module.exports.getIndicator(
+          ind.scriptIdPart,
+          ind.version,
+          session,
+          signature,
+        );
       },
     }));
   },
