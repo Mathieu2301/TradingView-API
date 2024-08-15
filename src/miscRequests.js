@@ -2,6 +2,7 @@ const os = require('os');
 const axios = require('axios');
 
 const PineIndicator = require('./classes/PineIndicator');
+const { genAuthCookies } = require('./utils');
 
 const validateStatus = (status) => status < 500;
 
@@ -279,7 +280,7 @@ module.exports = {
       `https://pine-facade.tradingview.com/pine-facade/translate/${indicID}/${version}`,
       {
         headers: {
-          cookie: `${session ? `sessionid=${session};` : ''}${signature ? `sessionid_sign=${signature};` : ''}`,
+          cookie: genAuthCookies(session, signature),
         },
         validateStatus,
       },
@@ -429,7 +430,7 @@ module.exports = {
   async getUser(session, signature = '', location = 'https://www.tradingview.com/') {
     const { data } = await axios.get(location, {
       headers: {
-        cookie: `sessionid=${session}${signature ? `;sessionid_sign=${signature};` : ''}`,
+        cookie: genAuthCookies(session, signature),
       },
       validateStatus,
     });
@@ -471,7 +472,7 @@ module.exports = {
       'https://pine-facade.tradingview.com/pine-facade/list',
       {
         headers: {
-          cookie: `sessionid=${session}${signature ? `;sessionid_sign=${signature};` : ''}`,
+          cookie: genAuthCookies(session, signature),
         },
         params: {
           filter: 'saved',
@@ -529,9 +530,7 @@ module.exports = {
       'https://www.tradingview.com/chart-token',
       {
         headers: {
-          cookie: session
-            ? `sessionid=${session}${signature ? `;sessionid_sign=${signature};` : ''}`
-            : '',
+          cookie: genAuthCookies(session, signature),
         },
         params: {
           image_url: layout,
