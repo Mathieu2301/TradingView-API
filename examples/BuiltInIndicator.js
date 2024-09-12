@@ -6,7 +6,13 @@ const TradingView = require('../main');
 
 const volumeProfile = new TradingView.BuiltInIndicator('VbPFixed@tv-basicstudies-241!');
 
-if (!process.argv[2] && !['VbPFixed@tv-basicstudies-241!', 'Volume@tv-basicstudies-241'].includes(volumeProfile.type)) {
+const AUTHENTICATED_INDICATORS = [
+  'VbPFixed@tv-basicstudies-241',
+  'VbPFixed@tv-basicstudies-241!',
+  'Volume@tv-basicstudies-241',
+];
+
+if (!process.argv[2] && !AUTHENTICATED_INDICATORS.includes(volumeProfile.type)) {
   throw Error('Please specify your \'sessionid\' cookie');
 }
 
