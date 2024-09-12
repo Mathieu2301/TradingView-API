@@ -4,9 +4,9 @@ const TradingView = require('../main');
  * This example tests built-in indicators like volume-based indicators
  */
 
-const volumeProfile = new TradingView.BuiltInIndicator('VbPFixed@tv-basicstudies-139!');
+const volumeProfile = new TradingView.BuiltInIndicator('VbPFixed@tv-basicstudies-241!');
 
-if (!process.argv[2] && !['VbPFixed@tv-basicstudies-139!', 'Volume@tv-basicstudies-144'].includes(volumeProfile.type)) {
+if (!process.argv[2] && !['VbPFixed@tv-basicstudies-241!', 'Volume@tv-basicstudies-241'].includes(volumeProfile.type)) {
   throw Error('Please specify your \'sessionid\' cookie');
 }
 

@@ -91,6 +91,6 @@ async function addIndicator(name, pineId, options = {}) {
   });
 }
 
-addIndicator('Volume', 'Volume@tv-basicstudies-144');
+addIndicator('Volume', 'Volume@tv-basicstudies-241');
 addIndicator('EMA_50', 'STD;EMA', { Length: 50 });
 addIndicator('EMA_200', 'STD;EMA', { Length: 200 });
