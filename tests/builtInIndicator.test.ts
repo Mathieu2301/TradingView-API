@@ -32,7 +32,7 @@ describe('BuiltInIndicator', () => {
   });
 
   it('gets volume profile', async () => {
-    const volumeProfile = new TradingView.BuiltInIndicator('VbPFixed@tv-basicstudies-139!');
+    const volumeProfile = new TradingView.BuiltInIndicator('VbPFixed@tv-basicstudies-241!');
     volumeProfile.setOption('first_bar_time', Date.now() - 10 ** 8);
 
     const VOL = new chart.Study(volumeProfile);

@@ -1,4 +1,5 @@
 const axios = require('axios');
+const { genAuthCookies } = require('../utils');
 
 /**
  * @typedef {Object} AuthorizationUser
@@ -50,7 +51,7 @@ class PinePermManager {
           headers: {
             origin: 'https://www.tradingview.com',
             'Content-Type': 'application/x-www-form-urlencoded',
-            cookie: `sessionid=${this.sessionId};sessionid_sign=${this.signature};`,
+            cookie: genAuthCookies(this.sessionId, this.signature),
           },
         },
       );
@@ -84,7 +85,7 @@ class PinePermManager {
           headers: {
             origin: 'https://www.tradingview.com',
             'Content-Type': 'application/x-www-form-urlencoded',
-            cookie: `sessionid=${this.sessionId};sessionid_sign=${this.signature};`,
+            cookie: genAuthCookies(this.sessionId, this.signature),
           },
         },
       );
@@ -118,7 +119,7 @@ class PinePermManager {
           headers: {
             origin: 'https://www.tradingview.com',
             'Content-Type': 'application/x-www-form-urlencoded',
-            cookie: `sessionid=${this.sessionId};sessionid_sign=${this.signature};`,
+            cookie: genAuthCookies(this.sessionId, this.signature),
           },
         },
       );
@@ -143,7 +144,7 @@ class PinePermManager {
           headers: {
             origin: 'https://www.tradingview.com',
             'Content-Type': 'application/x-www-form-urlencoded',
-            cookie: `sessionid=${this.sessionId};sessionid_sign=${this.signature};`,
+            cookie: genAuthCookies(this.sessionId, this.signature),
           },
         },
       );

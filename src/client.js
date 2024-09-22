@@ -217,6 +217,7 @@ module.exports = class Client {
    * @prop {string} [signature] User auth token signature (in 'sessionid_sign' cookie)
    * @prop {boolean} [DEBUG] Enable debug mode
    * @prop {'data' | 'prodata' | 'widgetdata'} [server] Server type
+   * @prop {string} [location] Auth page location (For france: https://fr.tradingview.com/)
    */
 
   /** Client object
@@ -234,6 +235,7 @@ module.exports = class Client {
       misc.getUser(
         clientOptions.token,
         clientOptions.signature ? clientOptions.signature : '',
+        clientOptions.location ? clientOptions.location : "https://tradingview.com",
       ).then((user) => {
         this.#sendQueue.unshift(protocol.formatWSPacket({
           m: 'set_auth_token',

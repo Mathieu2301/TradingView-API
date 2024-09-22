@@ -1,6 +1,7 @@
 /**
- * @typedef {'Volume@tv-basicstudies-144'
- *  | 'VbPFixed@tv-basicstudies-139!'
+ * @typedef {'Volume@tv-basicstudies-241'
+ *  | 'VbPFixed@tv-basicstudies-241'
+ *  | 'VbPFixed@tv-basicstudies-241!'
  *  | 'VbPFixed@tv-volumebyprice-53!'
  *  | 'VbPSessions@tv-volumebyprice-53'
  *  | 'VbPSessionsRough@tv-volumebyprice-53!'
@@ -17,11 +18,22 @@
  */
 
 const defaultValues = {
-  'Volume@tv-basicstudies-144': {
+  'Volume@tv-basicstudies-241': {
     length: 20,
     col_prev_close: false,
   },
-  'VbPFixed@tv-basicstudies-139!': {
+  'VbPFixed@tv-basicstudies-241': {
+    rowsLayout: 'Number Of Rows',
+    rows: 24,
+    volume: 'Up/Down',
+    vaVolume: 70,
+    subscribeRealtime: false,
+    first_bar_time: NaN,
+    last_bar_time: Date.now(),
+    extendToRight: false,
+    mapRightBoundaryToBarStartTime: true,
+  },
+  'VbPFixed@tv-basicstudies-241!': {
     rowsLayout: 'Number Of Rows',
     rows: 24,
     volume: 'Up/Down',
