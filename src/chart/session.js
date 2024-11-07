@@ -545,6 +545,7 @@ module.exports = (client) => class ChartSession {
     if (this.#replayMode) this.#client.send('replay_delete_session', [this.#replaySessionID]);
     this.#client.send('chart_delete_session', [this.#chartSessionID]);
     delete this.#client.sessions[this.#chartSessionID];
+    delete this.#client.sessions[this.#replaySessionID];
     this.#replayMode = false;
   }
 };
