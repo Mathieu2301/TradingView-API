@@ -94,10 +94,10 @@ describe('ReplayMode', () => {
 
     const msg = await Promise.race([
       new Promise((r) => {
-        chart.onReplayEnd(() => void r('Replay end'));
+        chart.onReplayEnd(() => r('Replay end'));
       }),
       new Promise((r) => {
-        setTimeout(() => void r('Timeout'), 9000);
+        setTimeout(() => r('Timeout'), 9000);
       }),
     ]);
 
