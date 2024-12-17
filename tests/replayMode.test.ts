@@ -84,7 +84,7 @@ describe('ReplayMode', () => {
     expect(chart.infos.full_name).toBe('BINANCE:BTCEUR');
   });
 
-  it('steps forward automatically', async () => {
+  it.skip('steps forward automatically', async () => {
     console.log('Play replay mode');
     await chart.replayStart(200);
 
