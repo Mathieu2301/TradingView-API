@@ -41,7 +41,7 @@ describe('Indicators', () => {
   const noAuth = !token || !signature;
 
   it.skipIf(noAuth)('creates a client', async () => {
-    client = new TradingView.Client({ token, signature });
+    client = new TradingView.Client({ token, signature });
     expect(client).toBeDefined();
   });
 
