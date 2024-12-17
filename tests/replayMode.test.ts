@@ -76,7 +76,7 @@ describe('ReplayMode', () => {
       range: 1,
     });
 
-    await new Promise((r) => chart.onSymbolLoaded(() => r(true)));
+    await new Promise((r) => void chart.onSymbolLoaded(() => r(true)));
     console.log('Chart loaded');
 
     expect(chart.infos.full_name).toBe('BINANCE:BTCEUR');
@@ -91,8 +91,8 @@ describe('ReplayMode', () => {
     });
 
     const msg = await Promise.race([
-      new Promise((r) => chart.onReplayEnd(() => r('Replay end'))),
-      new Promise((r) => setTimeout(() => r('Timeout'), 9000)),
+      new Promise((r) => void chart.onReplayEnd(() => r('Replay end'))),
+      new Promise((r) => void setTimeout(() => r('Timeout'), 9000)),
     ]);
 
     console.log(msg);
