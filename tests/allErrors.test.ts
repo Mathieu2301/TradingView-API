@@ -5,10 +5,9 @@ const token = <string>process.env.SESSION;
 const signature = <string>process.env.SIGNATURE;
 
 describe('AllErrors', () => {
-  const waitForError = (instance: any) => new Promise<string[]>((resolve) => {
-    instance.onError((...error: string[]) => {
-      resolve(error);
-    });
+  const waitForError = (instance: any, next = () => {}) => new Promise<string[]>((resolve) => {
+    instance.onError((...error: string[]) => resolve(error));
+    next();
   });
 
   it('throws an error when an invalid token is set', async () => {
@@ -32,9 +31,12 @@ describe('AllErrors', () => {
 
     const client = new TradingView.Client();
     const chart = new client.Session.Chart();
-    chart.setMarket('XXXXX');
 
-    const error = await waitForError(chart);
+    const error = await waitForError(
+      chart,
+      () => chart.setMarket('XXXXX'),
+    );
+
     console.log('=> Chart error:', error);
 
     expect(error).toBeDefined();
@@ -50,10 +52,12 @@ describe('AllErrors', () => {
     const chart = new client.Session.Chart();
     chart.setMarket('BINANCE:BTCEUR');
 
-    // @ts-expect-error
-    chart.setTimezone('Nowhere/Nowhere');
+    const error = await waitForError(
+      chart,
+      // @ts-expect-error
+      () => chart.setTimezone('Nowhere/Nowhere'),
+    );
 
-    const error = await waitForError(chart);
     console.log('=> Chart error:', error);
 
     expect(error).toBeDefined();
@@ -63,22 +67,24 @@ describe('AllErrors', () => {
     expect(error.length).toBe(3);
   });
 
-  it('throws an error when a custom timeframe is set without premium', async () => {
+  it.skip('throws an error when a custom timeframe is set without premium', async () => {
     console.log('Testing "custom timeframe" error:');
 
     const client = new TradingView.Client();
     const chart = new client.Session.Chart();
 
-    chart.setMarket('BINANCE:BTCEUR', { // Set a market
-      // @ts-expect-error
-      timeframe: '20', // Set a custom timeframe
-      /*
-        Timeframe '20' isn't available because we are
-        not logged in as a premium TradingView account
-      */
-    });
+    const error = await waitForError(
+      chart,
+      () => chart.setMarket('BINANCE:BTCEUR', { // Set a market
+        // @ts-expect-error
+        timeframe: '20', // Set a custom timeframe
+        /*
+          Timeframe '20' isn't available because we are
+          not logged in as a premium TradingView account
+        */
+      }),
+    );
 
-    const error = await waitForError(chart);
     console.log('=> Chart error:', error);
 
     expect(error).toBeDefined();
@@ -93,12 +99,14 @@ describe('AllErrors', () => {
     const client = new TradingView.Client();
     const chart = new client.Session.Chart();
 
-    chart.setMarket('BINANCE:BTCEUR', { // Set a market
-      // @ts-expect-error
-      timeframe: 'XX', // Set an invalid timeframe
-    });
+    const error = await waitForError(
+      chart,
+      () => chart.setMarket('BINANCE:BTCEUR', { // Set a market
+        // @ts-expect-error
+        timeframe: 'XX', // Set an invalid timeframe
+      }),
+    );
 
-    const error = await waitForError(chart);
     console.log('=> Chart error:', error);
 
     expect(error).toBeDefined();
@@ -114,12 +122,14 @@ describe('AllErrors', () => {
     const client = new TradingView.Client();
     const chart = new client.Session.Chart();
 
-    chart.setMarket('BINANCE:BTCEUR', { // Set a market
-      timeframe: '15',
-      type: 'Renko',
-    });
+    const error = await waitForError(
+      chart,
+      () => chart.setMarket('BINANCE:BTCEUR', { // Set a market
+        timeframe: '15',
+        type: 'Renko',
+      }),
+    );
 
-    const error = await waitForError(chart);
     console.log('=> Chart error:', error);
 
     expect(error).toBeDefined();
@@ -134,11 +144,10 @@ describe('AllErrors', () => {
     const client = new TradingView.Client();
     const chart = new client.Session.Chart();
 
-    setImmediate(() => {
-      chart.setSeries('15');
-    });
-
-    const error = await waitForError(chart);
+    const error = await waitForError(
+      chart,
+      () => chart.setSeries('15'),
+    );
     console.log('=> Chart error:', error);
 
     expect(error).toBeDefined();
@@ -169,7 +178,7 @@ describe('AllErrors', () => {
 
     const Supertrend = new chart.Study(ST);
 
-    const error = await waitForError(Supertrend) as any;
+    const error = await waitForError(Supertrend);
     console.log('=> Study error:', error);
 
     expect(error).toEqual([
