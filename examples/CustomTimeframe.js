@@ -4,10 +4,13 @@ const TradingView = require('../main');
  * This example tests custom timeframes like 1 second
  */
 
-if (!process.argv[2]) throw Error('Please specify your \'sessionid\' cookie');
+if (!process.env.SESSION || !process.env.SIGNATURE) {
+  throw Error('Please set your sessionid and signature cookies');
+}
 
 const client = new TradingView.Client({
-  token: process.argv[2],
+  token: process.env.SESSION,
+  signature: process.env.SIGNATURE,
 });
 
 const chart = new client.Session.Chart();

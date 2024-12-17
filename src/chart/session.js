@@ -356,8 +356,10 @@ module.exports = (client) => class ChartSession {
     if (options.currency) symbolInit['currency-id'] = options.currency;
 
     if (options.replay) {
-      this.#replayMode = true;
-      this.#client.send('replay_create_session', [this.#replaySessionID]);
+      if (!this.#replayMode) {
+        this.#replayMode = true;
+        this.#client.send('replay_create_session', [this.#replaySessionID]);
+      }
 
       this.#client.send('replay_add_series', [
         this.#replaySessionID,

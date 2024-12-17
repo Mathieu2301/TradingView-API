@@ -11,7 +11,7 @@ const client = new Client();
 const chart = new client.Session.Chart();
 
 chart.setMarket('BINANCE:BTCEUR', {
-  timeframe: 'D',
+  timeframe: '240',
   range: -1, // Range is negative, so 'to' means 'from'
   to: Math.round(Date.now() / 1000) - 86400 * 7, // Seven days before now
   // to: 1600000000,
@@ -31,10 +31,10 @@ chart.onUpdate(async () => {
 
   console.log('Next ->', times[0]);
 
-  if ((times[0] + 86400) * 1000 > Date.now()) {
+  if (times[0] > ((Date.now() / 1000) - 86400 * 1)) {
     await client.end();
     console.log('Done !', times.length);
   }
 
-  chart.fetchMore(-1);
+  chart.fetchMore(-2);
 });
