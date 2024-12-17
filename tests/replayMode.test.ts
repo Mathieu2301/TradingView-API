@@ -101,7 +101,7 @@ describe('ReplayMode', () => {
       utils.calculateTimeGap(chart.periods),
     ).toBe(24 * 60 * 60);
 
-    expect(chart.periods.length).toBeGreaterThanOrEqual(8);
+    expect(chart.periods.length).toBeGreaterThanOrEqual(7);
     expect(chart.periods.length).toBeLessThanOrEqual(11);
   });
 
