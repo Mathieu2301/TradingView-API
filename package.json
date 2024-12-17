@@ -4,7 +4,9 @@
   "description": "Tradingview instant stocks API, indicator alerts, trading bot, and more !",
   "main": "main.js",
   "scripts": {
-    "test": "vitest"
+    "test": "vitest",
+    "example": "node --env-file=.env",
+    "example:dev": "nodemon --env-file=.env"
   },
   "repository": {
     "type": "git",

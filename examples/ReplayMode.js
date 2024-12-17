@@ -5,17 +5,24 @@ const TradingView = require('../main');
  * indicator data and stores it in a 'periods' variable
  */
 
+if (!process.env.SESSION || !process.env.SIGNATURE) {
+  throw Error('Please set your sessionid and signature cookies');
+}
+
+console.log('----- Testing ReplayMode: -----');
+
+const client = new TradingView.Client({
+  token: process.env.SESSION,
+  signature: process.env.SIGNATURE,
+});
+const chart = new client.Session.Chart();
+
 const config = {
   symbol: 'BINANCE:BTCEUR',
   timeframe: 'D',
   startFrom: Math.round(Date.now() / 1000) - 86400 * 7, // Seven days before now
   // startFrom: 1600000000,
 };
-
-console.log('----- Testing ReplayMode: -----');
-
-const client = new TradingView.Client();
-const chart = new client.Session.Chart();
 
 chart.setMarket(config.symbol, {
   timeframe: config.timeframe,

@@ -4,16 +4,23 @@ const TradingView = require('../main');
  * This examples synchronously fetches data from 3 indicators
  */
 
-const client = new TradingView.Client();
-const chart = new client.Session.Chart();
-chart.setMarket('BINANCE:DOTUSDT');
+if (!process.env.SESSION || !process.env.SIGNATURE) {
+  throw Error('Please set your sessionid and signature cookies');
+}
+
+const client = new TradingView.Client({
+  token: process.env.SESSION,
+  signature: process.env.SIGNATURE,
+});
 
 function getIndicData(indicator) {
+  const chart = new client.Session.Chart();
+  chart.setMarket('BINANCE:DOTUSDT');
+  const STD = new chart.Study(indicator);
+
+  console.log(`Getting "${indicator.description}"...`);
+
   return new Promise((res) => {
-    const STD = new chart.Study(indicator);
-
-    console.log(`Getting "${indicator.description}"...`);
-
     STD.onUpdate(() => {
       res(STD.periods);
       console.log(`"${indicator.description}" done !`);
