@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import TradingView from '../main';
 
+const token = <string>process.env.SESSION;
+const signature = <string>process.env.SIGNATURE;
+
 describe('Indicators', () => {
   const indicators: { [name: string]: TradingView.PineIndicator } = {};
 
@@ -35,17 +38,19 @@ describe('Indicators', () => {
   let client: TradingView.Client;
   let chart: InstanceType<typeof client.Session.Chart>;
 
-  it('creates a client', async () => {
-    client = new TradingView.Client();
+  const noAuth = !token || !signature;
+
+  it.skipIf(noAuth)('creates a client', async () => {
+    client = new TradingView.Client({ token, signature });
     expect(client).toBeDefined();
   });
 
-  it('creates a chart', async () => {
+  it.skipIf(noAuth)('creates a chart', async () => {
     chart = new client.Session.Chart();
     expect(chart).toBeDefined();
   });
 
-  it('sets market', async () => {
+  it.skipIf(noAuth)('sets market', async () => {
     chart.setMarket('BINANCE:BTCEUR', {
       timeframe: '60',
     });
@@ -60,7 +65,7 @@ describe('Indicators', () => {
     expect(chart.infos.full_name).toBe('BINANCE:BTCEUR');
   });
 
-  it.concurrent('gets performance data from SuperTrend strategy', async () => {
+  it.skipIf(noAuth).concurrent('gets performance data from SuperTrend strategy', async () => {
     const SuperTrend = new chart.Study(indicators.SuperTrend);
 
     let QTY = 10;
@@ -109,7 +114,7 @@ describe('Indicators', () => {
     SuperTrend.remove();
   }, 10000);
 
-  it.concurrent('gets data from MarketCipher B study', async () => {
+  it.skipIf(noAuth).concurrent('gets data from MarketCipher B study', async () => {
     const CipherB = new chart.Study(indicators.CipherB);
 
     const lastResult: any = await new Promise((resolve) => {
@@ -132,12 +137,12 @@ describe('Indicators', () => {
     CipherB.remove();
   });
 
-  it('removes chart', () => {
+  it.skipIf(noAuth)('removes chart', () => {
     console.log('Closing the chart...');
     chart.delete();
   });
 
-  it('removes client', async () => {
+  it.skipIf(noAuth)('removes client', async () => {
     console.log('Closing the client...');
     await client.end();
   });

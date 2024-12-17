@@ -159,10 +159,7 @@ describe('AllErrors', () => {
   )('throws an error when setting an invalid study option value', async () => {
     console.log('Testing "Invalid value" error:');
 
-    const client = new TradingView.Client({
-      token,
-      signature,
-    });
+    const client = new TradingView.Client({ token, signature });
     const chart = new client.Session.Chart();
 
     chart.setMarket('BINANCE:BTCEUR'); // Set a market
