@@ -86,7 +86,7 @@ describe('ReplayMode', () => {
 
   it('steps forward automatically', async () => {
     console.log('Play replay mode');
-    await chart.replayStart(100);
+    await chart.replayStart(200);
 
     chart.onUpdate(() => {
       console.log('Point ->', chart.periods[0].time);
@@ -107,7 +107,7 @@ describe('ReplayMode', () => {
       utils.calculateTimeGap(chart.periods),
     ).toBe(24 * 60 * 60);
 
-    expect(chart.periods.length).toBeGreaterThanOrEqual(4);
+    expect(chart.periods.length).toBeGreaterThanOrEqual(7);
     expect(chart.periods.length).toBeLessThanOrEqual(11);
   });
 
