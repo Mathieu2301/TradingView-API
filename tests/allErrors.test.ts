@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import TradingView from '../main';
 
-const token = process.env.SESSION as string;
-const signature = process.env.SIGNATURE as string;
+const token = <string>process.env.SESSION;
+const signature = <string>process.env.SIGNATURE;
 
 describe('AllErrors', () => {
   const waitForError = (instance: any) => new Promise<string[]>((resolve) => {
@@ -154,10 +154,15 @@ describe('AllErrors', () => {
     ).rejects.toThrow('Inexistent or unsupported indicator: "undefined"');
   });
 
-  it('throws an error when setting an invalid study option value', async () => {
+  it.skipIf(
+    !token || !signature,
+  )('throws an error when setting an invalid study option value', async () => {
     console.log('Testing "Invalid value" error:');
 
-    const client = new TradingView.Client();
+    const client = new TradingView.Client({
+      token,
+      signature,
+    });
     const chart = new client.Session.Chart();
 
     chart.setMarket('BINANCE:BTCEUR'); // Set a market
