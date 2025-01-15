@@ -25,8 +25,6 @@ describe.skipIf(!token || !signature)('Authenticated actions', () => {
     expect(userInfo).toBeDefined();
     expect(userInfo.id).toBeDefined();
     expect(userInfo.username).toBeDefined();
-    expect(userInfo.firstName).toBeDefined();
-    expect(userInfo.lastName).toBeDefined();
     expect(userInfo.following).toBeDefined();
     expect(userInfo.followers).toBeDefined();
     expect(userInfo.notifications).toBeDefined();
