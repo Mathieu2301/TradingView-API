@@ -316,6 +316,91 @@ module.exports = {
   },
 
   /**
+   * Load a personal/custom indicator
+   * @function getPersonalIndicator
+   * @param {string} id Indicator ID (Like: USER;XXXXXXXXXXXXXXXXXXXXX)
+   * @param {string} session User 'sessionid' cookie
+   * @param {string} [signature] User 'sessionid_sign' cookie
+   * @returns {Promise<PineIndicator>} Indicator
+   */
+  async getPersonalIndicator(id, session, signature) {
+    const indicID = id.replace(/ |%/g, '%25').replace(';', '%3B');
+
+    const { data } = await axios.get(
+        `https://pine-facade.tradingview.com/pine-facade/translate/${indicID}/1.0`,
+        {
+          validateStatus,
+          headers: {
+            cookie: `sessionid=${session}${
+                signature ? `;sessionid_sign=${signature};` : ''
+            }`,
+          },
+        },
+    );
+
+    if (data === 'The user requesting information on the script is not allowed to do so')
+      throw new Error('User does not have access to this script.');
+
+    if (!data.success || !data.result.metaInfo || !data.result.metaInfo.inputs)
+      throw new Error(`Inexistent or unsupported indicator: "${data.reason}"`);
+
+    const inputs = {};
+
+    data.result.metaInfo.inputs.forEach((input) => {
+      if (['text', 'pineId', 'pineVersion'].includes(input.id)) return;
+
+      const inlineName = input.name
+          .replace(/ /g, '_')
+          .replace(/[^a-zA-Z0-9_]/g, '');
+
+      inputs[input.id] = {
+        name: input.name,
+        inline: input.inline || inlineName,
+        internalID: input.internalID || inlineName,
+        tooltip: input.tooltip,
+
+        type: input.type,
+        value: input.defval,
+        isHidden: !!input.isHidden,
+        isFake: !!input.isFake,
+      };
+
+      if (input.options) inputs[input.id].options = input.options;
+    });
+
+    const plots = {};
+
+    Object.keys(data.result.metaInfo.styles).forEach((plotId) => {
+      const plotTitle = data.result.metaInfo.styles[plotId].title
+          .replace(/ /g, '_')
+          .replace(/[^a-zA-Z0-9_]/g, '');
+
+      const titles = Object.values(plots);
+
+      if (titles.includes(plotTitle)) {
+        let i = 2;
+        while (titles.includes(`${plotTitle}_${i}`)) i += 1;
+        plots[plotId] = `${plotTitle}_${i}`;
+      } else plots[plotId] = plotTitle;
+    });
+
+    data.result.metaInfo.plots.forEach((plot) => {
+      if (!plot.target) return;
+      plots[plot.id] = `${plots[plot.target] ?? plot.target}_${plot.type}`;
+    });
+
+    return new PineIndicator({
+      pineId: data.result.metaInfo.scriptIdPart || indicID,
+      pineVersion: data.result.metaInfo.pine.version || version,
+      description: data.result.metaInfo.description,
+      shortDescription: data.result.metaInfo.shortDescription,
+      inputs,
+      plots,
+      script: data.result.ilTemplate,
+    });
+  },
+
+  /**
    * @typedef {Object} User Instance of User
    * @prop {number} id User ID
    * @prop {string} username User username
