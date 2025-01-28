@@ -590,6 +590,57 @@ module.exports = {
   },
 
   /**
+   * Get user's invite only scripts from a 'sessionid' cookie
+   * @function getInviteOnlyScripts
+   * @param {string} session User 'sessionid' cookie
+   * @param {string} [signature] User 'sessionid_sign' cookie
+   * @returns {Promise<Data[]>} invite only scripts
+   */
+  async getInviteOnlyScripts(session, signature = "") {
+    const { data: prefetch } = await axios.get(
+        "https://www.tradingview.com/pine_perm/list_scripts",
+        {
+          validateStatus,
+          headers: {
+            cookie: `sessionid=${session}${
+                signature ? `;sessionid_sign=${signature};` : ""
+            }`,
+          },
+        }
+    );
+
+    const requestBody = {
+      scriptIdPart: prefetch,
+      show_hidden: false,
+    };
+
+    // Manually construct the form-urlencoded string
+    const formData = Object.keys(requestBody)
+        .map(
+            (key) =>
+                encodeURIComponent(key) + "=" + encodeURIComponent(requestBody[key])
+        )
+        .join("&");
+
+    const { data } = await axios.post(
+        "https://www.tradingview.com/pubscripts-get/",
+        formData,
+        {
+          validateStatus,
+          headers: {
+            referer: "https://www.tradingview.com",
+            "Content-Type": "application/x-www-form-urlencoded",
+            cookie: `sessionid=${session}${
+                signature ? `;sessionid_sign=${signature};` : ""
+            }`,
+          },
+        }
+    );
+
+    return data;
+  },
+
+  /**
    * User credentials
    * @typedef {Object} UserCredentials
    * @prop {number} id User ID
