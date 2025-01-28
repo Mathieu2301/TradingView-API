@@ -2,17 +2,22 @@ const os = require('os');
 const axios = require('axios');
 
 const PineIndicator = require('./classes/PineIndicator');
+const { genAuthCookies } = require('./utils');
 
 const validateStatus = (status) => status < 500;
 
 const indicators = ['Recommend.Other', 'Recommend.All', 'Recommend.MA'];
 const builtInIndicList = [];
 
-async function fetchScanData(tickers = [], type = '', columns = []) {
-  const { data } = await axios.post(`https://scanner.tradingview.com/${type}/scan`, {
-    symbols: { tickers },
-    columns,
-  }, { validateStatus });
+async function fetchScanData(tickers = [], columns = []) {
+  const { data } = await axios.post(
+    'https://scanner.tradingview.com/global/scan',
+    {
+      symbols: { tickers },
+      columns,
+    },
+    { validateStatus },
+  );
 
   return data;
 }
@@ -40,56 +45,21 @@ async function fetchScanData(tickers = [], type = '', columns = []) {
  * }} Periods
  */
 
-// /**
-//  * @typedef {string | 'forex' | 'crypto'
-//  * | 'america' | 'australia' | 'canada' | 'egypt'
-//  * | 'germany' | 'india' | 'israel' | 'italy'
-//  * | 'luxembourg' | 'poland' | 'sweden' | 'turkey'
-//  * | 'uk' | 'vietnam'} Screener
-//  * You can use `getScreener(exchange)` function for non-forex and non-crypto markets.
-//  */
-
 module.exports = {
-  // /**
-  //  * Get a screener from an exchange
-  //  * @function getScreener
-  //  * @param {string} exchange Example: BINANCE, EURONEXT, NASDAQ
-  //  * @returns {Screener}
-  // */
-  // getScreener(exchange) {
-  //   const e = exchange.toUpperCase();
-  //   if (['NASDAQ', 'NYSE', 'NYSE ARCA', 'OTC'].includes(e)) return 'america';
-  //   if (['ASX'].includes(e)) return 'australia';
-  //   if (['TSX', 'TSXV', 'CSE', 'NEO'].includes(e)) return 'canada';
-  //   if (['EGX'].includes(e)) return 'egypt';
-  //   if (['FWB', 'SWB', 'XETR'].includes(e)) return 'germany';
-  //   if (['BSE', 'NSE'].includes(e)) return 'india';
-  //   if (['TASE'].includes(e)) return 'israel';
-  //   if (['MIL', 'MILSEDEX'].includes(e)) return 'italy';
-  //   if (['LUXSE'].includes(e)) return 'luxembourg';
-  //   if (['NEWCONNECT'].includes(e)) return 'poland';
-  //   if (['NGM'].includes(e)) return 'sweden';
-  //   if (['BIST'].includes(e)) return 'turkey';
-  //   if (['LSE', 'LSIN'].includes(e)) return 'uk';
-  //   if (['HNX'].includes(e)) return 'vietnam';
-  //   return 'global';
-  // },
-
   /**
    * Get technical analysis
    * @function getTA
-   * @param {Screener} screener Market screener
    * @param {string} id Full market id (Example: COINBASE:BTCEUR)
    * @returns {Promise<Periods>} results
    */
-  async getTA(screener, id) {
+  async getTA(id) {
     const advice = {};
 
     const cols = ['1', '5', '15', '60', '240', '1D', '1W', '1M']
       .map((t) => indicators.map((i) => (t !== '1D' ? `${i}|${t}` : i)))
       .flat();
 
-    const rs = await fetchScanData([id], screener, cols);
+    const rs = await fetchScanData([id], cols);
     if (!rs.data || !rs.data[0]) return false;
 
     rs.data[0].d.forEach((val, i) => {
@@ -107,7 +77,6 @@ module.exports = {
    * @prop {string} id Market full symbol
    * @prop {string} exchange Market exchange name
    * @prop {string} fullExchange Market exchange full name
-   * @prop {Screener | 'forex' | 'crypto'} screener Market screener
    * @prop {string} symbol Market symbol
    * @prop {string} description Market name
    * @prop {string} type Market type
@@ -115,7 +84,7 @@ module.exports = {
    */
 
   /**
-   * Find a symbol
+   * Find a symbol (deprecated)
    * @function searchMarket
    * @param {string} search Keywords
    * @param {'stock'
@@ -123,15 +92,20 @@ module.exports = {
    *  | 'crypto' | 'index' | 'economic'
    * } [filter] Caterogy filter
    * @returns {Promise<SearchMarketResult[]>} Search results
+   * @deprecated Use searchMarketV3 instead
    */
   async searchMarket(search, filter = '') {
     const { data } = await axios.get(
-      `https://symbol-search.tradingview.com/symbol_search/?text=${search.replace(/ /g, '%20')}&type=${filter}`,
+      'https://symbol-search.tradingview.com/symbol_search',
       {
-        validateStatus,
+        params: {
+          text: search.replace(/ /g, '%20'),
+          type: filter,
+        },
         headers: {
           origin: 'https://www.tradingview.com',
         },
+        validateStatus,
       },
     );
 
@@ -139,21 +113,63 @@ module.exports = {
       const exchange = s.exchange.split(' ')[0];
       const id = `${exchange}:${s.symbol}`;
 
-      // const screener = (['forex', 'crypto'].includes(s.type)
-      //   ? s.type
-      //   : this.getScreener(exchange)
-      // );
-      const screener = 'global';
+      return {
+        id,
+        exchange,
+        fullExchange: s.exchange,
+        symbol: s.symbol,
+        description: s.description,
+        type: s.type,
+        getTA: () => this.getTA(id),
+      };
+    });
+  },
+
+  /**
+   * Find a symbol
+   * @function searchMarketV3
+   * @param {string} search Keywords
+   * @param {'stock'
+   *  | 'futures' | 'forex' | 'cfd'
+   *  | 'crypto' | 'index' | 'economic'
+   * } [filter] Caterogy filter
+   * @returns {Promise<SearchMarketResult[]>} Search results
+   */
+  async searchMarketV3(search, filter = '') {
+    const splittedSearch = search.toUpperCase().replace(/ /g, '+').split(':');
+
+    const request = await axios.get(
+      'https://symbol-search.tradingview.com/symbol_search/v3',
+      {
+        params: {
+          exchange: (splittedSearch.length === 2
+            ? splittedSearch[0]
+            : undefined
+          ),
+          text: splittedSearch.pop(),
+          search_type: filter,
+        },
+        headers: {
+          origin: 'https://www.tradingview.com',
+        },
+        validateStatus,
+      },
+    );
+
+    const { data } = request;
+
+    return data.symbols.map((s) => {
+      const exchange = s.exchange.split(' ')[0];
+      const id = `${exchange.toUpperCase()}:${s.symbol}`;
 
       return {
         id,
         exchange,
         fullExchange: s.exchange,
-        screener,
         symbol: s.symbol,
         description: s.description,
         type: s.type,
-        getTA: () => this.getTA(screener, id),
+        getTA: () => this.getTA(id),
       };
     });
   },
@@ -182,16 +198,26 @@ module.exports = {
     if (!builtInIndicList.length) {
       await Promise.all(['standard', 'candlestick', 'fundamental'].map(async (type) => {
         const { data } = await axios.get(
-          `https://pine-facade.tradingview.com/pine-facade/list/?filter=${type}`,
-          { validateStatus },
+          'https://pine-facade.tradingview.com/pine-facade/list',
+          {
+            params: {
+              filter: type,
+            },
+            validateStatus,
+          },
         );
         builtInIndicList.push(...data);
       }));
     }
 
     const { data } = await axios.get(
-      `https://www.tradingview.com/pubscripts-suggest-json/?search=${search.replace(/ /g, '%20')}`,
-      { validateStatus },
+      'https://www.tradingview.com/pubscripts-suggest-json',
+      {
+        params: {
+          search: search.replace(/ /g, '%20'),
+        },
+        validateStatus,
+      },
     );
 
     function norm(str = '') {
@@ -243,14 +269,21 @@ module.exports = {
    * @function getIndicator
    * @param {string} id Indicator ID (Like: PUB;XXXXXXXXXXXXXXXXXXXXX)
    * @param {'last' | string} [version] Wanted version of the indicator
+   * @param {string} [session] User 'sessionid' cookie
+   * @param {string} [signature] User 'sessionid_sign' cookie
    * @returns {Promise<PineIndicator>} Indicator
    */
-  async getIndicator(id, version = 'last') {
+  async getIndicator(id, version = 'last', session = '', signature = '') {
     const indicID = id.replace(/ |%/g, '%25');
 
     const { data } = await axios.get(
       `https://pine-facade.tradingview.com/pine-facade/translate/${indicID}/${version}`,
-      { validateStatus },
+      {
+        headers: {
+          cookie: genAuthCookies(session, signature),
+        },
+        validateStatus,
+      },
     );
 
     if (!data.success || !data.result.metaInfo || !data.result.metaInfo.inputs) {
@@ -434,12 +467,12 @@ module.exports = {
       'https://www.tradingview.com/accounts/signin/',
       `username=${username}&password=${password}${remember ? '&remember=on' : ''}`,
       {
-        validateStatus,
         headers: {
           referer: 'https://www.tradingview.com',
           'Content-Type': 'application/x-www-form-urlencoded',
           'User-agent': `${UA} (${os.version()}; ${os.platform()}; ${os.arch()})`,
         },
+        validateStatus,
       },
     );
 
@@ -481,10 +514,10 @@ module.exports = {
    */
   async getUser(session, signature = '', location = 'https://www.tradingview.com/') {
     const { data } = await axios.get(location, {
-      validateStatus,
       headers: {
-        cookie: `sessionid=${session}${signature ? `;sessionid_sign=${signature};` : ''}`,
+        cookie: genAuthCookies(session, signature),
       },
+      validateStatus,
     });
 
     if (data.includes('auth_token')) {
@@ -497,8 +530,8 @@ module.exports = {
         following: parseFloat(/,"following":([0-9]*?),/.exec(data)?.[1] || 0),
         followers: parseFloat(/,"followers":([0-9]*?),/.exec(data)?.[1] || 0),
         notifications: {
-          following: parseFloat(/"notification_count":\{"following":([0-9]*),/.exec(data)?.[1] || 0),
-          user: parseFloat(/"notification_count":\{"following":[0-9]*,"user":([0-9]*)/.exec(data)?.[1] || 0),
+          following: parseFloat(/"notification_count":\{"following":([0-9]*),/.exec(data)?.[1] ?? 0),
+          user: parseFloat(/"notification_count":\{"following":[0-9]*,"user":([0-9]*)/.exec(data)?.[1] ?? 0),
         },
         session,
         signature,
@@ -520,12 +553,18 @@ module.exports = {
    * @returns {Promise<SearchIndicatorResult[]>} Search results
    */
   async getPrivateIndicators(session, signature = '') {
-    const { data } = await axios.get('https://pine-facade.tradingview.com/pine-facade/list?filter=saved', {
-      validateStatus,
-      headers: {
-        cookie: `sessionid=${session}${signature ? `;sessionid_sign=${signature};` : ''}`,
+    const { data } = await axios.get(
+      'https://pine-facade.tradingview.com/pine-facade/list',
+      {
+        headers: {
+          cookie: genAuthCookies(session, signature),
+        },
+        params: {
+          filter: 'saved',
+        },
+        validateStatus,
       },
-    });
+    );
 
     return data.map((ind) => ({
       id: ind.scriptIdPart,
@@ -540,7 +579,12 @@ module.exports = {
       source: ind.scriptSource,
       type: (ind.extra && ind.extra.kind) ? ind.extra.kind : 'study',
       get() {
-        return module.exports.getIndicator(ind.scriptIdPart, ind.version);
+        return module.exports.getIndicator(
+          ind.scriptIdPart,
+          ind.version,
+          session,
+          signature,
+        );
       },
     }));
   },
@@ -568,14 +612,16 @@ module.exports = {
     );
 
     const { data } = await axios.get(
-      `https://www.tradingview.com/chart-token/?image_url=${layout}&user_id=${id}`,
+      'https://www.tradingview.com/chart-token',
       {
-        validateStatus,
         headers: {
-          cookie: session
-            ? `sessionid=${session}${signature ? `;sessionid_sign=${signature};` : ''}`
-            : '',
+          cookie: genAuthCookies(session, signature),
         },
+        params: {
+          image_url: layout,
+          user_id: id,
+        },
+        validateStatus,
       },
     );
 
@@ -621,14 +667,15 @@ module.exports = {
     const { data } = await axios.get(
       `https://charts-storage.tradingview.com/charts-storage/get/layout/${
         layout
-      }/sources?chart_id=${
-        chartID
-      }&jwt=${
-        chartToken
-      }${
-        (symbol ? `&symbol=${symbol}` : '')
-      }`,
-      { validateStatus },
+      }/sources`,
+      {
+        params: {
+          chart_id: chartID,
+          jwt: chartToken,
+          symbol,
+        },
+        validateStatus,
+      },
     );
 
     if (!data.payload) throw new Error('Wrong layout, user credentials, or chart id.');

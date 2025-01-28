@@ -5,7 +5,14 @@ const TradingView = require('../main');
  * as 'lines', 'labels', 'boxes', 'tables', 'polygons', etc...
  */
 
-const client = new TradingView.Client();
+if (!process.env.SESSION || !process.env.SIGNATURE) {
+  throw Error('Please set your sessionid and signature cookies');
+}
+
+const client = new TradingView.Client({
+  token: process.env.SESSION,
+  signature: process.env.SIGNATURE,
+});
 
 const chart = new client.Session.Chart();
 chart.setMarket('BINANCE:BTCEUR', {
@@ -29,7 +36,7 @@ TradingView.getIndicator('STD;Zig_Zag').then((indic) => {
   STD.onUpdate(() => {
     console.log('Graphic data:', STD.graphic);
     // console.log('Tables:', changes, STD.graphic.tables);
-    // console.log('Cells', STD.graphic.tables[0].cells());
+    // console.log('Cells:', STD.graphic.tables[0].cells());
     client.end();
   });
 });

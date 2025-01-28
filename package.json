@@ -1,10 +1,12 @@
 {
   "name": "@mathieuc/tradingview",
-  "version": "3.4.2",
+  "version": "3.5.0",
   "description": "Tradingview instant stocks API, indicator alerts, trading bot, and more !",
   "main": "main.js",
   "scripts": {
-    "test": "vitest"
+    "test": "vitest",
+    "example": "node --env-file=.env",
+    "example:dev": "nodemon --env-file=.env"
   },
   "repository": {
     "type": "git",
@@ -37,6 +39,6 @@
     "eslint": "^7.25.0",
     "eslint-config-airbnb-base": "^14.2.1",
     "eslint-plugin-import": "^2.22.1",
-    "vitest": "^0.31.1"
+    "vitest": "^0.31.4"
   }
 }

@@ -5,11 +5,21 @@ const { PinePermManager } = require('../main');
  * and tests all the available functions
  */
 
-const sessionid = process.argv[2];
-const signature = process.argv[3];
-const pineid = process.argv[4];
+if (!process.env.SESSION || !process.env.SIGNATURE) {
+  throw Error('Please set your sessionid and signature cookies');
+}
 
-const manager = new PinePermManager(sessionid, signature, pineid);
+const pineid = process.argv[2];
+
+if (!pineid) throw Error('Please specify a pine id as first argument');
+
+console.log('Pine ID:', pineid);
+
+const manager = new PinePermManager(
+  process.env.SESSION,
+  process.env.SIGNATURE,
+  pineid,
+);
 
 (async () => {
   console.log('Users:', await manager.getUsers());

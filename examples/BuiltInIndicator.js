@@ -4,15 +4,26 @@ const TradingView = require('../main');
  * This example tests built-in indicators like volume-based indicators
  */
 
-const volumeProfile = new TradingView.BuiltInIndicator('VbPFixed@tv-basicstudies-139!');
+const volumeProfile = new TradingView.BuiltInIndicator('VbPFixed@tv-basicstudies-241!');
 
-if (!process.argv[2] && !['VbPFixed@tv-basicstudies-139!', 'Volume@tv-basicstudies-144'].includes(volumeProfile.type)) {
-  throw Error('Please specify your \'sessionid\' cookie');
+const needAuth = ![
+  'VbPFixed@tv-basicstudies-241',
+  'VbPFixed@tv-basicstudies-241!',
+  'Volume@tv-basicstudies-241',
+].includes(volumeProfile.type);
+
+if (needAuth && (!process.env.SESSION || !process.env.SIGNATURE)) {
+  throw Error('Please set your sessionid and signature cookies');
 }
 
-const client = new TradingView.Client({
-  token: process.argv[2],
-});
+const client = new TradingView.Client(
+  needAuth
+    ? {
+      token: process.env.SESSION,
+      signature: process.env.SIGNATURE,
+    }
+    : {},
+);
 
 const chart = new client.Session.Chart();
 chart.setMarket('BINANCE:BTCEUR', {
