@@ -331,6 +331,7 @@ module.exports = (client) => class ChartSession {
    * @param {number} [options.range] Number of loaded periods/candles (Default: 100)
    * @param {number} [options.to] Last candle timestamp (Default is now)
    * @param {'splits' | 'dividends'} [options.adjustment] Market adjustment
+   * @param {boolean} [options.backadjustment] Market backadjustment of futures contracts
    * @param {'regular' | 'extended'} [options.session] Chart session
    * @param {'EUR' | 'USD' | string} [options.currency] Chart currency
    * @param {ChartType} [options.type] Chart custom type
@@ -350,12 +351,15 @@ module.exports = (client) => class ChartSession {
       adjustment: options.adjustment || 'splits',
     };
 
+    if (options.backadjustment) symbolInit.backadjustment = 'default';
     if (options.session) symbolInit.session = options.session;
     if (options.currency) symbolInit['currency-id'] = options.currency;
 
     if (options.replay) {
-      this.#replayMode = true;
-      this.#client.send('replay_create_session', [this.#replaySessionID]);
+      if (!this.#replayMode) {
+        this.#replayMode = true;
+        this.#client.send('replay_create_session', [this.#replaySessionID]);
+      }
 
       this.#client.send('replay_add_series', [
         this.#replaySessionID,
@@ -543,6 +547,7 @@ module.exports = (client) => class ChartSession {
     if (this.#replayMode) this.#client.send('replay_delete_session', [this.#replaySessionID]);
     this.#client.send('chart_delete_session', [this.#chartSessionID]);
     delete this.#client.sessions[this.#chartSessionID];
+    delete this.#client.sessions[this.#replaySessionID];
     this.#replayMode = false;
   }
 };

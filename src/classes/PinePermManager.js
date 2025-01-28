@@ -1,4 +1,5 @@
 const axios = require('axios');
+const { genAuthCookies } = require('../utils');
 
 /**
  * @typedef {Object} AuthorizationUser
@@ -39,7 +40,7 @@ class PinePermManager {
    * | 'expiration,user__username'
    * | '-expiration,user__username'
    * } order Fetching order
-   * @returns {AuthorizationUser[]}
+   * @returns {Promise<AuthorizationUser[]>}
    */
   async getUsers(limit = 10, order = '-created') {
     try {
@@ -50,7 +51,7 @@ class PinePermManager {
           headers: {
             origin: 'https://www.tradingview.com',
             'Content-Type': 'application/x-www-form-urlencoded',
-            cookie: `sessionid=${this.sessionId};sessionid_sign=${this.signature};`,
+            cookie: genAuthCookies(this.sessionId, this.signature),
           },
         },
       );
@@ -65,7 +66,7 @@ class PinePermManager {
    * Adds an user to the authorized list
    * @param {string} username User's username
    * @param {Date} [expiration] Expiration date
-   * @returns {'ok' | 'exists' | null}
+   * @returns {Promise<'ok' | 'exists' | null>}
    */
   async addUser(username, expiration = null) {
     try {
@@ -84,7 +85,7 @@ class PinePermManager {
           headers: {
             origin: 'https://www.tradingview.com',
             'Content-Type': 'application/x-www-form-urlencoded',
-            cookie: `sessionid=${this.sessionId};sessionid_sign=${this.signature};`,
+            cookie: genAuthCookies(this.sessionId, this.signature),
           },
         },
       );
@@ -99,7 +100,7 @@ class PinePermManager {
    * Modify an authorization expiration date
    * @param {string} username User's username
    * @param {Date} [expiration] New expiration date
-   * @returns {'ok' | null}
+   * @returns {Promise<'ok' | null>}
    */
   async modifyExpiration(username, expiration = null) {
     try {
@@ -118,7 +119,7 @@ class PinePermManager {
           headers: {
             origin: 'https://www.tradingview.com',
             'Content-Type': 'application/x-www-form-urlencoded',
-            cookie: `sessionid=${this.sessionId};sessionid_sign=${this.signature};`,
+            cookie: genAuthCookies(this.sessionId, this.signature),
           },
         },
       );
@@ -132,7 +133,7 @@ class PinePermManager {
   /**
    * Removes an user to the authorized list
    * @param {string} username User's username
-   * @returns {'ok' | null}
+   * @returns {Promise<'ok' | null>}
    */
   async removeUser(username) {
     try {
@@ -143,7 +144,7 @@ class PinePermManager {
           headers: {
             origin: 'https://www.tradingview.com',
             'Content-Type': 'application/x-www-form-urlencoded',
-            cookie: `sessionid=${this.sessionId};sessionid_sign=${this.signature};`,
+            cookie: genAuthCookies(this.sessionId, this.signature),
           },
         },
       );

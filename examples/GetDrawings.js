@@ -5,14 +5,16 @@ const TradingView = require('../main');
  */
 
 // First parameter must be the layoutID
-// (if the layout is private) Second parameter must be the sessionid cookie
-// (if the layout is private) Third parameter must be the userid (you can use getUser function)
+// If the layout is private:
+// - Second parameter must be the userid (you can use getUser function)
+// - You should provide your sessionid and signature cookies in .env file
 
 if (!process.argv[2]) throw Error('Please specify a layoutID');
 
 TradingView.getDrawings(process.argv[2], null, {
-  session: process.argv[3],
-  id: process.argv[4],
+  session: process.env.SESSION,
+  signature: process.env.SIGNATURE,
+  id: process.argv[3],
 }).then((drawings) => {
   console.log(`Found ${drawings.length} drawings:`, drawings.map((d) => ({
     id: d.id,
