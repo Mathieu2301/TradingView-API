@@ -5,6 +5,7 @@ const protocol = require('./protocol');
 
 const quoteSessionGenerator = require('./quote/session');
 const chartSessionGenerator = require('./chart/session');
+const historySessionGenerator = require('./chart/history');
 
 /**
  * @typedef {Object} Session
@@ -279,6 +280,7 @@ module.exports = class Client {
   Session = {
     Quote: quoteSessionGenerator(this.#clientBridge),
     Chart: chartSessionGenerator(this.#clientBridge),
+    History: historySessionGenerator(this.#clientBridge),
   };
 
   /**
