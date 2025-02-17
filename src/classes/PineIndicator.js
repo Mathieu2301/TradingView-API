@@ -129,4 +129,10 @@ module.exports = class PineIndicator {
       input.value = value;
     } else throw new Error(`Input '${key}' not found (${propI}).`);
   }
+
+  clone() {
+    const newInstance = new PineIndicator(JSON.parse(JSON.stringify(this.#options)));
+    newInstance.#type = this.#type;
+    return newInstance;
+  }
 };
