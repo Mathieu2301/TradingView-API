@@ -134,4 +134,10 @@ module.exports = class BuiltInIndicator {
 
     this.#options[key] = value;
   }
+
+  clone() {
+    const newInstance = new BuiltInIndicator(JSON.parse(JSON.stringify(this.#options)));
+    newInstance.#type = this.#type;
+    return newInstance;
+  }
 };
