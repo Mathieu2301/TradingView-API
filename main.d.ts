@@ -77,11 +77,10 @@ declare module '@mathieuc/tradingview' {
 
         end(): Promise<void>;
 
-        // @ts-ignore
-        Session = {
-            Quote: QuoteSession,
-            Chart: ChartSession,
-            History: HistorySession,
+        Session: {
+            Quote: typeof QuoteSession,
+            Chart: typeof ChartSession,
+            History: typeof HistorySession,
         };
     }
 
@@ -1030,8 +1029,7 @@ declare module '@mathieuc/tradingview' {
 
         delete(): void;
 
-        //@ts-ignore
-        Study = ChartStudy;
+        Study: typeof ChartStudy;
     }
 
     // src/chart/history
