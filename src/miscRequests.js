@@ -428,10 +428,11 @@ module.exports = {
    * @returns {Promise<User>} Token
    */
   async getUser(session, signature = '', location = 'https://www.tradingview.com/') {
-    const { data } = await axios.get(location, {
+    const { data, headers } = await axios.get(location, {
       headers: {
         cookie: genAuthCookies(session, signature),
       },
+      maxRedirects: 0,
       validateStatus,
     });
 
@@ -455,6 +456,10 @@ module.exports = {
         authToken: /"auth_token":"(.*?)"/.exec(data)?.[1],
         joinDate: new Date(/"date_joined":"(.*?)"/.exec(data)?.[1] || 0),
       };
+    }
+
+    if (headers.location !== location) {
+      return this.getUser(session, signature, headers.location);
     }
 
     throw new Error('Wrong or expired sessionid/signature');
