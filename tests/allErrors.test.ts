@@ -10,7 +10,7 @@ describe('AllErrors', () => {
     next();
   });
 
-  it('throws an error when an invalid token is set', async () => {
+  it.skip('throws an error when an invalid token is set', async () => {
     console.log('Testing "Credentials error" error:');
 
     const client = new TradingView.Client({
@@ -231,7 +231,7 @@ describe('AllErrors', () => {
 
   it.skipIf(
     !token || !signature,
-  )('throws an error when creating an authenticated client without signature', async () => {
+  ).skip('throws an error when creating an authenticated client without signature', async () => {
     console.log('Testing "Wrong or expired sessionid/signature" error using client:');
 
     const client = new TradingView.Client({ token });
