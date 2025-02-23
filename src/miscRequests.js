@@ -1,8 +1,11 @@
 const os = require('os');
 const axios = require('axios');
+const zlib = require('zlib');
+const { writeFile } = require('fs/promises');
 
 const PineIndicator = require('./classes/PineIndicator');
-const { genAuthCookies } = require('./utils');
+const { genAuthCookies, toTitleCase } = require('./utils');
+const { createLayoutContentBlob } = require('./layout/contentBlob');
 
 const validateStatus = (status) => status < 500;
 
@@ -10,14 +13,9 @@ const indicators = ['Recommend.Other', 'Recommend.All', 'Recommend.MA'];
 const builtInIndicList = [];
 
 async function fetchScanData(tickers = [], columns = []) {
-  const { data } = await axios.post(
-    'https://scanner.tradingview.com/global/scan',
-    {
-      symbols: { tickers },
-      columns,
-    },
-    { validateStatus },
-  );
+  const { data } = await axios.post('https://scanner.tradingview.com/global/scan', {
+    symbols: { tickers }, columns,
+  }, { validateStatus });
 
   return data;
 }
@@ -47,11 +45,11 @@ async function fetchScanData(tickers = [], columns = []) {
 
 module.exports = {
   /**
-   * Get technical analysis
-   * @function getTA
-   * @param {string} id Full market id (Example: COINBASE:BTCEUR)
-   * @returns {Promise<Periods>} results
-   */
+     * Get technical analysis
+     * @function getTA
+     * @param {string} id Full market id (Example: COINBASE:BTCEUR)
+     * @returns {Promise<Periods>} results
+     */
   async getTA(id) {
     const advice = {};
 
@@ -73,41 +71,37 @@ module.exports = {
   },
 
   /**
-   * @typedef {Object} SearchMarketResult
-   * @prop {string} id Market full symbol
-   * @prop {string} exchange Market exchange name
-   * @prop {string} fullExchange Market exchange full name
-   * @prop {string} symbol Market symbol
-   * @prop {string} description Market name
-   * @prop {string} type Market type
-   * @prop {() => Promise<Periods>} getTA Get market technical analysis
-   */
+     * @typedef {Object} SearchMarketResult
+     * @prop {string} id Market full symbol
+     * @prop {string} exchange Market exchange name
+     * @prop {string} fullExchange Market exchange full name
+     * @prop {string} symbol Market symbol
+     * @prop {string} description Market name
+     * @prop {string} type Market type
+     * @prop {() => Promise<Periods>} getTA Get market technical analysis
+     */
 
   /**
-   * Find a symbol (deprecated)
-   * @function searchMarket
-   * @param {string} search Keywords
-   * @param {'stock'
-   *  | 'futures' | 'forex' | 'cfd'
-   *  | 'crypto' | 'index' | 'economic'
-   * } [filter] Caterogy filter
-   * @returns {Promise<SearchMarketResult[]>} Search results
-   * @deprecated Use searchMarketV3 instead
-   */
+     * Find a symbol (deprecated)
+     * @function searchMarket
+     * @param {string} search Keywords
+     * @param {'stock'
+     *  | 'futures' | 'forex' | 'cfd'
+     *  | 'crypto' | 'index' | 'economic'
+     * } [filter] Caterogy filter
+     * @returns {Promise<SearchMarketResult[]>} Search results
+     * @deprecated Use searchMarketV3 instead
+     */
   async searchMarket(search, filter = '') {
-    const { data } = await axios.get(
-      'https://symbol-search.tradingview.com/symbol_search',
-      {
-        params: {
-          text: search.replace(/ /g, '%20'),
-          type: filter,
-        },
-        headers: {
-          origin: 'https://www.tradingview.com',
-        },
-        validateStatus,
+    const { data } = await axios.get('https://symbol-search.tradingview.com/symbol_search', {
+      params: {
+        text: search.replace(/ /g, '%20'), type: filter,
       },
-    );
+      headers: {
+        origin: 'https://www.tradingview.com',
+      },
+      validateStatus,
+    });
 
     return data.map((s) => {
       const exchange = s.exchange.split(' ')[0];
@@ -126,35 +120,29 @@ module.exports = {
   },
 
   /**
-   * Find a symbol
-   * @function searchMarketV3
-   * @param {string} search Keywords
-   * @param {'stock'
-   *  | 'futures' | 'forex' | 'cfd'
-   *  | 'crypto' | 'index' | 'economic'
-   * } [filter] Caterogy filter
-   * @returns {Promise<SearchMarketResult[]>} Search results
-   */
+     * Find a symbol
+     * @function searchMarketV3
+     * @param {string} search Keywords
+     * @param {'stock'
+     *  | 'futures' | 'forex' | 'cfd'
+     *  | 'crypto' | 'index' | 'economic'
+     * } [filter] Caterogy filter
+     * @returns {Promise<SearchMarketResult[]>} Search results
+     */
   async searchMarketV3(search, filter = '') {
     const splittedSearch = search.toUpperCase().replace(/ /g, '+').split(':');
 
-    const request = await axios.get(
-      'https://symbol-search.tradingview.com/symbol_search/v3',
-      {
-        params: {
-          exchange: (splittedSearch.length === 2
-            ? splittedSearch[0]
-            : undefined
-          ),
-          text: splittedSearch.pop(),
-          search_type: filter,
-        },
-        headers: {
-          origin: 'https://www.tradingview.com',
-        },
-        validateStatus,
+    const request = await axios.get('https://symbol-search.tradingview.com/symbol_search/v3', {
+      params: {
+        exchange: (splittedSearch.length === 2 ? splittedSearch[0] : undefined),
+        text: splittedSearch.pop(),
+        search_type: filter,
       },
-    );
+      headers: {
+        origin: 'https://www.tradingview.com',
+      },
+      validateStatus,
+    });
 
     const { data } = request;
 
@@ -175,116 +163,101 @@ module.exports = {
   },
 
   /**
-   * @typedef {Object} SearchIndicatorResult
-   * @prop {string} id Script ID
-   * @prop {string} version Script version
-   * @prop {string} name Script complete name
-   * @prop {{ id: number, username: string }} author Author user ID
-   * @prop {string} image Image ID https://tradingview.com/i/${image}
-   * @prop {string | ''} source Script source (if available)
-   * @prop {'study' | 'strategy'} type Script type (study / strategy)
-   * @prop {'open_source' | 'closed_source' | 'invite_only'
-   *  | 'private' | 'other'} access Script access type
-   * @prop {() => Promise<PineIndicator>} get Get the full indicator informations
-   */
+     * @typedef {Object} SearchIndicatorResult
+     * @prop {string} id Script ID
+     * @prop {string} version Script version
+     * @prop {string} name Script complete name
+     * @prop {{ id: number, username: string }} author Author user ID
+     * @prop {string} image Image ID https://tradingview.com/i/${image}
+     * @prop {string | ''} source Script source (if available)
+     * @prop {'study' | 'strategy'} type Script type (study / strategy)
+     * @prop {'open_source' | 'closed_source' | 'invite_only'
+     *  | 'private' | 'other'} access Script access type
+     * @prop {() => Promise<PineIndicator>} get Get the full indicator informations
+     */
 
   /**
-   * Find an indicator
-   * @function searchIndicator
-   * @param {string} search Keywords
-   * @returns {Promise<SearchIndicatorResult[]>} Search results
-   */
+     * Find an indicator
+     * @function searchIndicator
+     * @param {string} search Keywords
+     * @returns {Promise<SearchIndicatorResult[]>} Search results
+     */
   async searchIndicator(search = '') {
     if (!builtInIndicList.length) {
       await Promise.all(['standard', 'candlestick', 'fundamental'].map(async (type) => {
-        const { data } = await axios.get(
-          'https://pine-facade.tradingview.com/pine-facade/list',
-          {
-            params: {
-              filter: type,
-            },
-            validateStatus,
+        const { data } = await axios.get('https://pine-facade.tradingview.com/pine-facade/list', {
+          params: {
+            filter: type,
           },
-        );
+          validateStatus,
+        });
         builtInIndicList.push(...data);
       }));
     }
 
-    const { data } = await axios.get(
-      'https://www.tradingview.com/pubscripts-suggest-json',
-      {
-        params: {
-          search: search.replace(/ /g, '%20'),
-        },
-        validateStatus,
+    const { data } = await axios.get('https://www.tradingview.com/pubscripts-suggest-json', {
+      params: {
+        search: search.replace(/ /g, '%20'),
       },
-    );
+      validateStatus,
+    });
 
     function norm(str = '') {
       return str.toUpperCase().replace(/[^A-Z]/g, '');
     }
 
-    return [
-      ...builtInIndicList.filter((i) => (
-        norm(i.scriptName).includes(norm(search))
-        || norm(i.extra.shortDescription).includes(norm(search))
-      )).map((ind) => ({
-        id: ind.scriptIdPart,
-        version: ind.version,
-        name: ind.scriptName,
-        author: {
-          id: ind.userId,
-          username: '@TRADINGVIEW@',
-        },
-        image: '',
-        access: 'closed_source',
-        source: '',
-        type: (ind.extra && ind.extra.kind) ? ind.extra.kind : 'study',
-        get() {
-          return module.exports.getIndicator(ind.scriptIdPart, ind.version);
-        },
-      })),
+    // eslint-disable-next-line max-len
+    return [...builtInIndicList.filter((i) => (norm(i.scriptName).includes(norm(search)) || norm(i.extra.shortDescription).includes(norm(search)))).map((ind) => ({
+      id: ind.scriptIdPart,
+      version: ind.version,
+      name: ind.scriptName,
+      author: {
+        id: ind.userId, username: '@TRADINGVIEW@',
+      },
+      image: '',
+      access: 'closed_source',
+      source: '',
+      type: (ind.extra && ind.extra.kind) ? ind.extra.kind : 'study',
+      get() {
+        return module.exports.getIndicator(ind.scriptIdPart, ind.version);
+      },
+    })),
 
-      ...data.results.map((ind) => ({
-        id: ind.scriptIdPart,
-        version: ind.version,
-        name: ind.scriptName,
-        author: {
-          id: ind.author.id,
-          username: ind.author.username,
-        },
-        image: ind.imageUrl,
-        access: ['open_source', 'closed_source', 'invite_only'][ind.access - 1] || 'other',
-        source: ind.scriptSource,
-        type: (ind.extra && ind.extra.kind) ? ind.extra.kind : 'study',
-        get() {
-          return module.exports.getIndicator(ind.scriptIdPart, ind.version);
-        },
-      })),
-    ];
+    ...data.results.map((ind) => ({
+      id: ind.scriptIdPart,
+      version: ind.version,
+      name: ind.scriptName,
+      author: {
+        id: ind.author.id, username: ind.author.username,
+      },
+      image: ind.imageUrl,
+      access: ['open_source', 'closed_source', 'invite_only'][ind.access - 1] || 'other',
+      source: ind.scriptSource,
+      type: (ind.extra && ind.extra.kind) ? ind.extra.kind : 'study',
+      get() {
+        return module.exports.getIndicator(ind.scriptIdPart, ind.version);
+      },
+    }))];
   },
 
   /**
-   * Get an indicator
-   * @function getIndicator
-   * @param {string} id Indicator ID (Like: PUB;XXXXXXXXXXXXXXXXXXXXX)
-   * @param {'last' | string} [version] Wanted version of the indicator
-   * @param {string} [session] User 'sessionid' cookie
-   * @param {string} [signature] User 'sessionid_sign' cookie
-   * @returns {Promise<PineIndicator>} Indicator
-   */
+     * Get an indicator
+     * @function getIndicator
+     * @param {string} id Indicator ID (Like: PUB;XXXXXXXXXXXXXXXXXXXXX)
+     * @param {'last' | string} [version] Wanted version of the indicator
+     * @param {string} [session] User 'sessionid' cookie
+     * @param {string} [signature] User 'sessionid_sign' cookie
+     * @returns {Promise<PineIndicator>} Indicator
+     */
   async getIndicator(id, version = 'last', session = '', signature = '') {
     const indicID = id.replace(/ |%/g, '%25');
 
-    const { data } = await axios.get(
-      `https://pine-facade.tradingview.com/pine-facade/translate/${indicID}/${version}`,
-      {
-        headers: {
-          cookie: genAuthCookies(session, signature),
-        },
-        validateStatus,
+    const { data } = await axios.get(`https://pine-facade.tradingview.com/pine-facade/translate/${indicID}/${version}`, {
+      headers: {
+        cookie: genAuthCookies(session, signature),
       },
-    );
+      validateStatus,
+    });
 
     if (!data.success || !data.result.metaInfo || !data.result.metaInfo.inputs) {
       throw new Error(`Inexistent or unsupported indicator: "${data.reason}"`);
@@ -315,10 +288,7 @@ module.exports = {
     const plots = {};
 
     Object.keys(data.result.metaInfo.styles).forEach((plotId) => {
-      const plotTitle = data
-        .result
-        .metaInfo
-        .styles[plotId]
+      const plotTitle = data.result.metaInfo.styles[plotId]
         .title
         .replace(/ /g, '_')
         .replace(/[^a-zA-Z0-9_]/g, '');
@@ -349,33 +319,68 @@ module.exports = {
   },
 
   /**
-   * Load a personal/custom indicator
-   * @function getPersonalIndicator
-   * @param {string} id Indicator ID (Like: USER;XXXXXXXXXXXXXXXXXXXXX)
-   * @param {string} session User 'sessionid' cookie
-   * @param {string} [signature] User 'sessionid_sign' cookie
-   * @returns {Promise<PineIndicator>} Indicator
-   */
+     * Get a raw indicator
+     * @function getRawIndicator
+     * @param {string} id Indicator ID (Like: PUB;XXXXXXXXXXXXXXXXXXXXX)
+     * @param {'last' | string} [version] Wanted version of the indicator
+     * @param {string} [session] User 'sessionid' cookie
+     * @param {string} [signature] User 'sessionid_sign' cookie
+     * @returns {Promise<RawPineIndicator>} RawPineIndicator
+     */
+  async getRawIndicator(id, version = 'last', session = '', signature = '') {
+    const indicID = id.replace(/ |%/g, '%25');
+
+    const { data } = await axios.get(`https://pine-facade.tradingview.com/pine-facade/translate/${indicID}/${version}`, {
+      headers: {
+        cookie: genAuthCookies(session, signature),
+      },
+      validateStatus,
+    });
+
+    if (!data.success || !data.result.metaInfo || !data.result.metaInfo.inputs) {
+      throw new Error(`Inexistent or unsupported indicator: "${data.reason}"`);
+    }
+
+    const indicator = {
+      ...data?.result,
+
+      get inputValues() {
+        return this.metaInfo.defaults.inputs;
+      },
+
+      get inputs() {
+        return this.metaInfo.inputs;
+      },
+
+      setInputValue(inputKey, value) {
+        this.metaInfo.defaults.inputs[inputKey] = value;
+      },
+    };
+
+    return indicator;
+  },
+
+  /**
+     * Load a personal/custom indicator
+     * @function getPersonalIndicator
+     * @param {string} id Indicator ID (Like: USER;XXXXXXXXXXXXXXXXXXXXX)
+     * @param {string} session User 'sessionid' cookie
+     * @param {string} [signature] User 'sessionid_sign' cookie
+     * @returns {Promise<PineIndicator>} Indicator
+     */
   async getPersonalIndicator(id, session, signature) {
     const indicID = id.replace(/ |%/g, '%25').replace(';', '%3B');
 
-    const { data } = await axios.get(
-        `https://pine-facade.tradingview.com/pine-facade/translate/${indicID}/1.0`,
-        {
-          validateStatus,
-          headers: {
-            cookie: `sessionid=${session}${
-                signature ? `;sessionid_sign=${signature};` : ''
-            }`,
-          },
-        },
-    );
+    const { data } = await axios.get(`https://pine-facade.tradingview.com/pine-facade/translate/${indicID}/1.0`, {
+      validateStatus,
+      headers: {
+        cookie: `sessionid=${session}${signature ? `;sessionid_sign=${signature};` : ''}`,
+      },
+    });
 
-    if (data === 'The user requesting information on the script is not allowed to do so')
-      throw new Error('User does not have access to this script.');
+    if (data === 'The user requesting information on the script is not allowed to do so') throw new Error('User does not have access to this script.');
 
-    if (!data.success || !data.result.metaInfo || !data.result.metaInfo.inputs)
-      throw new Error(`Inexistent or unsupported indicator: "${data.reason}"`);
+    if (!data.success || !data.result.metaInfo || !data.result.metaInfo.inputs) throw new Error(`Inexistent or unsupported indicator: "${data.reason}"`);
 
     const inputs = {};
 
@@ -383,8 +388,8 @@ module.exports = {
       if (['text', 'pineId', 'pineVersion'].includes(input.id)) return;
 
       const inlineName = input.name
-          .replace(/ /g, '_')
-          .replace(/[^a-zA-Z0-9_]/g, '');
+        .replace(/ /g, '_')
+        .replace(/[^a-zA-Z0-9_]/g, '');
 
       inputs[input.id] = {
         name: input.name,
@@ -405,8 +410,8 @@ module.exports = {
 
     Object.keys(data.result.metaInfo.styles).forEach((plotId) => {
       const plotTitle = data.result.metaInfo.styles[plotId].title
-          .replace(/ /g, '_')
-          .replace(/[^a-zA-Z0-9_]/g, '');
+        .replace(/ /g, '_')
+        .replace(/[^a-zA-Z0-9_]/g, '');
 
       const titles = Object.values(plots);
 
@@ -424,7 +429,7 @@ module.exports = {
 
     return new PineIndicator({
       pineId: data.result.metaInfo.scriptIdPart || indicID,
-      pineVersion: data.result.metaInfo.pine.version || version,
+      pineVersion: data.result.metaInfo.pine.version,
       description: data.result.metaInfo.description,
       shortDescription: data.result.metaInfo.shortDescription,
       inputs,
@@ -434,47 +439,45 @@ module.exports = {
   },
 
   /**
-   * @typedef {Object} User Instance of User
-   * @prop {number} id User ID
-   * @prop {string} username User username
-   * @prop {string} firstName User first name
-   * @prop {string} lastName User last name
-   * @prop {number} reputation User reputation
-   * @prop {number} following Number of following accounts
-   * @prop {number} followers Number of followers
-   * @prop {Object} notifications User's notifications
-   * @prop {number} notifications.user User notifications
-   * @prop {number} notifications.following Notification from following accounts
-   * @prop {string} session User session
-   * @prop {string} sessionHash User session hash
-   * @prop {string} signature User session signature
-   * @prop {string} privateChannel User private channel
-   * @prop {string} authToken User auth token
-   * @prop {Date} joinDate Account creation date
-   */
+     * @typedef {Object} User Instance of User
+     * @prop {number} id User ID
+     * @prop {string} username User username
+     * @prop {string} firstName User first name
+     * @prop {string} lastName User last name
+     * @prop {number} reputation User reputation
+     * @prop {number} following Number of following accounts
+     * @prop {number} followers Number of followers
+     * @prop {Object} notifications User's notifications
+     * @prop {number} notifications.user User notifications
+     * @prop {number} notifications.following Notification from following accounts
+     * @prop {string} session User session
+     * @prop {string} sessionHash User session hash
+     * @prop {string} signature User session signature
+     * @prop {string} privateChannel User private channel
+     * @prop {string} authToken User auth token
+     * @prop {Date} joinDate Account creation date
+     */
 
   /**
-   * Get user and sessionid from username/email and password
-   * @function loginUser
-   * @param {string} username User username/email
-   * @param {string} password User password
-   * @param {boolean} [remember] Remember the session (default: false)
-   * @param {string} [UA] Custom UserAgent
-   * @returns {Promise<User>} Token
-   */
+     * Get user and sessionid from username/email and password
+     * @function loginUser
+     * @param {string} username User username/email
+     * @param {string} password User password
+     * @param {boolean} [remember] Remember the session (default: false)
+     * @param {string} [UA] Custom UserAgent
+     * @returns {Promise<User>} Token
+     */
   async loginUser(username, password, remember = true, UA = 'TWAPI/3.0') {
-    const { data, headers } = await axios.post(
-      'https://www.tradingview.com/accounts/signin/',
-      `username=${username}&password=${password}${remember ? '&remember=on' : ''}`,
-      {
-        headers: {
-          referer: 'https://www.tradingview.com',
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'User-agent': `${UA} (${os.version()}; ${os.platform()}; ${os.arch()})`,
-        },
-        validateStatus,
+    const {
+      data, headers,
+    } = await axios.post('https://www.tradingview.com/accounts/signin/', `username=${username}&password=${password}${remember ? '&remember=on' : ''}`, {
+      headers: {
+        referer: 'https://www.tradingview.com',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'User-agent': `${UA} (${os.version()}; ${os.platform()}; ${os.arch()})`,
       },
-    );
+      validateStatus,
+    });
 
     const cookies = headers['set-cookie'];
 
@@ -505,13 +508,13 @@ module.exports = {
   },
 
   /**
-   * Get user from 'sessionid' cookie
-   * @function getUser
-   * @param {string} session User 'sessionid' cookie
-   * @param {string} [signature] User 'sessionid_sign' cookie
-   * @param {string} [location] Auth page location (For france: https://fr.tradingview.com/)
-   * @returns {Promise<User>} Token
-   */
+     * Get user from 'sessionid' cookie
+     * @function getUser
+     * @param {string} session User 'sessionid' cookie
+     * @param {string} [signature] User 'sessionid_sign' cookie
+     * @param {string} [location] Auth page location (For france: https://fr.tradingview.com/)
+     * @returns {Promise<User>} Token
+     */
   async getUser(session, signature = '', location = 'https://www.tradingview.com/') {
     const { data } = await axios.get(location, {
       headers: {
@@ -546,135 +549,105 @@ module.exports = {
   },
 
   /**
-   * Get user's private indicators from a 'sessionid' cookie
-   * @function getPrivateIndicators
-   * @param {string} session User 'sessionid' cookie
-   * @param {string} [signature] User 'sessionid_sign' cookie
-   * @returns {Promise<SearchIndicatorResult[]>} Search results
-   */
+     * Get user's private indicators from a 'sessionid' cookie
+     * @function getPrivateIndicators
+     * @param {string} session User 'sessionid' cookie
+     * @param {string} [signature] User 'sessionid_sign' cookie
+     * @returns {Promise<SearchIndicatorResult[]>} Search results
+     */
   async getPrivateIndicators(session, signature = '') {
-    const { data } = await axios.get(
-      'https://pine-facade.tradingview.com/pine-facade/list',
-      {
-        headers: {
-          cookie: genAuthCookies(session, signature),
-        },
-        params: {
-          filter: 'saved',
-        },
-        validateStatus,
+    const { data } = await axios.get('https://pine-facade.tradingview.com/pine-facade/list', {
+      headers: {
+        cookie: genAuthCookies(session, signature),
       },
-    );
+      params: {
+        filter: 'saved',
+      },
+      validateStatus,
+    });
 
     return data.map((ind) => ({
       id: ind.scriptIdPart,
       version: ind.version,
       name: ind.scriptName,
       author: {
-        id: -1,
-        username: '@ME@',
+        id: -1, username: '@ME@',
       },
       image: ind.imageUrl,
       access: 'private',
       source: ind.scriptSource,
       type: (ind.extra && ind.extra.kind) ? ind.extra.kind : 'study',
       get() {
-        return module.exports.getIndicator(
-          ind.scriptIdPart,
-          ind.version,
-          session,
-          signature,
-        );
+        return module.exports.getIndicator(ind.scriptIdPart, ind.version, session, signature);
       },
     }));
   },
 
   /**
-   * Get user's invite only scripts from a 'sessionid' cookie
-   * @function getInviteOnlyScripts
-   * @param {string} session User 'sessionid' cookie
-   * @param {string} [signature] User 'sessionid_sign' cookie
-   * @returns {Promise<Data[]>} invite only scripts
-   */
-  async getInviteOnlyScripts(session, signature = "") {
-    const { data: prefetch } = await axios.get(
-        "https://www.tradingview.com/pine_perm/list_scripts",
-        {
-          validateStatus,
-          headers: {
-            cookie: `sessionid=${session}${
-                signature ? `;sessionid_sign=${signature};` : ""
-            }`,
-          },
-        }
-    );
+     * Get user's invite only scripts from a 'sessionid' cookie
+     * @function getInviteOnlyScripts
+     * @param {string} session User 'sessionid' cookie
+     * @param {string} [signature] User 'sessionid_sign' cookie
+     * @returns {Promise<Data[]>} invite only scripts
+     */
+  async getInviteOnlyScripts(session, signature = '') {
+    const { data: prefetch } = await axios.get('https://www.tradingview.com/pine_perm/list_scripts', {
+      validateStatus,
+      headers: {
+        cookie: `sessionid=${session}${signature ? `;sessionid_sign=${signature};` : ''}`,
+      },
+    });
 
     const requestBody = {
-      scriptIdPart: prefetch,
-      show_hidden: false,
+      scriptIdPart: prefetch, show_hidden: false,
     };
 
     // Manually construct the form-urlencoded string
     const formData = Object.keys(requestBody)
-        .map(
-            (key) =>
-                encodeURIComponent(key) + "=" + encodeURIComponent(requestBody[key])
-        )
-        .join("&");
+      .map((key) => `${encodeURIComponent(key)}=${encodeURIComponent(requestBody[key])}`)
+      .join('&');
 
-    const { data } = await axios.post(
-        "https://www.tradingview.com/pubscripts-get/",
-        formData,
-        {
-          validateStatus,
-          headers: {
-            referer: "https://www.tradingview.com",
-            "Content-Type": "application/x-www-form-urlencoded",
-            cookie: `sessionid=${session}${
-                signature ? `;sessionid_sign=${signature};` : ""
-            }`,
-          },
-        }
-    );
+    const { data } = await axios.post('https://www.tradingview.com/pubscripts-get/', formData, {
+      validateStatus,
+      headers: {
+        referer: 'https://www.tradingview.com',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        cookie: `sessionid=${session}${signature ? `;sessionid_sign=${signature};` : ''}`,
+      },
+    });
 
     return data;
   },
 
   /**
-   * User credentials
-   * @typedef {Object} UserCredentials
-   * @prop {number} id User ID
-   * @prop {string} session User session ('sessionid' cookie)
-   * @prop {string} [signature] User session signature ('sessionid_sign' cookie)
-   */
+     * User credentials
+     * @typedef {Object} UserCredentials
+     * @prop {number} id User ID
+     * @prop {string} session User session ('sessionid' cookie)
+     * @prop {string} [signature] User session signature ('sessionid_sign' cookie)
+     */
 
   /**
-   * Get a chart token from a layout ID and the user credentials if the layout is not public
-   * @function getChartToken
-   * @param {string} layout The layout ID found in the layout URL (Like: 'XXXXXXXX')
-   * @param {UserCredentials} [credentials] User credentials (id + session + [signature])
-   * @returns {Promise<string>} Token
-   */
+     * Get a chart token from a layout ID and the user credentials if the layout is not public
+     * @function getChartToken
+     * @param {string} layout The layout ID found in the layout URL (Like: 'XXXXXXXX')
+     * @param {UserCredentials} [credentials] User credentials (id + session + [signature])
+     * @returns {Promise<string>} Token
+     */
   async getChartToken(layout, credentials = {}) {
-    const { id, session, signature } = (
-      credentials.id && credentials.session
-        ? credentials
-        : { id: -1, session: null, signature: null }
-    );
+    const { id, session, signature } = (credentials.id && credentials.session ? credentials : {
+      id: -1, session: null, signature: null,
+    });
 
-    const { data } = await axios.get(
-      'https://www.tradingview.com/chart-token',
-      {
-        headers: {
-          cookie: genAuthCookies(session, signature),
-        },
-        params: {
-          image_url: layout,
-          user_id: id,
-        },
-        validateStatus,
+    const { data } = await axios.get('https://www.tradingview.com/chart-token', {
+      headers: {
+        cookie: genAuthCookies(session, signature),
       },
-    );
+      params: {
+        image_url: layout, user_id: id,
+      },
+      validateStatus,
+    });
 
     if (!data.token) throw new Error('Wrong layout or credentials');
 
@@ -682,57 +655,176 @@ module.exports = {
   },
 
   /**
-   * @typedef {Object} DrawingPoint Drawing poitn
-   * @prop {number} time_t Point X time position
-   * @prop {number} price Point Y price position
-   * @prop {number} offset Point offset
-   */
+     * @typedef {Object} DrawingPoint Drawing poitn
+     * @prop {number} time_t Point X time position
+     * @prop {number} price Point Y price position
+     * @prop {number} offset Point offset
+     */
 
   /**
-   * @typedef {Object} Drawing
-   * @prop {string} id Drawing ID (Like: 'XXXXXX')
-   * @prop {string} symbol Layout market symbol (Like: 'BINANCE:BUCEUR')
-   * @prop {string} ownerSource Owner user ID (Like: 'XXXXXX')
-   * @prop {string} serverUpdateTime Drawing last update timestamp
-   * @prop {string} currencyId Currency ID (Like: 'EUR')
-   * @prop {any} unitId Unit ID
-   * @prop {string} type Drawing type
-   * @prop {DrawingPoint[]} points List of drawing points
-   * @prop {number} zorder Drawing Z order
-   * @prop {string} linkKey Drawing link key
-   * @prop {Object} state Drawing state
-   */
+     * @typedef {Object} Drawing
+     * @prop {string} id Drawing ID (Like: 'XXXXXX')
+     * @prop {string} symbol Layout market symbol (Like: 'BINANCE:BUCEUR')
+     * @prop {string} ownerSource Owner user ID (Like: 'XXXXXX')
+     * @prop {string} serverUpdateTime Drawing last update timestamp
+     * @prop {string} currencyId Currency ID (Like: 'EUR')
+     * @prop {any} unitId Unit ID
+     * @prop {string} type Drawing type
+     * @prop {DrawingPoint[]} points List of drawing points
+     * @prop {number} zorder Drawing Z order
+     * @prop {string} linkKey Drawing link key
+     * @prop {Object} state Drawing state
+     */
 
   /**
-   * Get a chart token from a layout ID and the user credentials if the layout is not public
-   * @function getDrawings
-   * @param {string} layout The layout ID found in the layout URL (Like: 'XXXXXXXX')
-   * @param {string | ''} [symbol] Market filter (Like: 'BINANCE:BTCEUR')
-   * @param {UserCredentials} [credentials] User credentials (id + session + [signature])
-   * @param {number} [chartID] Chart ID
-   * @returns {Promise<Drawing[]>} Drawings
-   */
+     * Get a chart token from a layout ID and the user credentials if the layout is not public
+     * @function getDrawings
+     * @param {string} layout The layout ID found in the layout URL (Like: 'XXXXXXXX')
+     * @param {string | ''} [symbol] Market filter (Like: 'BINANCE:BTCEUR')
+     * @param {UserCredentials} [credentials] User credentials (id + session + [signature])
+     * @param {number} [chartID] Chart ID
+     * @returns {Promise<Drawing[]>} Drawings
+     */
   async getDrawings(layout, symbol = '', credentials = {}, chartID = '_shared') {
     const chartToken = await module.exports.getChartToken(layout, credentials);
 
-    const { data } = await axios.get(
-      `https://charts-storage.tradingview.com/charts-storage/get/layout/${
-        layout
-      }/sources`,
-      {
-        params: {
-          chart_id: chartID,
-          jwt: chartToken,
-          symbol,
-        },
-        validateStatus,
+    const { data } = await axios.get(`https://charts-storage.tradingview.com/charts-storage/get/layout/${layout}/sources`, {
+      params: {
+        chart_id: chartID, jwt: chartToken, symbol,
       },
-    );
+      validateStatus,
+    });
 
     if (!data.payload) throw new Error('Wrong layout, user credentials, or chart id.');
 
     return Object.values(data.payload.sources || {}).map((drawing) => ({
       ...drawing, ...drawing.state,
     }));
+  },
+
+  /**
+     * Create a new layout
+     * @function createLayout
+     * @param {string} name Layout name
+     * @param {string} session User 'sessionid' cookie
+     * @param {string} [signature] User 'sessionid_sign' cookie
+     * @returns {Promise<Layout>} Layouts
+     */
+  async createBlankLayout(name, session, signature = '') {
+    const createLayoutResponse = await fetch('https://www.tradingview.com/charts/', {
+      method: 'POST',
+      headers: {
+        cookie: genAuthCookies(session, signature),
+        Accept: '*/*',
+        'Accept-Encoding': 'gzip, deflate, br, zstd',
+        DNT: '1',
+        Origin: 'https://www.tradingview.com',
+      },
+      body: JSON.stringify({ name }),
+      credentials: 'include',
+    });
+
+    if (!createLayoutResponse.ok) throw new Error('Failed to create layout.');
+
+    const layouts = await this.getLayouts(session, signature);
+
+    const layout = layouts.find((l) => l.name === name);
+    if (!layout) throw new Error(`Unable to find Layout '${name}'.`);
+
+    return layout;
+  },
+
+  /**
+     * Get user's layouts
+     * @function getLayouts
+     * @param {string} session User 'sessionid' cookie
+     * @param {string} [signature] User 'sessionid_sign' cookie
+     * @returns {Promise<Layout[]>} Layouts
+     */
+  async getLayouts(session, signature = '') {
+    const { data: layouts } = await axios.get('https://www.tradingview.com/my-charts/', {
+      headers: {
+        cookie: genAuthCookies(session, signature),
+      },
+      validateStatus,
+    });
+
+    return layouts || [];
+  },
+
+  /**
+     * Replaces an existing layout
+     * @function replaceLayout
+     * @param {Layout} layout Layout
+     * @param {string} symbol symbol
+     * @param {string} interval interval
+     * @param {string} studyId studyId
+     * @param {string} indicatorId indicatorId
+     * @param {Record<string, any>} indicatorValues indicatorValues
+     * @param {string} session User 'sessionid' cookie
+     * @param {string} [signature] User 'sessionid_sign' cookie
+     * @returns {Promise<string>} Layout URL
+     */
+  async replaceLayout(layout, symbol, interval, studyId, indicatorId, indicatorValues, session, signature) {
+    const formData = new FormData();
+    formData.append('id', layout.id);
+    formData.append('name', layout.name);
+    formData.append('description', layout.name);
+    formData.append('symbol_type', 'swap'); // TODO is this needed to change?
+    formData.append('symbol', symbol);
+    formData.append('legs', JSON.stringify([{ symbol, pro_symbol: symbol }]));
+    formData.append('charts_symbols', JSON.stringify({ 1: { symbol } }));
+    formData.append('resolution', interval);
+
+    const [broker, coin] = symbol.split(':');
+    formData.append('exchange', toTitleCase(broker));
+    formData.append('listed_exchange', broker);
+    formData.append('short_name', coin);
+
+    formData.append('is_realtime', '1');
+    // formData.append('savingToken', '0.7257906314572806');  //TODO is this needed?
+
+    const rawIndicator = await this.getRawIndicator(indicatorId, 'last', session, signature);
+    Object.entries(indicatorValues).forEach(([key, value]) => rawIndicator.setInputValue(key, value));
+
+    const contentBlob = createLayoutContentBlob(layout.name, symbol, interval, studyId, rawIndicator);
+    const gzipData = zlib.gzipSync(JSON.stringify(contentBlob));
+    formData.append('content', new Blob([gzipData], { type: 'application/gzip' }), 'blob.gz');
+
+    const response = await fetch('https://www.tradingview.com/savechart/', {
+      method: 'POST',
+      headers: {
+        cookie: genAuthCookies(process.env.TV_SESSION_ID, process.env.TV_SESSION_SIGNATURE),
+        Accept: '*/*',
+        'Accept-Encoding': 'gzip, deflate, br, zstd',
+        DNT: '1',
+        Origin: 'https://www.tradingview.com',
+      },
+      body: formData,
+      credentials: 'include',
+    });
+
+    if (!response.ok) throw new Error(`Failed to save layout: ${layout.id} /${layout.image_url}/`);
+
+    return `https://www.tradingview.com/chart/${layout.image_url}/`;
+  },
+
+  /**
+     * Creates a new layout and populates it with the provided indicator setup
+     * @function createLayout
+     * @param {string} name name
+     * @param {string} symbol symbol
+     * @param {string} interval interval
+     * @param {string} studyId studyId
+     * @param {string} indicatorId indicatorId
+     * @param {Record<string, any>} indicatorValues indicatorValues
+     * @param {string} session User 'sessionid' cookie
+     * @param {string} [signature] User 'sessionid_sign' cookie
+     * @returns {Promise<string>} Layout URL
+     */
+  async createLayout(name, symbol, interval, studyId, indicatorId, indicatorValues, session, signature) {
+    const layout = await module.exports.createBlankLayout(name, session, signature);
+    const layoutUrl = await module.exports.replaceLayout(layout, symbol, interval, studyId, indicatorId, indicatorValues, session, signature);
+    return layoutUrl;
   },
 };
