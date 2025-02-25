@@ -38,6 +38,11 @@ declare module '@mathieuc/tradingview' {
     export type SocketSession = unknown;
 
     export class Client extends EventEmitter {
+        Session: {
+            Quote: typeof QuoteSession,
+            Chart: typeof ChartSession,
+            History: typeof HistorySession,
+        };
         #ws: WebSocket;
         #logged: boolean;
         #sessions: SessionList;
@@ -69,19 +74,13 @@ declare module '@mathieuc/tradingview' {
 
         onEvent(cb: (...args: any[]) => void): void;
 
+        end(): Promise<void>;
+
         #handleEvent(ev: ClientEvent, ...data: any[]): void;
 
         #handleError(...msgs: any[]): void;
 
         #parsePacket(str: string): void;
-
-        end(): Promise<void>;
-
-        Session: {
-            Quote: typeof QuoteSession,
-            Chart: typeof ChartSession,
-            History: typeof HistorySession,
-        };
     }
 
     // src/miscRequests
@@ -150,6 +149,13 @@ declare module '@mathieuc/tradingview' {
         session?: string,
         signature?: string,
     ): Promise<PineIndicator>;
+
+    export function getRawIndicator(
+        id: string,
+        version?: string,
+        session?: string,
+        signature?: string,
+    ): Promise<RawPineIndicator>;
 
     export function getPersonalIndicator(
         id: string,
@@ -615,6 +621,77 @@ declare module '@mathieuc/tradingview' {
         clone(): PineIndicator;
     }
 
+    export type RawPineIndicator = {
+        IL: string;
+        ilTemplate: string;
+        metaInfo: {
+            _metainfoVersion: number;
+            behind_chart: boolean;
+            defaults: {
+                inputs: RawPineIndicatorInputValues;
+                strategy?: {
+                    orders?: {
+                        showLabels?: boolean;
+                        showQty?: boolean;
+                        visible?: boolean;
+                    };
+                };
+                styles?: Record<string, any>;
+                filledAreasStyle?: Record<string, {
+                    color: string;
+                    transparency: number;
+                    visible: boolean;
+                }>;
+                graphics?: {
+                    dwglabels?: { labels?: { visible?: boolean } };
+                    dwglines?: { lines?: { visible?: boolean } };
+                    dwgtablecells?: { tableCells?: { visible?: boolean } };
+                    dwgtables?: { tables?: { visible?: boolean } };
+                };
+            };
+            description?: string;
+            docs?: string;
+            format?: { type?: string };
+            id: string;
+            inputs: Array<RawPineIndicatorInput>;
+            styles?: Record<string, any>;
+            filledAreas?: Array<{
+                fillgaps: boolean;
+                id: string;
+                isHidden: boolean;
+                objAId: string;
+                objBId: string;
+                title: string;
+                type: string;
+            }>;
+            hasAlertFunction?: boolean;
+            historyCalculationMayChange?: boolean;
+        };
+
+        readonly inputValues: RawPineIndicatorInputValues;
+        readonly inputs: RawPineIndicatorInput[];
+
+        setInputValue(inputKey: string, value: any): void;
+    };
+
+    export type RawPineIndicatorInputValues = Record<string, any>
+
+    export type RawPineIndicatorInput = {
+        defval: any;
+        id: string;
+        name?: string;
+        type: string;
+        display?: number;
+        isHidden?: boolean;
+        options?: string[];
+        max?: number;
+        min?: number;
+        tooltip?: string;
+        groupId?: string;
+        internalID?: string;
+        isFake?: boolean;
+    }
+
     // src/classes/PinePermManager
     export type AuthorizationUser = {
         id: string;
@@ -741,11 +818,11 @@ declare module '@mathieuc/tradingview' {
     }
 
     export class QuoteSession {
+        Market: typeof QuoteMarket;
         #sessionID: string;
         #client: ClientBridge;
         #symbolListeners: SymbolListeners;
         #quoteSession: QuoteSessionBridge;
-        Market: typeof QuoteMarket;
 
         constructor(options?: QuoteSessionOptions);
 
@@ -963,6 +1040,7 @@ declare module '@mathieuc/tradingview' {
     }
 
     export class ChartSession {
+        Study: typeof ChartStudy;
         #chartSessionID: string;
         #replaySessionID: string;
         #replayMode: boolean;
@@ -1028,8 +1106,6 @@ declare module '@mathieuc/tradingview' {
         onError(cb: (...args: any[]) => void): void;
 
         delete(): void;
-
-        Study: typeof ChartStudy;
     }
 
     // src/chart/history
@@ -1069,4 +1145,70 @@ declare module '@mathieuc/tradingview' {
 
         delete(): void;
     }
+
+    export type Layout = {
+        id: number;
+        image_url: string;
+        symbol: string;
+        short_name: string;
+        name: string;
+        created: string;
+        modified: string;
+        resolution: string;
+        pro_symbol: string;
+        expression: string;
+        created_time: string;
+        created_timestamp: number;
+        modified_iso: number;
+        short_symbol: string;
+        interval: string;
+        url: string;
+        favorite: boolean;
+    };
+
+    export function fetchLayouts(session: string, signature: string): Promise<Layout[]>;
+
+    export function fetchLayout(nameOrIdOrUrl: string | number, session: string, signature: string): Promise<Layout>;
+
+    export function fetchLayoutContent(chartShortUrl: string | number, session: string, signature: string): Promise<any>
+
+    export function createBlankLayout(
+        name: string,
+        session: string,
+        signature: string
+    ): Promise<Layout>;
+
+    export function replaceLayout(
+        layout: Layout,
+        symbol: string,
+        interval: string,
+        studyId: string,
+        indicatorId: string,
+        indicatorValues: Record<string, any>,
+        session: string,
+        signature: string
+    ): Promise<string>;
+
+    export function createLayout(
+        name: string,
+        symbol: string,
+        interval: string,
+        studyId: string,
+        indicatorId: string,
+        indicatorValues: Record<string, any>,
+        session: string,
+        signature: string
+    ): Promise<string>;
+
+    export function deleteLayout(
+        chartShortUrl: string | string[],
+        session: string,
+        signature: string
+    ): Promise<void>;
+
+    export function deleteLayouts(
+        chartShortUrl: string[],
+        session: string,
+        signature: string
+    ): Promise<void>;
 }
