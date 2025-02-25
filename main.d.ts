@@ -1199,4 +1199,16 @@ declare module '@mathieuc/tradingview' {
         session: string,
         signature: string
     ): Promise<string>;
+
+    export function deleteLayout(
+        chartShortUrl: string | string[],
+        session: string,
+        signature: string
+    ): Promise<void>;
+
+    export function deleteLayouts(
+        chartShortUrl: string[],
+        session: string,
+        signature: string
+    ): Promise<void>;
 }

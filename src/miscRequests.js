@@ -712,8 +712,7 @@ module.exports = {
     try {
       const { data: layouts } = await axios.get('https://www.tradingview.com/my-charts/', {
         headers: {
-          cookie: genAuthCookies(session, signature),
-          Origin: 'https://www.tradingview.com',
+          cookie: genAuthCookies(session, signature), Origin: 'https://www.tradingview.com',
         },
         validateStatus,
       });
@@ -750,15 +749,12 @@ module.exports = {
      */
   async createBlankLayout(name, session, signature = '') {
     try {
-      await axios.post('https://www.tradingview.com/charts/',
-        { name },
-        {
-          headers: {
-            cookie: genAuthCookies(session, signature),
-            Origin: 'https://www.tradingview.com',
-          },
-          validateStatus,
-        });
+      await axios.post('https://www.tradingview.com/charts/', { name }, {
+        headers: {
+          cookie: genAuthCookies(session, signature), Origin: 'https://www.tradingview.com',
+        },
+        validateStatus,
+      });
     } catch (e) {
       throw new Error(`Failed to create layout: '${name}' reason: ${e}`);
     }
@@ -835,18 +831,16 @@ module.exports = {
     formData.append('content', new Blob([gzipData], { type: 'application/gzip' }), 'blob.gz');
 
     try {
-      await axios.post('https://www.tradingview.com/savechart/',
-        formData,
-        {
-          headers: {
-            cookie: genAuthCookies(process.env.TV_SESSION_ID, process.env.TV_SESSION_SIGNATURE),
-            Accept: '*/*',
-            'Accept-Encoding': 'gzip, deflate, br, zstd',
-            DNT: '1',
-            Origin: 'https://www.tradingview.com',
-          },
-          validateStatus,
-        });
+      await axios.post('https://www.tradingview.com/savechart/', formData, {
+        headers: {
+          cookie: genAuthCookies(process.env.TV_SESSION_ID, process.env.TV_SESSION_SIGNATURE),
+          Accept: '*/*',
+          'Accept-Encoding': 'gzip, deflate, br, zstd',
+          DNT: '1',
+          Origin: 'https://www.tradingview.com',
+        },
+        validateStatus,
+      });
     } catch (e) {
       throw new Error(`Failed to save layout: ${layout.id} /${layout.image_url}/`);
     }
@@ -871,5 +865,41 @@ module.exports = {
     const layout = await module.exports.createBlankLayout(name, session, signature);
     const layoutUrl = await module.exports.replaceLayout(layout, symbol, interval, studyId, indicatorId, indicatorValues, session, signature);
     return layoutUrl;
+  },
+
+  /**
+     * Creates a new layout and populates it with the provided indicator setup
+     * @function createLayout
+     * @param {string|string[]} chartShortUrl chartShortUrls
+     * @param {string} session User 'sessionid' cookie
+     * @param {string} [signature] User 'sessionid_sign' cookie
+     * @returns {Promise<string>} Layout URL
+     */
+  async deleteLayout(chartShortUrl, session, signature) {
+    try {
+      await axios.post('https://www.tradingview.com/api/v1/charts/delete/', {
+        uid: Array.isArray(chartShortUrl) ? chartShortUrl : [chartShortUrl],
+      }, {
+        headers: {
+          cookie: genAuthCookies(session, signature),
+          Origin: 'https://www.tradingview.com',
+        },
+        validateStatus,
+      });
+    } catch (e) {
+      throw new Error(`Failed to delete layout(s): ${chartShortUrl}\nReason: ${e}`);
+    }
+  },
+
+  /**
+     * Delete multiple layouts
+     * @function deleteLayouts
+     * @param {string[]} chartShortUrls chartShortUrls
+     * @param {string} session User 'sessionid' cookie
+     * @param {string} [signature] User 'sessionid_sign' cookie
+     * @returns {Promise<string>} Layout URL
+     */
+  async deleteLayouts(chartShortUrls, session, signature) {
+    return module.exports.deleteLayout(chartShortUrls, session, signature);
   },
 };
