@@ -850,7 +850,7 @@ module.exports = {
       throw new Error(`Failed to save layout: ${layout.id} /${layout.image_url}/`);
     }
 
-    return `https://www.tradingview.com/chart/${layout.image_url}/`;
+    return layout.image_url;
   },
 
   /**
@@ -864,12 +864,12 @@ module.exports = {
      * @param {Record<string, any>} indicatorValues indicatorValues
      * @param {string} session User 'sessionid' cookie
      * @param {string} [signature] User 'sessionid_sign' cookie
-     * @returns {Promise<string>} Layout URL
+     * @returns {Promise<string>} Layout Short URL
      */
   async createLayout(name, symbol, interval, studyId, indicatorId, indicatorValues, session, signature) {
     const layout = await module.exports.createBlankLayout(name, session, signature);
-    const layoutUrl = await module.exports.replaceLayout(layout, symbol, interval, studyId, indicatorId, indicatorValues, session, signature);
-    return layoutUrl;
+    const layoutShortUrl = await module.exports.replaceLayout(layout, symbol, interval, studyId, indicatorId, indicatorValues, session, signature);
+    return layoutShortUrl;
   },
 
   /**
