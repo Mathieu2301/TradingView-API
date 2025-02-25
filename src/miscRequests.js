@@ -833,7 +833,7 @@ module.exports = {
     try {
       await axios.post('https://www.tradingview.com/savechart/', formData, {
         headers: {
-          cookie: genAuthCookies(process.env.TV_SESSION_ID, process.env.TV_SESSION_SIGNATURE),
+          cookie: genAuthCookies(session, signature),
           Accept: '*/*',
           'Accept-Encoding': 'gzip, deflate, br, zstd',
           DNT: '1',
