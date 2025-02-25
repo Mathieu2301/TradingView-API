@@ -718,6 +718,7 @@ module.exports = {
       });
       return layouts || [];
     } catch (e) {
+      console.error(e);
       throw new Error(`Failed to getLayouts, reason: ${e}`);
     }
   },
@@ -751,11 +752,13 @@ module.exports = {
     try {
       await axios.post('https://www.tradingview.com/charts/', { name }, {
         headers: {
-          cookie: genAuthCookies(session, signature), Origin: 'https://www.tradingview.com',
+          cookie: genAuthCookies(session, signature),
+          Origin: 'https://www.tradingview.com',
         },
         validateStatus,
       });
     } catch (e) {
+      console.error(e);
       throw new Error(`Failed to create layout: '${name}' reason: ${e}`);
     }
 
@@ -785,7 +788,8 @@ module.exports = {
     if (match && match[1]) {
       try {
         return JSON.parse(match[1]);
-      } catch (error) {
+      } catch (e) {
+        console.error(e);
         throw new Error("Failed to to parse 'initData.content' data.");
       }
     } else throw new Error("Failed to find 'content' property on 'initData' object.");
@@ -842,6 +846,7 @@ module.exports = {
         validateStatus,
       });
     } catch (e) {
+      console.error(e);
       throw new Error(`Failed to save layout: ${layout.id} /${layout.image_url}/`);
     }
 
@@ -887,6 +892,7 @@ module.exports = {
         validateStatus,
       });
     } catch (e) {
+      console.error(e);
       throw new Error(`Failed to delete layout(s): ${chartShortUrl}\nReason: ${e}`);
     }
   },
