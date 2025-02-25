@@ -1,7 +1,6 @@
 const os = require('os');
 const axios = require('axios');
 const zlib = require('zlib');
-const { writeFile } = require('fs/promises');
 
 const PineIndicator = require('./classes/PineIndicator');
 const { genAuthCookies, toTitleCase } = require('./utils');
@@ -338,7 +337,7 @@ module.exports = {
     });
 
     if (!data.success || !data.result.metaInfo || !data.result.metaInfo.inputs) {
-      throw new Error(`Inexistent or unsupported indicator: "${data.reason}"`);
+      throw new Error(`Non-existent or unsupported indicator: '${id}' '${data.reason}'`);
     }
 
     const indicator = {
@@ -380,7 +379,7 @@ module.exports = {
 
     if (data === 'The user requesting information on the script is not allowed to do so') throw new Error('User does not have access to this script.');
 
-    if (!data.success || !data.result.metaInfo || !data.result.metaInfo.inputs) throw new Error(`Inexistent or unsupported indicator: "${data.reason}"`);
+    if (!data.success || !data.result.metaInfo || !data.result.metaInfo.inputs) throw new Error(`Non-existent or unsupported indicator: '${id}' '${data.reason}'`);
 
     const inputs = {};
 
@@ -703,6 +702,45 @@ module.exports = {
   },
 
   /**
+     * Fetch user's layouts
+     * @function fetchLayouts
+     * @param {string} session User 'sessionid' cookie
+     * @param {string} [signature] User 'sessionid_sign' cookie
+     * @returns {Promise<Layout[]>} Layouts
+     */
+  async fetchLayouts(session, signature = '') {
+    try {
+      const { data: layouts } = await axios.get('https://www.tradingview.com/my-charts/', {
+        headers: {
+          cookie: genAuthCookies(session, signature),
+          Origin: 'https://www.tradingview.com',
+        },
+        validateStatus,
+      });
+      return layouts || [];
+    } catch (e) {
+      throw new Error(`Failed to getLayouts, reason: ${e}`);
+    }
+  },
+
+  /**
+     * Fetch layout by nameOrIdOrUrl
+     * @function fetchLayouts
+     * @param {string|number} nameOrIdOrUrl Layout name, id or short url
+     * @param {string} session User 'sessionid' cookie
+     * @param {string} [signature] User 'sessionid_sign' cookie
+     * @returns {Promise<Layout>} Layout
+     */
+  async fetchLayout(nameOrIdOrUrl, session, signature) {
+    const layouts = await module.exports.fetchLayouts(session, signature);
+
+    const layout = layouts.find((l) => [l.name, l.id, l.image_url].includes(nameOrIdOrUrl));
+    if (!layout) throw new Error(`Unable to find Layout '${nameOrIdOrUrl}'.`);
+
+    return layout;
+  },
+
+  /**
      * Create a new layout
      * @function createLayout
      * @param {string} name Layout name
@@ -711,22 +749,21 @@ module.exports = {
      * @returns {Promise<Layout>} Layouts
      */
   async createBlankLayout(name, session, signature = '') {
-    const createLayoutResponse = await fetch('https://www.tradingview.com/charts/', {
-      method: 'POST',
-      headers: {
-        cookie: genAuthCookies(session, signature),
-        Accept: '*/*',
-        'Accept-Encoding': 'gzip, deflate, br, zstd',
-        DNT: '1',
-        Origin: 'https://www.tradingview.com',
-      },
-      body: JSON.stringify({ name }),
-      credentials: 'include',
-    });
+    try {
+      await axios.post('https://www.tradingview.com/charts/',
+        { name },
+        {
+          headers: {
+            cookie: genAuthCookies(session, signature),
+            Origin: 'https://www.tradingview.com',
+          },
+          validateStatus,
+        });
+    } catch (e) {
+      throw new Error(`Failed to create layout: '${name}' reason: ${e}`);
+    }
 
-    if (!createLayoutResponse.ok) throw new Error('Failed to create layout.');
-
-    const layouts = await this.getLayouts(session, signature);
+    const layouts = await module.exports.fetchLayouts(session, signature);
 
     const layout = layouts.find((l) => l.name === name);
     if (!layout) throw new Error(`Unable to find Layout '${name}'.`);
@@ -735,21 +772,27 @@ module.exports = {
   },
 
   /**
-     * Get user's layouts
-     * @function getLayouts
+     * Fetch layout content
+     * @function fetchLayoutContent
+     * @param {string} chartShortUrl Chart short url
      * @param {string} session User 'sessionid' cookie
      * @param {string} [signature] User 'sessionid_sign' cookie
-     * @returns {Promise<Layout[]>} Layouts
+     * @returns {Promise<any>} Layout content
      */
-  async getLayouts(session, signature = '') {
-    const { data: layouts } = await axios.get('https://www.tradingview.com/my-charts/', {
+  async fetchLayoutContent(chartShortUrl, session, signature) {
+    const { data: html } = await axios.get(`https://www.tradingview.com/chart/${chartShortUrl}`, {
       headers: {
         cookie: genAuthCookies(session, signature),
       },
-      validateStatus,
     });
-
-    return layouts || [];
+    const match = html.match(/initData\.content\s*=\s*(\{.*?\});/s);
+    if (match && match[1]) {
+      try {
+        return JSON.parse(match[1]);
+      } catch (error) {
+        throw new Error("Failed to to parse 'initData.content' data.");
+      }
+    } else throw new Error("Failed to find 'content' property on 'initData' object.");
   },
 
   /**
@@ -784,27 +827,29 @@ module.exports = {
     formData.append('is_realtime', '1');
     // formData.append('savingToken', '0.7257906314572806');  //TODO is this needed?
 
-    const rawIndicator = await this.getRawIndicator(indicatorId, 'last', session, signature);
+    const rawIndicator = await module.exports.getRawIndicator(indicatorId, 'last', session, signature);
     Object.entries(indicatorValues).forEach(([key, value]) => rawIndicator.setInputValue(key, value));
 
     const contentBlob = createLayoutContentBlob(layout.name, symbol, interval, studyId, rawIndicator);
     const gzipData = zlib.gzipSync(JSON.stringify(contentBlob));
     formData.append('content', new Blob([gzipData], { type: 'application/gzip' }), 'blob.gz');
 
-    const response = await fetch('https://www.tradingview.com/savechart/', {
-      method: 'POST',
-      headers: {
-        cookie: genAuthCookies(process.env.TV_SESSION_ID, process.env.TV_SESSION_SIGNATURE),
-        Accept: '*/*',
-        'Accept-Encoding': 'gzip, deflate, br, zstd',
-        DNT: '1',
-        Origin: 'https://www.tradingview.com',
-      },
-      body: formData,
-      credentials: 'include',
-    });
-
-    if (!response.ok) throw new Error(`Failed to save layout: ${layout.id} /${layout.image_url}/`);
+    try {
+      await axios.post('https://www.tradingview.com/savechart/',
+        formData,
+        {
+          headers: {
+            cookie: genAuthCookies(process.env.TV_SESSION_ID, process.env.TV_SESSION_SIGNATURE),
+            Accept: '*/*',
+            'Accept-Encoding': 'gzip, deflate, br, zstd',
+            DNT: '1',
+            Origin: 'https://www.tradingview.com',
+          },
+          validateStatus,
+        });
+    } catch (e) {
+      throw new Error(`Failed to save layout: ${layout.id} /${layout.image_url}/`);
+    }
 
     return `https://www.tradingview.com/chart/${layout.image_url}/`;
   },

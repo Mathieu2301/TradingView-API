@@ -13,7 +13,7 @@
     "url": "git+https://github.com/Mathieu2301/TradingView-API.git"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=14.0.0"
   },
   "keywords": [
     "tradingwiew",
@@ -28,9 +28,9 @@
   "author": "Mathieu Colmon",
   "license": "ISC",
   "dependencies": {
-    "axios": "1.7.8",
+    "axios": "^1.5.0",
     "jszip": "^3.7.1",
-    "ws": "8.17.1"
+    "ws": "^7.4.3"
   },
   "devDependencies": {
     "@babel/eslint-parser": "^7.15.7",
@@ -39,6 +39,6 @@
     "eslint": "^7.25.0",
     "eslint-config-airbnb-base": "^14.2.1",
     "eslint-plugin-import": "^2.22.1",
-    "vitest": "^3.0.6"
+    "vitest": "^0.31.4"
   }
 }

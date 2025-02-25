@@ -1166,13 +1166,17 @@ declare module '@mathieuc/tradingview' {
         favorite: boolean;
     };
 
+    export function fetchLayouts(session: string, signature: string): Promise<Layout[]>;
+
+    export function fetchLayout(nameOrIdOrUrl: string | number, session: string, signature: string): Promise<Layout>;
+
+    export function fetchLayoutContent(chartShortUrl: string | number, session: string, signature: string): Promise<any>
+
     export function createBlankLayout(
         name: string,
         session: string,
         signature: string
-    ): Promise<Layout[]>;
-
-    export function getLayouts(session: string, signature: string): Promise<Layout[]>;
+    ): Promise<Layout>;
 
     export function replaceLayout(
         layout: Layout,
