@@ -545,11 +545,11 @@ module.exports = {
 
     const cookies = headers['set-cookie'];
 
-    const sessionCookie = cookies.find((c) => c.includes('sessionid='));
-    const session = (sessionCookie.match(/sessionid=(.*?);/) ?? [])[1];
+    const sessionCookie = cookies?.find((c) => c.includes('sessionid='));
+    const session = (sessionCookie?.match(/sessionid=(.*?);/) ?? [])[1];
 
-    const signCookie = cookies.find((c) => c.includes('sessionid_sign='));
-    const signature = (signCookie.match(/sessionid_sign=(.*?);/) ?? [])[1];
+    const signCookie = cookies?.find((c) => c.includes('sessionid_sign='));
+    const signature = (signCookie?.match(/sessionid_sign=(.*?);/) ?? [])[1];
 
     if (data.error) {
       if (data.error.includes('2FA_required')) {
