@@ -565,7 +565,7 @@ module.exports = {
       throw new Error(data.error);
     }
 
-    if (data.code.includes('2FA_challenge_not_generated')) {
+    if (data.code?.includes('2FA_challenge_not_generated')) {
       return {
         two_factor_info: {
           ...data,
