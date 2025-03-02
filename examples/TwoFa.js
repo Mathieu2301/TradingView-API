@@ -7,7 +7,7 @@ const TradingView = require('../main');
 if (!process.argv[2]) throw Error('Please specify your username/email');
 if (!process.argv[3]) throw Error('Please specify your password');
 
-TradingView.twoFactorAuth(process.argv[2], process.argv[3], process.argv[4])
+TradingView.twoFactorAuth(process.argv[2], process.argv[3], 'sms', process.argv[4])
   .then((data) => {
     console.log(data);
   })

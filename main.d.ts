@@ -260,6 +260,7 @@ declare module '@mathieuc/tradingview' {
         smsCode: string,
         session: string,
         signature: string,
+        twoFaType?: 'sms' | 'totp',
         UA?: string,
     ): Promise<LoginResponse>;
 

@@ -529,7 +529,7 @@ module.exports = {
      * @param {string} password User password
      * @param {boolean} [remember] Remember the session (default: false)
      * @param {string} [UA] Custom UserAgent
-     * @returns {Promise<LoginResponse>} Token
+     * @returns {Promise<LoginResponse>} Login response
      */
   async loginUser(username, password, remember = true, UA = 'TWAPI/3.0') {
     const {
@@ -582,17 +582,20 @@ module.exports = {
 
   /**
      * Get user and sessionid from username/email and password
-     * @function loginUser
-     * @param {string} username User username/email
-     * @param {string} password User password
-     * @param {boolean} [remember] Remember the session (default: false)
+     * @function twoFactorAuth
+     * @param {string} code User username/email
+     * @param {string} session sission id
+     * @param {boolean} signature session sign
+     * @param {string} [twoFaType] 2fa type: "sms" | "totp"
      * @param {string} [UA] Custom UserAgent
-     * @returns {Promise<User>} Token
+     * @returns {Promise<LoginResponse>} Login response
      */
-  async twoFactorAuth(smsCode, session, signature, UA = 'TWAPI/3.0') {
-    const { data } = await axios.post(
-      'https://www.tradingview.com/accounts/two-factor/signin/sms/',
-      `code=${smsCode}`,
+  async twoFactorAuth(code, session, signature, twoFaType = 'sms', UA = 'TWAPI/3.0') {
+    const type = twoFaType === 'sms' ? 'sms' : 'totp';
+
+    const { data, headers } = await axios.post(
+      `https://www.tradingview.com/accounts/two-factor/signin/${type}/`,
+      `code=${code}`,
       {
         validateStatus,
         headers: {
@@ -614,7 +617,17 @@ module.exports = {
       };
     }
 
-    return data;
+    const cookies = headers['set-cookie'];
+
+    const sessionCookie = cookies.find((c) => c.includes('sessionid='));
+
+    const signCookie = cookies.find((c) => c.includes('sessionid_sign='));
+
+    return {
+      session: (sessionCookie.match(/sessionid=(.*?);/) ?? [])[1],
+      signature: (signCookie.match(/sessionid_sign=(.*?);/) ?? [])[1],
+      ...data,
+    };
   },
 
   /**
