@@ -441,20 +441,85 @@ module.exports = {
      * @typedef {Object} User Instance of User
      * @prop {number} id User ID
      * @prop {string} username User username
-     * @prop {string} firstName User first name
-     * @prop {string} lastName User last name
+     * @prop {boolean} has_active_email Whether the user has an active email
+     * @prop {Date} date_joined Account creation date
+     * @prop {string} userpic User profile picture URL
+     * @prop {string} userpic_mid Medium-sized profile picture URL
+     * @prop {string} userpic_big Large-sized profile picture URL
+     * @prop {string} status User status
+     * @prop {boolean} must_change_password Whether the user must change their password
+     * @prop {boolean} must_change_tfa Whether the user must enable two-factor authentication
+     * @prop {string} private_channel User private channel
+     * @prop {string} session_hash User session hash
+     * @prop {boolean} notification_popup Whether notifications pop up
+     * @prop {boolean} notification_sound Whether notification sounds are enabled
+     * @prop {Object} notification_count User's notifications
+     * @prop {number} notification_count.user User notifications
+     * @prop {number} notification_count.following Notifications from following accounts
      * @prop {number} reputation User reputation
-     * @prop {number} following Number of following accounts
-     * @prop {number} followers Number of followers
-     * @prop {Object} notifications User's notifications
-     * @prop {number} notifications.user User notifications
-     * @prop {number} notifications.following Notification from following accounts
+     * @prop {number} max_user_language_reputation Maximum reputation in a language
+     * @prop {boolean} profile_data_filled Whether the profile is fully filled out
+     * @prop {boolean} is_corporation_user Whether the user is a corporation
+     * @prop {any} active_broker Active broker information (nullable)
+     * @prop {Array<any>} ignore_list List of ignored users
+     * @prop {boolean} is_active_partner Whether the user is an active partner
+     * @prop {boolean} is_broker Whether the user is a broker
+     * @prop {any} broker_plan User's broker plan (nullable)
+     * @prop {Array<any>} badges User's badges
+     * @prop {Object} permissions User's permissions
+     * @prop {boolean} is_symphony Whether the user is a Symphony member
+     * @prop {boolean} is_staff Whether the user is a staff member
+     * @prop {boolean} is_superuser Whether the user is a superuser
+     * @prop {boolean} is_moderator Whether the user is a moderator
+     * @prop {string} last_locale Last used locale
+     * @prop {boolean} social_registration Whether the user registered via social login
+     * @prop {boolean} has_phone Whether the user has a phone number linked
+     * @prop {string|null} sms_email SMS email (nullable)
+     * @prop {boolean} is_non_pro_confirmed Whether the user is confirmed as non-pro
+     * @prop {boolean} do_not_track Whether the user has opted out of tracking
+     * @prop {boolean} is_pro Whether the user has a Pro plan
+     * @prop {boolean} is_expert Whether the user is an expert
+     * @prop {boolean} is_trial Whether the user is on a trial plan
+     * @prop {boolean} is_lite_plan Whether the user is on a Lite plan
+     * @prop {boolean|null} pro_being_cancelled Whether the Pro plan is being canceled (nullable)
+     * @prop {number} pro_plan_days_left Days left on the Pro plan
+     * @prop {string} pro_plan_original_name Original name of the Pro plan
+     * @prop {string} pro_plan Current Pro plan type
+     * @prop {string} pro_plan_billing_cycle Billing cycle of the Pro plan
+     * @prop {number|null} trial_days_left Days left on the trial (nullable)
+     * @prop {string} trial_days_left_text Text representation of trial days left
+     * @prop {Object} available_offers Available offers for the user
+     * @prop {boolean} had_pro Whether the user had a Pro plan before
+     * @prop {string} declared_status User's declared status (e.g., "non_pro")
+     * @prop {string|null} declared_status_timestamp Timestamp of declared status update (nullable)
+     * @prop {string|null} market_profile_updated_timestamp Timestamp of last market profile update
+     * @prop {boolean} force_to_complete_data Whether the user is forced to complete their profile
+     * @prop {boolean} force_to_upgrade Whether the user is forced to upgrade their plan
+     * @prop {boolean} is_support_available Whether customer support is available for the user
+     * @prop {boolean} disallow_adding_to_private_chats user is restricted from private chats
+     * @prop {string} picture_url User's profile picture URL
+     */
+
+  /**
+     * @typedef {Object} TwoFactorTypes Instance of User
+     * @prop {string} name 2fa detail message
+     * @prop {number} code_ttl 2fa dtaill code
+     */
+
+  /**
+     * @typedef {Object} TwoFactorInfoMessage Instance of User
+     * @prop {string} detail 2fa detail message
+     * @prop {string} code 2fa dtaill code
+     * @prop {TwoFactorTypes[]} two_factor_types List of drawing points
+     */
+
+  /**
+     * @typedef {Object} LoginResponse Instance of User
      * @prop {string} session User session
-     * @prop {string} sessionHash User session hash
      * @prop {string} signature User session signature
-     * @prop {string} privateChannel User private channel
-     * @prop {string} authToken User auth token
-     * @prop {Date} joinDate Account creation date
+     * @prop {User} [User] User Object
+     * @prop {TwoFactorInfoMessage} [two_factor_info] User Object
+     * @prop {TwoFactorTypes[]} two_factor_types 2fa info messages
      */
 
   /**
@@ -464,7 +529,7 @@ module.exports = {
      * @param {string} password User password
      * @param {boolean} [remember] Remember the session (default: false)
      * @param {string} [UA] Custom UserAgent
-     * @returns {Promise<User>} Token
+     * @returns {Promise<LoginResponse>} Token
      */
   async loginUser(username, password, remember = true, UA = 'TWAPI/3.0') {
     const {
@@ -480,30 +545,76 @@ module.exports = {
 
     const cookies = headers['set-cookie'];
 
-    if (data.error) throw new Error(data.error);
-
     const sessionCookie = cookies.find((c) => c.includes('sessionid='));
     const session = (sessionCookie.match(/sessionid=(.*?);/) ?? [])[1];
 
     const signCookie = cookies.find((c) => c.includes('sessionid_sign='));
     const signature = (signCookie.match(/sessionid_sign=(.*?);/) ?? [])[1];
 
+    if (data.error) {
+      if (data.error.includes('2FA_required')) {
+        return {
+          session,
+          signature,
+          two_factor_info: {
+            ...data,
+          },
+        };
+      }
+
+      throw new Error(data.error);
+    }
+
+    if (data.code.includes('2FA_challenge_not_generated')) {
+      return {
+        two_factor_info: {
+          ...data,
+        },
+      };
+    }
+
     return {
-      id: data.user.id,
-      username: data.user.username,
-      firstName: data.user.first_name,
-      lastName: data.user.last_name,
-      reputation: data.user.reputation,
-      following: data.user.following,
-      followers: data.user.followers,
-      notifications: data.user.notification_count,
+      ...data,
       session,
       signature,
-      sessionHash: data.user.session_hash,
-      privateChannel: data.user.private_channel,
-      authToken: data.user.auth_token,
-      joinDate: new Date(data.user.date_joined),
     };
+  },
+
+  /**
+     * Get user and sessionid from username/email and password
+     * @function loginUser
+     * @param {string} username User username/email
+     * @param {string} password User password
+     * @param {boolean} [remember] Remember the session (default: false)
+     * @param {string} [UA] Custom UserAgent
+     * @returns {Promise<User>} Token
+     */
+  async twoFactorAuth(smsCode, session, signature, UA = 'TWAPI/3.0') {
+    const { data } = await axios.post(
+      'https://www.tradingview.com/accounts/two-factor/signin/sms/',
+      `code=${smsCode}`,
+      {
+        validateStatus,
+        headers: {
+          referer: 'https://www.tradingview.com',
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'User-agent': `${UA} (${os.version()}; ${os.platform()}; ${os.arch()})`,
+          cookie: `sessionid=${session}${
+            signature ? `;sessionid_sign=${signature};` : ''
+          }`,
+        },
+      },
+    );
+
+    if (data.code) {
+      return {
+        two_factor_info: {
+          ...data,
+        },
+      };
+    }
+
+    return data;
   },
 
   /**
@@ -790,9 +901,9 @@ module.exports = {
         return JSON.parse(match[1]);
       } catch (e) {
         console.error(e);
-        throw new Error("Failed to to parse 'initData.content' data.");
+        throw new Error('Failed to to parse \'initData.content\' data.');
       }
-    } else throw new Error("Failed to find 'content' property on 'initData' object.");
+    } else throw new Error('Failed to find \'content\' property on \'initData\' object.');
   },
 
   /**
