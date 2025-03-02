@@ -163,24 +163,90 @@ declare module '@mathieuc/tradingview' {
         signature?: string,
     ): Promise<PineIndicator>;
 
+    export interface TwoFactorInfoMessage {
+      detail: string;
+      code: string;
+      two_factor_types: [ 
+        { 
+        name: string, 
+        code_ttl: number 
+        } 
+      ]
+    }
     export interface User {
         id: number;
         username: string;
-        firstName: string;
-        lastName: string;
+        first_name?: string;
+        last_name?: string;
         reputation: number;
         following: number;
         followers: number;
-        notifications: {
-            user: number;
-            following: number;
+        notification_count: {
+          user: number;
+          following: number;
         };
-        session: string;
-        sessionHash: string;
-        signature: string;
-        privateChannel: string;
-        authToken: string;
-        joinDate: Date;
+        session_hash: string;
+        private_channel: string;
+        auth_token: string;
+        date_joined: string;
+        has_active_email: boolean;
+        userpic?: string;
+        userpic_mid?: string;
+        userpic_big?: string;
+        status?: string;
+        must_change_password: boolean;
+        must_change_tfa: boolean;
+        notification_popup: boolean;
+        notification_sound: boolean;
+        max_user_language_reputation: number;
+        profile_data_filled: boolean;
+        is_corporation_user: boolean;
+        active_broker?: any;
+        ignore_list: any[];
+        is_active_partner: boolean;
+        is_broker: boolean;
+        broker_plan?: any;
+        badges?: any[];
+        permissions: Record<string, any>;
+        is_symphony: boolean;
+        is_staff: boolean;
+        is_superuser: boolean;
+        is_moderator: boolean;
+        last_locale: string;
+        social_registration: boolean;
+        has_phone: boolean;
+        sms_email?: string | null;
+        is_non_pro_confirmed: boolean;
+        do_not_track: boolean;
+        is_pro: boolean;
+        is_expert: boolean;
+        is_trial: boolean;
+        is_lite_plan: boolean;
+        pro_being_cancelled?: boolean | null;
+        pro_plan_days_left: number;
+        pro_plan_original_name?: string;
+        pro_plan: string;
+        pro_plan_billing_cycle: string;
+        trial_days_left?: number | null;
+        trial_days_left_text?: string;
+        available_offers: Record<string, any>;
+        had_pro: boolean;
+        declared_status: string;
+        declared_status_timestamp?: string | null;
+        market_profile_updated_timestamp?: string | null;
+        force_to_complete_data: boolean;
+        force_to_upgrade: boolean;
+        is_support_available: boolean;
+        disallow_adding_to_private_chats: boolean;
+        picture_url?: string;
+    }
+    
+
+    export interface LoginResponse {
+      session: string;
+      signature: string;
+      user?: User;
+      two_factor_info?: TwoFactorInfoMessage;
     }
 
     export function loginUser(
@@ -188,7 +254,15 @@ declare module '@mathieuc/tradingview' {
         password: string,
         remember?: boolean,
         UA?: string,
-    ): Promise<User>;
+    ): Promise<LoginResponse>;
+
+    export function twoFactorAuth(
+        smsCode: string,
+        session: string,
+        signature: string,
+        twoFaType?: 'sms' | 'totp',
+        UA?: string,
+    ): Promise<LoginResponse>;
 
     export function getUser(session: string, signature?: string, location?: string): Promise<User>;
 
