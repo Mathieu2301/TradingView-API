@@ -259,7 +259,7 @@ declare module '@mathieuc/tradingview' {
     export function twoFactorAuth(
         smsCode: string,
         session: string,
-        signature?: boolean,
+        signature: string,
         UA?: string,
     ): Promise<LoginResponse>;
 
