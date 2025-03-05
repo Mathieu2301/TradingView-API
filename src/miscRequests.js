@@ -370,7 +370,7 @@ module.exports = {
   async getPersonalIndicator(id, session, signature) {
     const indicID = id.replace(/ |%/g, '%25').replace(';', '%3B');
 
-    const { data } = await axios.get(`https://pine-facade.tradingview.com/pine-facade/translate/${indicID}/1.0`, {
+    const { data } = await axios.get(`https://pine-facade.tradingview.com/pine-facade/translate/${indicID}/last`, {
       validateStatus,
       headers: {
         cookie: `sessionid=${session}${signature ? `;sessionid_sign=${signature};` : ''}`,
