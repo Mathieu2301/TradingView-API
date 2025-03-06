@@ -648,23 +648,74 @@ module.exports = {
 
     if (data.includes('auth_token')) {
       return {
-        id: /"id":([0-9]{1,10}),/.exec(data)?.[1],
-        username: /"username":"(.*?)"/.exec(data)?.[1],
-        firstName: /"first_name":"(.*?)"/.exec(data)?.[1],
-        lastName: /"last_name":"(.*?)"/.exec(data)?.[1],
-        reputation: parseFloat(/"reputation":(.*?),/.exec(data)?.[1] || 0),
-        following: parseFloat(/,"following":([0-9]*?),/.exec(data)?.[1] || 0),
-        followers: parseFloat(/,"followers":([0-9]*?),/.exec(data)?.[1] || 0),
-        notifications: {
-          following: parseFloat(/"notification_count":\{"following":([0-9]*),/.exec(data)?.[1] ?? 0),
-          user: parseFloat(/"notification_count":\{"following":[0-9]*,"user":([0-9]*)/.exec(data)?.[1] ?? 0),
-        },
         session,
         signature,
-        sessionHash: /"session_hash":"(.*?)"/.exec(data)?.[1],
-        privateChannel: /"private_channel":"(.*?)"/.exec(data)?.[1],
-        authToken: /"auth_token":"(.*?)"/.exec(data)?.[1],
+
+        id: Number(/"id":([0-9]{1,10}),/.exec(data)?.[1]),
+        username: /"username":"(.*?)"/.exec(data)?.[1],
+        first_name: /"first_name":"(.*?)"/.exec(data)?.[1],
+        last_name: /"last_name":"(.*?)"/.exec(data)?.[1],
+        reputation: parseFloat(/"reputation":(.*?),/.exec(data)?.[1] || 0),
+        following: parseFloat(/"following":([0-9]*?),/.exec(data)?.[1] || 0),
+        followers: parseFloat(/"followers":([0-9]*?),/.exec(data)?.[1] || 0),
+        notification_count: {
+          user: parseFloat(/"notification_count":\{"following":[0-9]*,"user":([0-9]*)/.exec(data)?.[1] ?? 0),
+          following: parseFloat(/"notification_count":\{"following":([0-9]*),/.exec(data)?.[1] ?? 0),
+        },
+        session_hash: /"session_hash":"(.*?)"/.exec(data)?.[1],
+        private_channel: /"private_channel":"(.*?)"/.exec(data)?.[1],
+        auth_token: /"auth_token":"(.*?)"/.exec(data)?.[1],
         joinDate: new Date(/"date_joined":"(.*?)"/.exec(data)?.[1] || 0),
+        has_active_email: !!/"has_active_email":\s*(true|false)/.exec(data)?.[1],
+        userpic: /"userpic":"(.*?)"/.exec(data)?.[1],
+        userpic_mid: /"userpic_mid":"(.*?)"/.exec(data)?.[1],
+        userpic_big: /"userpic_big":"(.*?)"/.exec(data)?.[1],
+        status: /"status":"(.*?)"/.exec(data)?.[1], // DONE
+        must_change_password: !!/"must_change_password":\s*(true|false)/.exec(data)?.[1],
+        must_change_tfa: !!/"must_change_tfa":\s*(true|false)/.exec(data)?.[1],
+        notification_popup: !!/"notification_popup":\s*(true|false)/.exec(data)?.[1],
+        notification_sound: !!/"notification_sound":\s*(true|false)/.exec(data)?.[1],
+        max_user_language_reputation: parseFloat(/"max_user_language_reputation":([0-9]*?),/.exec(data)?.[1] || 0),
+        profile_data_filled: !!/"profile_data_filled":\s*(true|false)/.exec(data)?.[1],
+        is_corporation_user: !!/"is_corporation_user":\s*(true|false)/.exec(data)?.[1],
+        active_broker: /"active_broker":"(.*?)"/.exec(data)?.[1],
+        ignore_list: /"ignore_list":"(.*?)"/.exec(data)?.[1],
+        is_active_partner: !!/"is_active_partner":\s*(true|false)/.exec(data)?.[1],
+        is_broker: !!/"is_broker":\s*(true|false)/.exec(data)?.[1],
+        broker_plan: /"broker_plan":"(.*?)"/.exec(data)?.[1], // DONE
+        badges: /"badges":"(.*?)"/.exec(data)?.[1],
+        permissions: /"permissions":"(.*?)"/.exec(data)?.[1],
+        is_symphony: !!/"is_symphony":\s*(true|false)/.exec(data)?.[1],
+        is_staff: !!/"is_staff":\s*(true|false)/.exec(data)?.[1],
+        is_superuser: !!/"is_superuser":\s*(true|false)/.exec(data)?.[1],
+        is_moderator: !!/"is_moderator":\s*(true|false)/.exec(data)?.[1],
+        last_locale: /"last_locale":"(.*?)"/.exec(data)?.[1],
+        social_registration: !!/"social_registration":\s*(true|false)/.exec(data)?.[1],
+        has_phone: !!/"has_phone":\s*(true|false)/.exec(data)?.[1],
+        sms_email: /"sms_email":"(.*?)"/.exec(data)?.[1],
+        is_non_pro_confirmed: !!/"is_non_pro_confirmed":\s*(true|false)/.exec(data)?.[1],
+        do_not_track: !!/"do_not_track":\s*(true|false)/.exec(data)?.[1],
+        is_pro: !!/"is_pro":\s*(true|false)/.exec(data)?.[1],
+        is_expert: !!/"is_expert":\s*(true|false)/.exec(data)?.[1],
+        is_trial: !!/"is_trial":\s*(true|false)/.exec(data)?.[1],
+        is_lite_plan: !!/"is_lite_plan":\s*(true|false)/.exec(data)?.[1],
+        pro_being_cancelled: !!/"pro_being_cancelled":\s*(true|false)/.exec(data)?.[1],
+        pro_plan_days_left: parseFloat(/"pro_plan_days_left":([0-9]*?),/.exec(data)?.[1] || 0),
+        pro_plan_original_name: /"pro_plan_original_name":"(.*?)"/.exec(data)?.[1], // DONE
+        pro_plan: /"pro_plan":"(.*?)"/.exec(data)?.[1], // DONE
+        pro_plan_billing_cycle: /"pro_plan_billing_cycle":"(.*?)"/.exec(data)?.[1], // DONE
+        trial_days_left: parseFloat(/"trial_days_left":([0-9]*?),/.exec(data)?.[1] || 0),
+        trial_days_left_text: /"trial_days_left_text":"(.*?)"/.exec(data)?.[1],
+        available_offers: /"available_offers":"(.*?)"/.exec(data)?.[1], // DONE
+        had_pro: !!/"had_pro":\s*(true|false)/.exec(data)?.[1],
+        declared_status: /"declared_status":"(.*?)"/.exec(data)?.[1], // DONE
+        declared_status_timestamp: !!/"declared_status_timestamp":\s*(true|false)/.exec(data)?.[1],
+        market_profile_updated_timestamp: /"market_profile_updated_timestamp":"(.*?)"/.exec(data)?.[1], // DONE
+        force_to_complete_data: !!/"force_to_complete_data":\s*(true|false)/.exec(data)?.[1],
+        force_to_upgrade: !!/"force_to_upgrade":\s*(true|false)/.exec(data)?.[1],
+        is_support_available: !!/"is_support_available":\s*(true|false)/.exec(data)?.[1],
+        disallow_adding_to_private_chats: !!/"disallow_adding_to_private_chats":\s*(true|false)/.exec(data)?.[1],
+        picture_url: /"picture_url":"(.*?)"/.exec(data)?.[1], // DONE
       };
     }
 
