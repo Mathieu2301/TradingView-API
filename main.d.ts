@@ -802,13 +802,53 @@ declare module '@mathieuc/tradingview' {
     // src/quote/market
     export type MarketEvent = 'loaded' | 'data' | 'error';
 
+    export type SymbolInfo = {
+      fractional: false;
+      original_name: string;
+      lp_time: number;
+      pricescale: number;
+      current_session: string;
+      first_bar_time_1s: number;
+      rtc: null;
+      currency_code: string;
+      ch: number;
+      pro_name: string;
+      low_price: number;
+      "currency-logoid": string;
+      "base-currency-logoid": string;
+      lp: number;
+      rchp: null;
+      first_bar_time_1m: number;
+      update_mode: string;
+      is_tradable: boolean;
+      provider_id: string;
+      open_price: number;
+      prev_close_price: number;
+      minmove2: number;
+      chp: number;
+      timezone: string;
+      rch: null;
+      rtc_time: null;
+      volume: number;
+      minmov: number;
+      high_price: number;
+      short_name: string;
+      description: string;
+      type: string;
+      exchange: string;
+    };
+    
+
     export class QuoteMarket {
         #symbol: string;
         #session: string;
+        #symbolInfo: SymbolInfo;
         #symbolKey: string;
         #symbolListenerID: number;
         #lastData: Record<string, any>;
         #callbacks: Record<MarketEvent | 'event', Array<(...args: any[]) => void>>;
+
+        get symbolInfo(): SymbolInfo;
 
         constructor(symbol: string, session?: string);
 
