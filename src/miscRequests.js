@@ -670,7 +670,7 @@ module.exports = {
         userpic: /"userpic":"(.*?)"/.exec(data)?.[1],
         userpic_mid: /"userpic_mid":"(.*?)"/.exec(data)?.[1],
         userpic_big: /"userpic_big":"(.*?)"/.exec(data)?.[1],
-        status: /"status":"(.*?)"/.exec(data)?.[1], // DONE
+        status: /"status":"(.*?)"/.exec(data)?.[1],
         must_change_password: !!/"must_change_password":\s*(true|false)/.exec(data)?.[1],
         must_change_tfa: !!/"must_change_tfa":\s*(true|false)/.exec(data)?.[1],
         notification_popup: !!/"notification_popup":\s*(true|false)/.exec(data)?.[1],
@@ -682,7 +682,7 @@ module.exports = {
         ignore_list: /"ignore_list":"(.*?)"/.exec(data)?.[1],
         is_active_partner: !!/"is_active_partner":\s*(true|false)/.exec(data)?.[1],
         is_broker: !!/"is_broker":\s*(true|false)/.exec(data)?.[1],
-        broker_plan: /"broker_plan":"(.*?)"/.exec(data)?.[1], // DONE
+        broker_plan: /"broker_plan":"(.*?)"/.exec(data)?.[1],
         badges: /"badges":"(.*?)"/.exec(data)?.[1],
         permissions: /"permissions":"(.*?)"/.exec(data)?.[1],
         is_symphony: !!/"is_symphony":\s*(true|false)/.exec(data)?.[1],
@@ -701,21 +701,21 @@ module.exports = {
         is_lite_plan: !!/"is_lite_plan":\s*(true|false)/.exec(data)?.[1],
         pro_being_cancelled: !!/"pro_being_cancelled":\s*(true|false)/.exec(data)?.[1],
         pro_plan_days_left: parseFloat(/"pro_plan_days_left":([0-9]*?),/.exec(data)?.[1] || 0),
-        pro_plan_original_name: /"pro_plan_original_name":"(.*?)"/.exec(data)?.[1], // DONE
-        pro_plan: /"pro_plan":"(.*?)"/.exec(data)?.[1], // DONE
-        pro_plan_billing_cycle: /"pro_plan_billing_cycle":"(.*?)"/.exec(data)?.[1], // DONE
+        pro_plan_original_name: /"pro_plan_original_name":"(.*?)"/.exec(data)?.[1],
+        pro_plan: /"pro_plan":"(.*?)"/.exec(data)?.[1],
+        pro_plan_billing_cycle: /"pro_plan_billing_cycle":"(.*?)"/.exec(data)?.[1],
         trial_days_left: parseFloat(/"trial_days_left":([0-9]*?),/.exec(data)?.[1] || 0),
         trial_days_left_text: /"trial_days_left_text":"(.*?)"/.exec(data)?.[1],
-        available_offers: /"available_offers":"(.*?)"/.exec(data)?.[1], // DONE
+        available_offers: /"available_offers":"(.*?)"/.exec(data)?.[1],
         had_pro: !!/"had_pro":\s*(true|false)/.exec(data)?.[1],
-        declared_status: /"declared_status":"(.*?)"/.exec(data)?.[1], // DONE
+        declared_status: /"declared_status":"(.*?)"/.exec(data)?.[1],
         declared_status_timestamp: !!/"declared_status_timestamp":\s*(true|false)/.exec(data)?.[1],
-        market_profile_updated_timestamp: /"market_profile_updated_timestamp":"(.*?)"/.exec(data)?.[1], // DONE
+        market_profile_updated_timestamp: /"market_profile_updated_timestamp":"(.*?)"/.exec(data)?.[1],
         force_to_complete_data: !!/"force_to_complete_data":\s*(true|false)/.exec(data)?.[1],
         force_to_upgrade: !!/"force_to_upgrade":\s*(true|false)/.exec(data)?.[1],
         is_support_available: !!/"is_support_available":\s*(true|false)/.exec(data)?.[1],
         disallow_adding_to_private_chats: !!/"disallow_adding_to_private_chats":\s*(true|false)/.exec(data)?.[1],
-        picture_url: /"picture_url":"(.*?)"/.exec(data)?.[1], // DONE
+        picture_url: /"picture_url":"(.*?)"/.exec(data)?.[1],
       };
     }
 
