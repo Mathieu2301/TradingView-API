@@ -1325,4 +1325,171 @@ declare module '@mathieuc/tradingview' {
         session: string,
         signature: string
     ): Promise<void>;
+
+    type Alert = {
+      symbol: string;
+      resolution: string;
+      condition: {
+        type: string;
+        frequency: string;
+        series: any[]; 
+        strategy_mode: string;
+      };
+      expiration: null;
+      auto_deactivate: boolean;
+      email: boolean;
+      sms_over_email: boolean;
+      mobile_push: boolean;
+      message: string;
+      sound_file: string | null;
+      sound_duration: number;
+      popup: boolean;
+      web_hook: string;
+      name: string;
+      alert_id: number;
+      cross_interval: boolean;
+      type: string;
+      active: boolean;
+      create_time: string; // ISO date string
+      last_fire_time: string; // ISO date string
+      last_fire_bar_time: string; // ISO date string
+      last_error: string | null;
+      last_stop_reason: string | null;
+      complexity: string;
+      presentation_data: {
+        main_series: Record<string, unknown>;
+        studies: Record<string, unknown>;
+        mutable_study_data: Record<string, unknown>;
+      };
+      kinds: string[];
+    };
+
+    export function getAlerts(
+        session: string,
+        signature: string
+    ): Promise<Alert>;
+
+    type AlertCreated = {
+        symbol: string;
+        resolution: string;
+        condition: {
+          type: 'strategy';
+          frequency: string;
+          series: {
+            type: string;
+            study: string;
+            pine_id: string;
+            pine_version: string;
+            inputs: Record<string, unknown>; // Dynamic object
+          }[];
+          strategy_mode: 'strategy';
+        };
+        expiration: null;
+        auto_deactivate: boolean;
+        email: boolean;
+        sms_over_email: boolean;
+        mobile_push: boolean;
+        message: string;
+        sound_file: string | null;
+        sound_duration: number;
+        popup: boolean;
+        web_hook: string;
+        name: string;
+        alert_id: number;
+        cross_interval: boolean;
+        type: 'strategy';
+        active: boolean;
+        create_time: string; // ISO date string
+        last_fire_time: string | null;
+        last_fire_bar_time: string | null;
+        last_error: string | null;
+        last_stop_reason: string | null;
+        complexity: 'complex';
+        presentation_data: {
+          main_series: {
+            type: string;
+            formatter: string;
+            pricescale: number;
+            minmovement: number;
+            "currency-logoid": string;
+            "base-currency-logoid": string;
+          };
+          studies: Record<string, {
+            description: string;
+            short_description: string;
+            format_type: string;
+          }>;
+          mutable_study_data: Record<string, {
+            titles: {
+              title: string;
+              short_title: string;
+            };
+          }>;
+        };
+        kinds: string[];
+    };
+
+    type CreateAlertPayload = {
+      symbol: string;
+      resolution: string;
+      message: string;
+      sound_file: string | null;
+      sound_duration: number;
+      popup: boolean;
+      expiration: null | string;
+      condition: {
+        type: 'strategy';
+        strategy_mode: 'strategy';
+        series: {
+          type: string;
+          study: string;
+          inputs: Record<string, any>; // Inputs can be anything
+          pine_id: string;
+          pine_version: string;
+        }[];
+      };
+      auto_deactivate: boolean;
+      email: boolean;
+      sms_over_email: boolean;
+      mobile_push: boolean;
+      web_hook?: string;
+      name?: string;
+      active: boolean;
+      ignore_warnings: boolean;
+      watchlist_color: string | null;
+    };
+    
+    export function createAlert(
+        payload: CreateAlertPayload,
+        session: string,
+        signature: string
+    ): Promise<{s: string, id: string, r: AlertCreated, errmsg?: string, err?: {code: string} }>;
+
+    export function modifyAlerts(
+        alertIds: number[],
+        action: 'stop' | 'start' | 'clone' | 'delete',
+        session: string,
+        signature: string
+    ): Promise<{s: string, id: string, r: null, errmsg?: string, err?: {code: string} }>;
+
+    type FiredAlert = {
+      fire_id: number;
+      alert_id: number;
+      symbol: string;
+      resolution: string;
+      sound_file: string | null;
+      sound_duration: number;
+      popup: boolean;
+      cross_interval: boolean;
+      message: string; // JSON string containing details
+      fire_time: string; // ISO date string
+      bar_time: string; // ISO date string
+      name: string;
+      kinds: string[];
+    };
+    export function getFiredAlerts(
+        filter?: {limit?: string, symbol?: string, resolution?: string},
+        session: string,
+        signature: string
+    ): Promise<{s: string, id: string, r: FiredAlert[], errmsg?: string, err?: {code: string} }>;
 }

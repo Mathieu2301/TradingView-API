@@ -15,6 +15,7 @@ module.exports = {
   genAuthCookies(sessionId = '', signature = '') {
     if (!sessionId) return '';
     if (!signature) return `sessionid=${sessionId}`;
+
     return `sessionid=${sessionId};sessionid_sign=${signature}`;
   },
 
