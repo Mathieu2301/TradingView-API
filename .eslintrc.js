@@ -13,6 +13,7 @@ module.exports = {
   rules: {
     quotes: ['error', 'single'],
     'no-console': 'off',
+    'max-len': ['error', { code: 160 }],
     'import/no-extraneous-dependencies': [
       'error',
       {

@@ -1083,4 +1083,88 @@ module.exports = {
   async deleteLayouts(chartShortUrls, session, signature) {
     return module.exports.deleteLayout(chartShortUrls, session, signature);
   },
+
+  /**
+     * Get all alerts
+     */
+  async getAlerts(session, signature) {
+    try {
+      const { data } = await axios.get('https://pricealerts.tradingview.com/list_alerts', {
+        headers: {
+          cookie: genAuthCookies(session, signature),
+        },
+        validateStatus,
+      });
+      return data.r;
+    } catch (e) {
+      console.error(e);
+      throw new Error(`Failed to fetch alerts: \nReason: ${e}`);
+    }
+  },
+
+  /**
+     * modify multiple alerts
+     */
+  async modifyAlerts(alertIds, action, session, signature) {
+    try {
+      const { data } = await axios.post(`https://pricealerts.tradingview.com/${action}_alerts`, {
+        payload: {
+          alert_ids: alertIds,
+        },
+      }, {
+        headers: {
+          cookie: genAuthCookies(session, signature),
+          Origin: 'https://www.tradingview.com',
+        },
+        validateStatus,
+      });
+      return data;
+    } catch (e) {
+      console.error(e);
+      throw new Error(`Failed to fetch alerts: \nReason: ${e}`);
+    }
+  },
+
+  /**
+     * modify multiple alerts
+     */
+  async createAlert(payload, session, signature) {
+    try {
+      const { data } = await axios.post('https://pricealerts.tradingview.com/create_alert', {
+        payload,
+      }, {
+        headers: {
+          cookie: genAuthCookies(session, signature),
+          Origin: 'https://www.tradingview.com',
+        },
+        validateStatus,
+      });
+      return data;
+    } catch (e) {
+      console.error(e);
+      throw new Error(`Failed to fetch alerts: \nReason: ${e}`);
+    }
+  },
+
+  /**
+     * modify multiple alerts
+     */
+  async getFiredAlerts(filter = { limit: 50 }, session, signature) {
+    try {
+      const { data } = await axios.post('https://pricealerts.tradingview.com/list_fires', {
+        payload: { ...filter },
+      }, {
+        headers: {
+          cookie: genAuthCookies(session, signature),
+          Origin: 'https://www.tradingview.com',
+        },
+        validateStatus,
+      });
+      return data;
+    } catch (e) {
+      console.error(e);
+      throw new Error(`Failed to fetch alerts: \nReason: ${e}`);
+    }
+  },
+
 };
