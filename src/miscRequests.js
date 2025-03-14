@@ -160,7 +160,7 @@ module.exports = {
 
     return data.symbols.map((s) => {
       const exchange = s.exchange.split(' ')[0];
-      const id = `${exchange.toUpperCase()}:${s.symbol}`;
+      const id = s.prefix ? `${s.prefix}:${s.symbol}` : `${exchange.toUpperCase()}:${s.symbol}`;
 
       return {
         id,
