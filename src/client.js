@@ -241,7 +241,7 @@ module.exports = class Client {
       ).then((user) => {
         this.#sendQueue.unshift(protocol.formatWSPacket({
           m: 'set_auth_token',
-          p: [user.authToken],
+          p: [user.auth_token],
         }));
         this.#logged = true;
         this.sendQueue();
