@@ -1130,7 +1130,7 @@ module.exports = {
      */
   async modifyAlert(payload, session, signature) {
     try {
-      const { data } = await axios.post('https://pricealerts.tradingview.com/modify_restart_alert_alerts', {
+      const { data } = await axios.post('https://pricealerts.tradingview.com/modify_restart_alert', {
         payload: {
           ...payload,
         },
