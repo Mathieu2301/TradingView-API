@@ -1128,11 +1128,24 @@ module.exports = {
   /**
      * update a single alerts
      */
-  async modifyAlert(payload, session, signature) {
+  async modifyAlert(payload = {}, session, signature) {
+    const modifiedPayload = payload;
+    delete modifiedPayload.cross_interval;
+    delete modifiedPayload?.type;
+    delete modifiedPayload?.create_time;
+    delete modifiedPayload?.last_fire_time;
+    delete modifiedPayload?.last_fire_bar_time;
+    delete modifiedPayload?.last_error;
+    delete modifiedPayload?.last_stop_reason;
+    delete modifiedPayload?.complexity;
+    delete modifiedPayload?.presentation_data;
+    delete modifiedPayload?.kinds;
+    modifiedPayload.ignore_warnings = true;
+
     try {
       const { data } = await axios.post('https://pricealerts.tradingview.com/modify_restart_alert', {
         payload: {
-          ...payload,
+          ...modifiedPayload,
         },
       }, {
         headers: {
