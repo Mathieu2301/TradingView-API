@@ -1121,7 +1121,30 @@ module.exports = {
       return data;
     } catch (e) {
       console.error(e);
-      throw new Error(`Failed to fetch alerts: \nReason: ${e}`);
+      throw new Error(`Failed to modify alerts: \nReason: ${e}`);
+    }
+  },
+
+  /**
+     * update a single alerts
+     */
+  async modifyAlert(payload, session, signature) {
+    try {
+      const { data } = await axios.post('https://pricealerts.tradingview.com/modify_restart_alert_alerts', {
+        payload: {
+          ...payload,
+        },
+      }, {
+        headers: {
+          cookie: genAuthCookies(session, signature),
+          Origin: 'https://www.tradingview.com',
+        },
+        validateStatus,
+      });
+      return data;
+    } catch (e) {
+      console.error(e);
+      throw new Error(`Failed to modify alert: \nReason: ${e}`);
     }
   },
 

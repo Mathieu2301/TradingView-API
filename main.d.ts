@@ -1467,7 +1467,13 @@ declare module '@mathieuc/tradingview' {
 
     export function modifyAlerts(
         alertIds: number[],
-        action: 'stop' | 'restart' | 'clone' | 'delete',
+        action: 'stop' | 'restart' | 'clone' | 'delete' | 'modify_restart_alert',
+        session: string,
+        signature: string
+    ): Promise<{s: string, id: string, r: null, errmsg?: string, err?: {code: string} }>;
+
+    export function modifyAlert(
+        payload: Alert,
         session: string,
         signature: string
     ): Promise<{s: string, id: string, r: null, errmsg?: string, err?: {code: string} }>;
