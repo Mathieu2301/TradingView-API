@@ -2,6 +2,7 @@ const os = require('os');
 const axios = require('axios');
 const zlib = require('zlib');
 
+const { fetchLayoutContent, createAlert } = require('@mathieuc/tradingview');
 const PineIndicator = require('./classes/PineIndicator');
 const { genAuthCookies, toTitleCase } = require('./utils');
 const { createLayoutContentBlob } = require('./layout/contentBlob');
@@ -574,9 +575,7 @@ module.exports = {
     }
 
     return {
-      ...data,
-      session,
-      signature,
+      ...data, session, signature,
     };
   },
 
@@ -593,21 +592,17 @@ module.exports = {
   async twoFactorAuth(code, session, signature, twoFaType = 'sms', UA = 'TWAPI/3.0') {
     const type = twoFaType === 'sms' ? 'sms' : 'totp';
 
-    const { data, headers } = await axios.post(
-      `https://www.tradingview.com/accounts/two-factor/signin/${type}/`,
-      `code=${code}`,
-      {
-        validateStatus,
-        headers: {
-          referer: 'https://www.tradingview.com',
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'User-agent': `${UA} (${os.version()}; ${os.platform()}; ${os.arch()})`,
-          cookie: `sessionid=${session}${
-            signature ? `;sessionid_sign=${signature};` : ''
-          }`,
-        },
+    const {
+      data, headers,
+    } = await axios.post(`https://www.tradingview.com/accounts/two-factor/signin/${type}/`, `code=${code}`, {
+      validateStatus,
+      headers: {
+        referer: 'https://www.tradingview.com',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'User-agent': `${UA} (${os.version()}; ${os.platform()}; ${os.arch()})`,
+        cookie: `sessionid=${session}${signature ? `;sessionid_sign=${signature};` : ''}`,
       },
-    );
+    });
 
     if (data.code) {
       return {
@@ -927,8 +922,7 @@ module.exports = {
     try {
       await axios.post('https://www.tradingview.com/charts/', { name }, {
         headers: {
-          cookie: genAuthCookies(session, signature),
-          Origin: 'https://www.tradingview.com',
+          cookie: genAuthCookies(session, signature), Origin: 'https://www.tradingview.com',
         },
         validateStatus,
       });
@@ -1061,8 +1055,7 @@ module.exports = {
         uid: Array.isArray(chartShortUrl) ? chartShortUrl : [chartShortUrl],
       }, {
         headers: {
-          cookie: genAuthCookies(session, signature),
-          Origin: 'https://www.tradingview.com',
+          cookie: genAuthCookies(session, signature), Origin: 'https://www.tradingview.com',
         },
         validateStatus,
       });
@@ -1113,8 +1106,7 @@ module.exports = {
         },
       }, {
         headers: {
-          cookie: genAuthCookies(session, signature),
-          Origin: 'https://www.tradingview.com',
+          cookie: genAuthCookies(session, signature), Origin: 'https://www.tradingview.com',
         },
         validateStatus,
       });
@@ -1149,8 +1141,7 @@ module.exports = {
         },
       }, {
         headers: {
-          cookie: genAuthCookies(session, signature),
-          Origin: 'https://www.tradingview.com',
+          cookie: genAuthCookies(session, signature), Origin: 'https://www.tradingview.com',
         },
         validateStatus,
       });
@@ -1170,8 +1161,7 @@ module.exports = {
         payload,
       }, {
         headers: {
-          cookie: genAuthCookies(session, signature),
-          Origin: 'https://www.tradingview.com',
+          cookie: genAuthCookies(session, signature), Origin: 'https://www.tradingview.com',
         },
         validateStatus,
       });
@@ -1180,6 +1170,83 @@ module.exports = {
       console.error(e);
       throw new Error(`Failed to fetch alerts: \nReason: ${e}`);
     }
+  },
+
+  async createAlertForChart(chartId, name, webhook, message, email = false, sourceId = undefined, session, signature) {
+    const contentBlob = await module.exports.fetchLayoutContent(chartId, session, signature);
+
+    const studyMetaInfo = contentBlob.studyMetaInfoMap;
+    const chartSources = contentBlob.charts[0].panes[0].sources;
+
+    const seriesDefaultSource = chartSources.find((source) => source.id === '_seriesId');
+    const defaultCurrencyId = seriesDefaultSource.state.currencyId;
+    const defaultSymbolId = seriesDefaultSource.state.symbol;
+    const symbol = `={"adjustment":"splits","currency-id":"${defaultCurrencyId}","session":"regular","symbol":"${defaultSymbolId}"}`;
+    const resolution = seriesDefaultSource.state.interval;
+
+    const seriesStrategySources = sourceId ? [chartSources.find((source) => source.id === sourceId)] : chartSources.filter((source) => (source.id !== ('_seriesId')) && source.metaInfo.includes('StrategyScript'));
+
+    if (seriesStrategySources.length === 0) throw Error('No strategy found on chart. Please check the chartId & sourceId if supplied.');
+
+    if (seriesStrategySources.length > 1) {
+      const strats = seriesStrategySources.map((source) => ({
+        id: source.id, name: studyMetaInfo[source.metaInfo]?.description,
+      }));
+
+      return {
+        status: 'ERROR',
+        message: `Multiple indicators found on chart '${chartId}'. Unable to determine alert source.`,
+        data: strats,
+      };
+    }
+
+    const strategyMetaInfo = seriesStrategySources[0].metaInfo;
+    const strategyInputs = seriesStrategySources[0].state.inputs;
+
+    const studyScriptHandle = `${strategyMetaInfo.split('$')[0]}@${strategyMetaInfo.split('@')[1].split('[')[0]}`;
+    const studyPineId = strategyMetaInfo.split('$')[1].split('@')[0];
+    const studyPineVersion = strategyMetaInfo.split('[v.')[1].split(']')[0];
+
+    const studyInputs = strategyInputs;
+    delete studyInputs?.pineId;
+    delete studyInputs?.pineVersion;
+    // eslint-disable-next-line no-underscore-dangle
+    studyInputs.__profile = false;
+
+    const studySeries = {
+      type: 'study',
+      study: studyScriptHandle,
+      pine_id: studyPineId,
+      pine_version: studyPineVersion,
+      inputs: studyInputs,
+    };
+
+    const alertPayload = {
+      active: true,
+      auto_deactivate: false,
+      expiration: null,
+      symbol,
+      resolution,
+      name,
+      message,
+      ignore_warnings: true,
+      condition: {
+        type: 'strategy', strategy_mode: 'strategy', series: [studySeries],
+      },
+      web_hook: webhook,
+      email,
+      sms_over_email: true,
+      sound_file: null,
+      sound_duration: 0,
+      mobile_push: false,
+      popup: false,
+    };
+
+    const createAlertData = await module.exports.createAlert(alertPayload, process.env.TV_SESSION_ID, process.env.TV_SESSION_SIGNATURE);
+
+    return {
+      status: 'OK', message: 'Alert created successfully.', data: createAlertData,
+    };
   },
 
   /**
@@ -1191,8 +1258,7 @@ module.exports = {
         payload: { ...filter },
       }, {
         headers: {
-          cookie: genAuthCookies(session, signature),
-          Origin: 'https://www.tradingview.com',
+          cookie: genAuthCookies(session, signature), Origin: 'https://www.tradingview.com',
         },
         validateStatus,
       });
