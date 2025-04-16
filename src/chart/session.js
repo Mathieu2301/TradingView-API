@@ -171,7 +171,7 @@ module.exports = (client) => class ChartSession {
    * @param {...{}} data Packet data
    */
   #handleEvent(ev, ...data) {
-    this.#callbacks[ev].forEach((e) => e(...data));
+    this.#callbacks[ev]?.forEach((e) => e(...data));
     this.#callbacks.event.forEach((e) => e(ev, ...data));
   }
 
@@ -531,6 +531,20 @@ module.exports = (client) => class ChartSession {
   onError(cb) {
     this.#callbacks.error.push(cb);
   }
+  
+  /**
+   * When the replay session cursor has moved
+   * @param {string} event_name
+   * @param {(index: number) => void} cb
+   * @event
+   */
+  on(event_name,cb) {
+    if (!this.#callbacks[event_name]) {
+      this.#callbacks[event_name] = [];
+    }
+    this.#callbacks[event_name].push(cb);
+  }
+  
 
   /** @type {ChartSessionBridge} */
   #chartSession = {
