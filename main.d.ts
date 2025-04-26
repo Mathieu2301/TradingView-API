@@ -116,6 +116,8 @@ declare module '@mathieuc/tradingview' {
         symbol: string;
         description: string;
         type: string;
+        currency: string;
+        chartCurrencyId: string;
         getTA: () => Promise<Periods>;
     }
 
@@ -1295,6 +1297,7 @@ declare module '@mathieuc/tradingview' {
 
     export function replaceLayout(
         layout: Layout,
+        currencyId: string,
         symbol: string,
         interval: string,
         studyId: string,
@@ -1306,6 +1309,7 @@ declare module '@mathieuc/tradingview' {
 
     export function createLayout(
         name: string,
+        currencyId: string,
         symbol: string,
         interval: string,
         studyId: string,
