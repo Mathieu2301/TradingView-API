@@ -4,7 +4,7 @@ const zlib = require('zlib');
 
 const PineIndicator = require('./classes/PineIndicator');
 const { genAuthCookies, toTitleCase } = require('./utils');
-const { createLayoutContentBlob } = require('./layout/contentBlob');
+const { createLayoutContentBlob, getMainSeriesSourceFromLayoutContent } = require('./layout/contentBlob');
 
 const validateStatus = (status) => status < 500;
 
@@ -146,23 +146,23 @@ module.exports = {
     const { data } = request;
 
     return data.symbols
-        .filter((s) => Object.hasOwn(s, 'currency-logoid'))
-        .map((s) => {
-      const exchange = s.exchange.split(' ')[0];
-      const id = `${exchange.toUpperCase()}:${s.symbol}`;
+      .filter((s) => Object.hasOwn(s, 'currency-logoid'))
+      .map((s) => {
+        const exchange = s.exchange.split(' ')[0];
+        const id = `${exchange.toUpperCase()}:${s.symbol}`;
 
-      return {
-        id,
-        exchange: s.source_id,
-        fullExchange: s.exchange,
-        symbol: s.symbol,
-        currency: s.currency_code,
-        chartCurrencyId: s['currency-logoid'].split('/')[1],
-        description: s.description,
-        type: s.type,
-        getTA: () => this.getTA(id),
-      };
-    });
+        return {
+          id,
+          exchange: s.source_id,
+          fullExchange: s.exchange,
+          symbol: s.symbol,
+          currency: s.currency_code,
+          chartCurrencyId: s['currency-logoid'].split('/')[1],
+          description: s.description,
+          type: s.type,
+          getTA: () => this.getTA(id),
+        };
+      });
   },
 
   /**
@@ -381,11 +381,9 @@ module.exports = {
       },
     });
 
-    if (data === 'The user requesting information on the script is not allowed to do so')
-        throw new Error('User does not have access to this script.');
+    if (data === 'The user requesting information on the script is not allowed to do so') throw new Error('User does not have access to this script.');
 
-    if (!data.success || !data.result.metaInfo || !data.result.metaInfo.inputs)
-        throw new Error(`Non-existent or unsupported indicator: '${id}' '${data.reason}'`);
+    if (!data.success || !data.result.metaInfo || !data.result.metaInfo.inputs) throw new Error(`Non-existent or unsupported indicator: '${id}' '${data.reason}'`);
 
     const inputs = {};
 
@@ -970,6 +968,58 @@ module.exports = {
   },
 
   /**
+     * Fetch layout initData
+     * @function fetchLayoutData
+     * @param {string} chartShortUrl Chart short url
+     * @param {string} session User 'sessionid' cookie
+     * @param {string} [signature] User 'sessionid_sign' cookie
+     * @returns {Promise<{metaInfo: any, content: any}>} Layout initData
+     */
+  async fetchLayoutInitData(chartShortUrl, session, signature) {
+    const { data: html } = await axios.get(`https://www.tradingview.com/chart/${chartShortUrl}`, {
+      headers: {
+        cookie: genAuthCookies(session, signature),
+      },
+    });
+
+    let metaInfo;
+    const metaInfoMatch = html.match(/initData\.metaInfo\s*=\s*(\{[\s\S]*?\});/);
+    if (metaInfoMatch && metaInfoMatch[1]) {
+      try {
+        const rawMetaInfo = metaInfoMatch[0]
+          .replace('initData.metaInfo = ', '')
+          .replaceAll('\n', '')
+          .replaceAll('\t', '')
+          .replaceAll('  ', ' ')
+          .replaceAll('{', '{"')
+          .replace(',};', '}')
+          .replaceAll(':', '":')
+          .replaceAll(',', ', "');
+        console.log('rawMetaInfo:', rawMetaInfo);
+        metaInfo = JSON.parse(rawMetaInfo);
+      } catch (e) {
+        console.error(e);
+        throw new Error('Failed to to parse \'initData.metaInfo\' data.');
+      }
+    } else throw new Error('Failed to find \'metaInfo\' property on \'initData\' object.');
+
+    let content;
+    const contentMatch = html.match(/initData\.content\s*=\s*(\{.*?\});/s);
+    if (contentMatch && contentMatch[1]) {
+      try {
+        content = JSON.parse(contentMatch[1]);
+      } catch (e) {
+        console.error(e);
+        throw new Error('Failed to to parse \'initData.content\' data.');
+      }
+    } else throw new Error('Failed to find \'content\' property on \'initData\' object.');
+
+    return {
+      metaInfo, content,
+    };
+  },
+
+  /**
      * Replaces an existing layout
      * @function replaceLayout
      * @param {Layout} layout Layout
@@ -1046,6 +1096,77 @@ module.exports = {
     const layout = await module.exports.createBlankLayout(name, session, signature);
     const layoutShortUrl = await module.exports.replaceLayout(layout, currencyId, symbol, interval, studyId, indicatorId, indicatorValues, session, signature);
     return layoutShortUrl;
+  },
+
+  async updateLayoutStudyInputs(chartShortUrl, studySourceId, inputs, session, signature) {
+    const initData = await module.exports.fetchLayoutInitData(chartShortUrl, session, signature);
+    if (!initData) throw new Error(`Failed to retrieve initData for layout: '${chartShortUrl}'`);
+
+    const mainSeriesSource = getMainSeriesSourceFromLayoutContent(initData.content);
+    if (!mainSeriesSource) throw new Error('Failed to retrieve MainSeriesSource.');
+
+    const formData = new FormData();
+    formData.append('id', initData.metaInfo.id);
+    formData.append('name', initData.metaInfo.name);
+    formData.append('description', initData.metaInfo.description);
+
+    formData.append('symbol_type', 'swap'); // TODO is this needed to change?
+    formData.append('symbol', mainSeriesSource.state.symbol);
+    formData.append('legs', JSON.stringify([{
+      symbol: mainSeriesSource.state.symbol,
+      pro_symbol: mainSeriesSource.state.symbol,
+    }]));
+    formData.append('charts_symbols', JSON.stringify({ 1: { symbol: mainSeriesSource.state.symbol } }));
+    formData.append('resolution', mainSeriesSource.state.interval);
+
+    const [broker, coin] = mainSeriesSource.state.symbol.split(':');
+    formData.append('exchange', toTitleCase(broker));
+    formData.append('listed_exchange', broker);
+    formData.append('short_name', coin);
+
+    formData.append('is_realtime', '1');
+
+    const contentBlob = {
+      ...initData.content,
+      charts: initData.content.charts.map((chart) => ({
+        ...chart,
+        panes: chart.panes.map((pane) => ({
+          ...pane,
+          sources: pane.sources.map((source) => {
+            if (source.id !== studySourceId) return source;
+
+            const updatedSource = source;
+            Object.entries(inputs)
+              .forEach(([inputKey, inputValue]) => {
+                updatedSource.state.inputs[inputKey] = inputValue;
+              });
+
+            return updatedSource;
+          }),
+        })),
+      })),
+    };
+
+    const gzipData = zlib.gzipSync(JSON.stringify(contentBlob));
+    formData.append('content', new Blob([gzipData], { type: 'application/gzip' }), 'blob.gz');
+
+    try {
+      await axios.post('https://www.tradingview.com/savechart/', formData, {
+        headers: {
+          cookie: genAuthCookies(session, signature),
+          Accept: '*/*',
+          'Accept-Encoding': 'gzip, deflate, br, zstd',
+          DNT: '1',
+          Origin: 'https://www.tradingview.com',
+        },
+        validateStatus,
+      });
+    } catch (e) {
+      console.error(e);
+      throw new Error(`Failed to save new inputs to layout: ${chartShortUrl}`);
+    }
+
+    return chartShortUrl;
   },
 
   /**
@@ -1191,9 +1312,7 @@ module.exports = {
     const symbol = `={"adjustment":"splits","currency-id":"${defaultCurrencyId}","session":"regular","symbol":"${defaultSymbolId}"}`;
     const resolution = seriesDefaultSource.state.interval;
 
-    const seriesStrategySources = sourceId ?
-        [chartSources.find((source) => source.id === sourceId)] :
-        chartSources.filter((source) => (source.id !== ('_seriesId')) && source.metaInfo.includes('StrategyScript'));
+    const seriesStrategySources = sourceId ? [chartSources.find((source) => source.id === sourceId)] : chartSources.filter((source) => (source.id !== ('_seriesId')) && source.metaInfo.includes('StrategyScript'));
 
     if (seriesStrategySources.length === 0) throw Error('No strategy found on chart. Please check the chartId & sourceId if supplied.');
 

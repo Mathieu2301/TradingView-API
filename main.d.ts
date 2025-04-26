@@ -851,9 +851,9 @@ declare module '@mathieuc/tradingview' {
         #lastData: Record<string, any>;
         #callbacks: Record<MarketEvent | 'event', Array<(...args: any[]) => void>>;
 
-        get symbolInfo(): SymbolInfo;
-
         constructor(symbol: string, session?: string);
+
+        get symbolInfo(): SymbolInfo;
 
         onLoaded(cb: () => void): void;
 
@@ -1287,6 +1287,8 @@ declare module '@mathieuc/tradingview' {
 
     export function fetchLayout(nameOrIdOrUrl: string | number, session: string, signature: string): Promise<Layout>;
 
+    export function fetchLayoutInitData(chartShortUrl: string | number, session: string, signature: string): Promise<any>
+
     export function fetchLayoutContent(chartShortUrl: string | number, session: string, signature: string): Promise<any>
 
     export function createBlankLayout(
@@ -1315,6 +1317,14 @@ declare module '@mathieuc/tradingview' {
         studyId: string,
         indicatorId: string,
         indicatorValues: Record<string, any>,
+        session: string,
+        signature: string
+    ): Promise<string>;
+
+    export function updateLayoutStudyInputs(
+        chartShortUrl: string,
+        studyId: string,
+        inputs: Record<string, any>,
         session: string,
         signature: string
     ): Promise<string>;
@@ -1515,4 +1525,6 @@ declare module '@mathieuc/tradingview' {
         session: string,
         signature: string
     ): Promise<{ s: string, id: string, r: FiredAlert[], errmsg?: string, err?: { code: string } }>;
+
+    export function getStudySourcesFromLayoutContent(layoutContent: any): any[];
 }
