@@ -2,7 +2,6 @@ const os = require('os');
 const axios = require('axios');
 const zlib = require('zlib');
 
-const { fetchLayoutContent, createAlert } = require('@mathieuc/tradingview');
 const PineIndicator = require('./classes/PineIndicator');
 const { genAuthCookies, toTitleCase } = require('./utils');
 const { createLayoutContentBlob } = require('./layout/contentBlob');
@@ -146,15 +145,19 @@ module.exports = {
 
     const { data } = request;
 
-    return data.symbols.map((s) => {
+    return data.symbols
+        .filter((s) => Object.hasOwn(s, 'currency-logoid'))
+        .map((s) => {
       const exchange = s.exchange.split(' ')[0];
       const id = `${exchange.toUpperCase()}:${s.symbol}`;
 
       return {
         id,
-        exchange,
+        exchange: s.source_id,
         fullExchange: s.exchange,
         symbol: s.symbol,
+        currency: s.currency_code,
+        chartCurrencyId: s['currency-logoid'].split('/')[1],
         description: s.description,
         type: s.type,
         getTA: () => this.getTA(id),
@@ -378,9 +381,11 @@ module.exports = {
       },
     });
 
-    if (data === 'The user requesting information on the script is not allowed to do so') throw new Error('User does not have access to this script.');
+    if (data === 'The user requesting information on the script is not allowed to do so')
+        throw new Error('User does not have access to this script.');
 
-    if (!data.success || !data.result.metaInfo || !data.result.metaInfo.inputs) throw new Error(`Non-existent or unsupported indicator: '${id}' '${data.reason}'`);
+    if (!data.success || !data.result.metaInfo || !data.result.metaInfo.inputs)
+        throw new Error(`Non-existent or unsupported indicator: '${id}' '${data.reason}'`);
 
     const inputs = {};
 
@@ -886,7 +891,7 @@ module.exports = {
         },
         validateStatus,
       });
-      return layouts || [];
+      return typeof layouts === 'string' || !Array.isArray(layouts) ? [] : layouts;
     } catch (e) {
       console.error(e);
       throw new Error(`Failed to getLayouts, reason: ${e}`);
@@ -895,7 +900,7 @@ module.exports = {
 
   /**
      * Fetch layout by nameOrIdOrUrl
-     * @function fetchLayouts
+     * @function fetchLayout
      * @param {string|number} nameOrIdOrUrl Layout name, id or short url
      * @param {string} session User 'sessionid' cookie
      * @param {string} [signature] User 'sessionid_sign' cookie
@@ -968,6 +973,7 @@ module.exports = {
      * Replaces an existing layout
      * @function replaceLayout
      * @param {Layout} layout Layout
+     * @param {string} currencyId currencyId
      * @param {string} symbol symbol
      * @param {string} interval interval
      * @param {string} studyId studyId
@@ -977,7 +983,7 @@ module.exports = {
      * @param {string} [signature] User 'sessionid_sign' cookie
      * @returns {Promise<string>} Layout URL
      */
-  async replaceLayout(layout, symbol, interval, studyId, indicatorId, indicatorValues, session, signature) {
+  async replaceLayout(layout, currencyId, symbol, interval, studyId, indicatorId, indicatorValues, session, signature) {
     const formData = new FormData();
     formData.append('id', layout.id);
     formData.append('name', layout.name);
@@ -999,7 +1005,7 @@ module.exports = {
     const rawIndicator = await module.exports.getRawIndicator(indicatorId, 'last', session, signature);
     Object.entries(indicatorValues).forEach(([key, value]) => rawIndicator.setInputValue(key, value));
 
-    const contentBlob = createLayoutContentBlob(layout.name, symbol, interval, studyId, rawIndicator);
+    const contentBlob = createLayoutContentBlob(layout.name, currencyId, symbol, interval, studyId, rawIndicator);
     const gzipData = zlib.gzipSync(JSON.stringify(contentBlob));
     formData.append('content', new Blob([gzipData], { type: 'application/gzip' }), 'blob.gz');
 
@@ -1026,6 +1032,7 @@ module.exports = {
      * Creates a new layout and populates it with the provided indicator setup
      * @function createLayout
      * @param {string} name name
+     * @param {string} currencyId currencyId
      * @param {string} symbol symbol
      * @param {string} interval interval
      * @param {string} studyId studyId
@@ -1035,9 +1042,9 @@ module.exports = {
      * @param {string} [signature] User 'sessionid_sign' cookie
      * @returns {Promise<string>} Layout Short URL
      */
-  async createLayout(name, symbol, interval, studyId, indicatorId, indicatorValues, session, signature) {
+  async createLayout(name, currencyId, symbol, interval, studyId, indicatorId, indicatorValues, session, signature) {
     const layout = await module.exports.createBlankLayout(name, session, signature);
-    const layoutShortUrl = await module.exports.replaceLayout(layout, symbol, interval, studyId, indicatorId, indicatorValues, session, signature);
+    const layoutShortUrl = await module.exports.replaceLayout(layout, currencyId, symbol, interval, studyId, indicatorId, indicatorValues, session, signature);
     return layoutShortUrl;
   },
 
@@ -1184,7 +1191,9 @@ module.exports = {
     const symbol = `={"adjustment":"splits","currency-id":"${defaultCurrencyId}","session":"regular","symbol":"${defaultSymbolId}"}`;
     const resolution = seriesDefaultSource.state.interval;
 
-    const seriesStrategySources = sourceId ? [chartSources.find((source) => source.id === sourceId)] : chartSources.filter((source) => (source.id !== ('_seriesId')) && source.metaInfo.includes('StrategyScript'));
+    const seriesStrategySources = sourceId ?
+        [chartSources.find((source) => source.id === sourceId)] :
+        chartSources.filter((source) => (source.id !== ('_seriesId')) && source.metaInfo.includes('StrategyScript'));
 
     if (seriesStrategySources.length === 0) throw Error('No strategy found on chart. Please check the chartId & sourceId if supplied.');
 

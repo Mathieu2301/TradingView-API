@@ -1,4 +1,4 @@
-function createEmptyLayoutContentBlob(layoutName, symbol, interval, studyId) {
+function createEmptyLayoutContentBlob(layoutName, currencyId, symbol, interval, studyId) {
   const shortName = symbol.split(':')[1];
   return {
     name: layoutName,
@@ -640,7 +640,7 @@ function createEmptyLayoutContentBlob(layoutName, symbol, interval, studyId) {
                   timeframe: '',
                   interval,
                   unitId: null,
-                  currencyId: 'XTVCUSDT',
+                  currencyId,
                   priceAxisProperties: {
                     autoScale: true,
                     autoScaleDisabled: false,
@@ -1033,8 +1033,8 @@ function createStudyStrategy(studyId, rawIndicator) {
 }
 
 module.exports = {
-  createLayoutContentBlob(layoutName, symbol, interval, studyId, rawIndicator) {
-    const emptyBlob = createEmptyLayoutContentBlob(layoutName, symbol, interval, studyId);
+  createLayoutContentBlob(layoutName, currencyId, symbol, interval, studyId, rawIndicator) {
+    const emptyBlob = createEmptyLayoutContentBlob(layoutName, currencyId, symbol, interval, studyId);
     if (!rawIndicator) return emptyBlob;
 
     const blob = { ...emptyBlob };
