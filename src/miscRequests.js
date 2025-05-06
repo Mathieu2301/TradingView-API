@@ -637,10 +637,11 @@ module.exports = {
      * @returns {Promise<User>} Token
      */
   async getUser(session, signature = '', location = 'https://www.tradingview.com/') {
-    const { data } = await axios.get(location, {
+    const { data, headers } = await axios.get(location, {
       headers: {
         cookie: genAuthCookies(session, signature),
       },
+      maxRedirects: 0,
       validateStatus,
     });
 
@@ -715,6 +716,10 @@ module.exports = {
         disallow_adding_to_private_chats: !!/"disallow_adding_to_private_chats":\s*(true|false)/.exec(data)?.[1],
         picture_url: /"picture_url":"(.*?)"/.exec(data)?.[1],
       };
+    }
+
+    if (headers.location !== location) {
+      return this.getUser(session, signature, headers.location);
     }
 
     throw new Error('Wrong or expired sessionid/signature');
