@@ -12,7 +12,7 @@ const client = new TradingView.Client({
 });
 
 const chart = new client.Session.Chart();
-chart.setMarket('BYBIT:BTCUSDT.P', {
+chart.setMarket('BYBIT:LINKUSDT.P', {
   timeframe: '60',
   range: 99999,
 });
@@ -33,30 +33,24 @@ const rsiStudy = 'STD;RSI';
       indicator.onError(() => reject(Error('error')));
 
       indicator.onUpdate(() => {
+        console.log(indicator.instance.inputs);
         client.end();
         resolve(indicator.studID);
       });
     });
   });
-  console.log('STUDID', studID);
 
-  TradingView.getIndicator(mystrat).then((indic) => {
-    const indicator = new chart.Study(indic);
-    indicator.instance.inputs.in_1.value = 'zCsxQD$0';
-    console.log(indicator.instance.inputs.in_1);
+  // TradingView.getIndicator(mystrat).then((indic) => {
+  //   const indicator = new chart.Study(indic);
+  //   console.log(studID, indicator.studID);
 
-    // console.log('inputs', indicator.instance.inputs);
+  //   indicator.instance.inputs.in_1.value = `${studID}$0`;
+  //   console.log(indicator.instance.inputs.in_1);
 
-    indicator.onError((...err) => {
-      console.log('Study error:', ...err);
-    });
-
-    indicator.onUpdate(() => {
-      const { strategyReport: { performance: { all } } } = indicator;
-
-      console.log('Result: ', all.netProfitPercent);
-
-      client.end();
-    });
-  });
+  //   indicator.onUpdate(() => {
+  //     const { strategyReport: { performance: { all } } } = indicator;
+  //     console.log('Result: ', all.netProfitPercent);
+  //     client.end();
+  //   });
+  // });
 })();
