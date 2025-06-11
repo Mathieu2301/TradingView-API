@@ -22,7 +22,6 @@ chart.onError((...err) => {
 });
 
 const mystrat = 'PUB;db3dda4d2c1f475bbc9240ff0a41116b';
-// const mystrat = 'StrategyScript$USER;de623475265547e3acaf9ea5de52f4b1@tv-scripting-101[v.1.0]';
 const rsiStrategy = 'STD;RSI%1Strategy';
 const rsiStudy = 'STD;RSI';
 // NEED TO LOOK OUT FOR: mainSourceId
@@ -34,7 +33,7 @@ const rsiStudy = 'STD;RSI';
       indicator.onError(() => reject(Error('error')));
 
       indicator.onUpdate(() => {
-        // client.end();
+        client.end();
         resolve(indicator.studID);
       });
     });
@@ -43,7 +42,8 @@ const rsiStudy = 'STD;RSI';
 
   TradingView.getIndicator(mystrat).then((indic) => {
     const indicator = new chart.Study(indic);
-    indicator.instance.inputs.in_1.value = 's1_st1$0';
+    indicator.instance.inputs.in_1.value = 'zCsxQD$0';
+    console.log(indicator.instance.inputs.in_1);
 
     // console.log('inputs', indicator.instance.inputs);
 
