@@ -33,24 +33,24 @@ const rsiStudy = 'STD;RSI';
       indicator.onError(() => reject(Error('error')));
 
       indicator.onUpdate(() => {
-        console.log(indicator.instance.inputs);
-        client.end();
+        // console.log(indicator.instance.inputs);
+        // client.end();
         resolve(indicator.studID);
       });
     });
   });
 
-  // TradingView.getIndicator(mystrat).then((indic) => {
-  //   const indicator = new chart.Study(indic);
-  //   console.log(studID, indicator.studID);
+  TradingView.getIndicator(mystrat).then((indic) => {
+    const indicator = new chart.Study(indic);
+    console.log(studID, indicator.studID);
 
-  //   indicator.instance.inputs.in_1.value = `${studID}$0`;
-  //   console.log(indicator.instance.inputs.in_1);
+    indicator.instance.inputs.in_1.value = 'st6$0';
+    console.log(indicator.instance.inputs.in_1);
 
-  //   indicator.onUpdate(() => {
-  //     const { strategyReport: { performance: { all } } } = indicator;
-  //     console.log('Result: ', all.netProfitPercent);
-  //     client.end();
-  //   });
-  // });
+    indicator.onUpdate(() => {
+      const { strategyReport: { performance: { all } } } = indicator;
+      console.log('Result: ', all.netProfitPercent);
+      client.end();
+    });
+  });
 })();
