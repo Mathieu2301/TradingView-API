@@ -30,7 +30,7 @@ declare module '@mathieuc/tradingview' {
     export interface ClientOptions {
         token?: string;
         signature?: string;
-        DEBUG?: boolean;
+        DEBUG?: boolean | 'session' | 'client' | 'study' | 'market' | 'quote';
         server?: 'data' | 'prodata' | 'widgetdata' | 'history-data';
         location?: string;
     }

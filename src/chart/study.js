@@ -1,3 +1,4 @@
+const util = require('util');
 const { genSessionID } = require('../utils');
 const { parseCompressed } = require('../protocol');
 const graphicParser = require('./graphicParser');
@@ -161,6 +162,10 @@ const studyConstructor = (chartSession) => class ChartStudy {
     return Object.values(this.#periods).sort((a, b) => b.$time - a.$time);
   }
 
+  get studID() {
+    return this.#studID;
+  }
+
   /**
    * List of graphic xPos indexes
    * @type {number[]}
@@ -235,7 +240,7 @@ const studyConstructor = (chartSession) => class ChartStudy {
     this.instance = indicator;
 
     this.#studyListeners[this.#studID] = async (packet) => {
-      if (global.TW_DEBUG) console.log('§90§30§105 STUDY §0 DATA', packet);
+      if (global.TW_DEBUG === true || global.TW_DEBUG === 'study') console.log('§90§30§105 STUDY §0 DATA', util.inspect(packet, { depth: 4, colors: true }));
 
       if (packet.type === 'study_completed') {
         this.#handleEvent('studyCompleted');
