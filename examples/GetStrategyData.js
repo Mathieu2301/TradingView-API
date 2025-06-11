@@ -34,6 +34,7 @@ const rsiStudy = 'STD;RSI';
 
       indicator.onUpdate(() => {
         // console.log(indicator.instance.inputs);
+        // console.log('IDEEE', indicator.studID);
         // client.end();
         resolve(indicator.studID);
       });
@@ -44,7 +45,7 @@ const rsiStudy = 'STD;RSI';
     const indicator = new chart.Study(indic);
     console.log(studID, indicator.studID);
 
-    indicator.instance.inputs.in_1.value = 'st6$0';
+    indicator.instance.inputs.in_1.value = 's1$0'; // saw this in real payload of tv
     console.log(indicator.instance.inputs.in_1);
 
     indicator.onUpdate(() => {
