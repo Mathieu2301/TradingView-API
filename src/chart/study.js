@@ -147,7 +147,7 @@ const parseTrades = (trades) => trades.reverse().map((t) => ({
  * @param {import('./session').ChartSessionBridge} chartSession
  */
 const studyConstructor = (chartSession) => class ChartStudy {
-  #studID = genSessionID('st');
+  #studID = 'st1';
 
   #studyListeners = chartSession.studyListeners;
 
@@ -230,7 +230,7 @@ const studyConstructor = (chartSession) => class ChartStudy {
   /**
    * @param {PineIndicator | BuiltInIndicator} indicator Indicator object instance
    */
-  constructor(indicator) {
+  constructor(indicator, index = 1) {
     if (!(indicator instanceof PineIndicator) && !(indicator instanceof BuiltInIndicator)) {
       throw new Error(`Indicator argument must be an instance of PineIndicator or BuiltInIndicator.
       Please use 'TradingView.getIndicator(...)' function.`);
@@ -238,6 +238,7 @@ const studyConstructor = (chartSession) => class ChartStudy {
 
     /** @type {PineIndicator | BuiltInIndicator} Indicator instance */
     this.instance = indicator;
+    this.#studID = `st${index}`;
 
     this.#studyListeners[this.#studID] = async (packet) => {
       if (global.TW_DEBUG === true || global.TW_DEBUG === 'study') console.log('§90§30§105 STUDY §0 DATA', util.inspect(packet, { depth: 4, colors: true }));
@@ -367,9 +368,10 @@ const studyConstructor = (chartSession) => class ChartStudy {
 
     chartSession.send('create_study', [
       chartSession.sessionID,
-      `${this.#studID}`,
+      this.#studID,
       'st1',
       '$prices',
+      // 'sds_1',
       this.instance.type,
       getInputs(this.instance),
     ]);
@@ -388,8 +390,8 @@ const studyConstructor = (chartSession) => class ChartStudy {
 
     chartSession.send('modify_study', [
       chartSession.sessionID,
-      `${this.#studID}`,
       'st1',
+      ...(this.#studID !== 'st1' && this.#studID),
       getInputs(this.instance),
     ]);
   }

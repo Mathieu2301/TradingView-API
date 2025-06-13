@@ -293,6 +293,11 @@ module.exports = (client) => class ChartSession {
     };
 
     this.#client.send('chart_create_session', [this.#chartSessionID]);
+    // this.#client.send('resolve_symbol', [
+    //   this.#chartSessionID,
+    //   'sds_sym_1',
+    //   '={"adjustment":"splits","currency-id":"XTVCUSDT","session":"regular","symbol":"BYBIT:LINKUSDT.P"}']);
+    // this.#client.send('create_series', [this.#chartSessionID, 'sds_1', 's1', 'sds_sym_1', '60', 300, '']);
   }
 
   #seriesCreated = false;

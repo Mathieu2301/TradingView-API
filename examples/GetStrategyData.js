@@ -8,7 +8,7 @@ const client = new TradingView.Client({
   server: 'prodata',
   token: process.env.SESSION,
   signature: process.env.SIGNATURE,
-  // DEBUG: 'study',
+  DEBUG: 'study',
 });
 
 const chart = new client.Session.Chart();
@@ -28,7 +28,7 @@ const rsiStudy = 'STD;RSI';
 (async () => {
   const studID = await new Promise((resolve, reject) => {
     TradingView.getIndicator(rsiStudy).then((indic) => {
-      const indicator = new chart.Study(indic);
+      const indicator = new chart.Study(indic, 2);
 
       indicator.onError(() => reject(Error('error')));
 
@@ -45,7 +45,7 @@ const rsiStudy = 'STD;RSI';
     const indicator = new chart.Study(indic);
     console.log(studID, indicator.studID);
 
-    indicator.instance.inputs.in_1.value = 's1$0'; // saw this in real payload of tv
+    indicator.instance.inputs.in_1.value = 'st2$0'; // saw this in real payload of tv
     console.log(indicator.instance.inputs.in_1);
 
     indicator.onUpdate(() => {
