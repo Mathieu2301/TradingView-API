@@ -1,5 +1,4 @@
 const util = require('util');
-const { genSessionID } = require('../utils');
 const { parseCompressed } = require('../protocol');
 const graphicParser = require('./graphicParser');
 
@@ -230,7 +229,7 @@ const studyConstructor = (chartSession) => class ChartStudy {
   /**
    * @param {PineIndicator | BuiltInIndicator} indicator Indicator object instance
    */
-  constructor(indicator, index = 1) {
+  constructor(indicator, index) {
     if (!(indicator instanceof PineIndicator) && !(indicator instanceof BuiltInIndicator)) {
       throw new Error(`Indicator argument must be an instance of PineIndicator or BuiltInIndicator.
       Please use 'TradingView.getIndicator(...)' function.`);
@@ -238,7 +237,7 @@ const studyConstructor = (chartSession) => class ChartStudy {
 
     /** @type {PineIndicator | BuiltInIndicator} Indicator instance */
     this.instance = indicator;
-    this.#studID = `st${index}`;
+    if (index) this.#studID = `st${index}`;
 
     this.#studyListeners[this.#studID] = async (packet) => {
       if (global.TW_DEBUG === true || global.TW_DEBUG === 'study') console.log('§90§30§105 STUDY §0 DATA', util.inspect(packet, { depth: 4, colors: true }));
@@ -370,7 +369,6 @@ const studyConstructor = (chartSession) => class ChartStudy {
       chartSession.sessionID,
       this.#studID,
       'st1',
-      // '$prices',
       'sds_1',
       this.instance.type,
       getInputs(this.instance),
@@ -390,8 +388,8 @@ const studyConstructor = (chartSession) => class ChartStudy {
 
     chartSession.send('modify_study', [
       chartSession.sessionID,
+      this.#studID,
       'st1',
-      ...(this.#studID !== 'st1' && this.#studID),
       getInputs(this.instance),
     ]);
   }

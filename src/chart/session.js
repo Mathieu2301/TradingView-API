@@ -69,7 +69,7 @@ const ChartTypes = {
 
 /**
  * @typedef {Object} MarketInfos
- * @prop {string} series_id            Used series (ex: 'ser_1')
+ * @prop {string} series_id            Used series (ex: 'sds_sym_1')
  * @prop {string} base_currency        Base currency (ex: 'BTC')
  * @prop {string} base_currency_id     Base currency ID (ex: 'XTVCBTC')
  * @prop {string} name                 Market short name (ex: 'BTCEUR')
@@ -292,12 +292,7 @@ module.exports = (client) => class ChartSession {
       },
     };
 
-    this.#client.send('chart_create_session', [this.#chartSessionID]);
-    // this.#client.send('resolve_symbol', [
-    //   this.#chartSessionID,
-    //   'sds_sym_1',
-    //   '={"adjustment":"splits","currency-id":"XTVCUSDT","session":"regular","symbol":"BYBIT:LINKUSDT.P"}']);
-    // this.#client.send('create_series', [this.#chartSessionID, 'sds_1', 's1', 'sds_sym_1', '60', 300, '']);
+    this.#client.send('chart_create_session', [this.#chartSessionID, '']);
   }
 
   #seriesCreated = false;
@@ -323,9 +318,10 @@ module.exports = (client) => class ChartSession {
       this.#chartSessionID,
       'sds_1',
       's1',
-      `ser_${this.#currentSeries}`,
+      `sds_sym_${this.#currentSeries}`,
       timeframe,
       this.#seriesCreated ? '' : calcRange,
+      '',
     ]);
 
     this.#seriesCreated = true;
@@ -397,7 +393,7 @@ module.exports = (client) => class ChartSession {
 
     this.#client.send('resolve_symbol', [
       this.#chartSessionID,
-      `ser_${this.#currentSeries}`,
+      `sds_sym_${this.#currentSeries}`,
       `=${JSON.stringify(chartInit)}`,
     ]);
 
