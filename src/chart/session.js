@@ -209,8 +209,8 @@ module.exports = (client) => class ChartSession {
 
           Object.keys(packet.data[1]).forEach((k) => {
             changes.push(k);
-            if (k === '$prices') {
-              const periods = packet.data[1].$prices;
+            if (k === 'sds_1') {
+              const periods = packet.data[1].sds_1;
               if (!periods || !periods.s) return;
 
               periods.s.forEach((p) => {
@@ -319,9 +319,9 @@ module.exports = (client) => class ChartSession {
 
     this.#periods = {};
 
-    this.#client.send(`${this.#seriesCreated ? 'modify' : 'create'}_series`, [
+    this.#client.send(this.#seriesCreated ? 'modify_series' : 'create_series', [
       this.#chartSessionID,
-      '$prices',
+      'sds_1',
       's1',
       `ser_${this.#currentSeries}`,
       timeframe,
