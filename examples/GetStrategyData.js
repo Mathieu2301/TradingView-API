@@ -31,14 +31,16 @@ const rsiStudyId = 'STD;RSI';
     rsiStudy: await TradingView.getIndicator(rsiStudyId),
     myStrategy: await TradingView.getIndicator(mystratId),
   };
-  indicators.myStrategy.setOption('Enter_Short_after_crossing', 'st1$0');
 
-  new chart.Study(indicators.rsiStudy, 1);
+  indicators.rsiStudy.setOption('RSI_Length', 9);
+  const study = new chart.Study(indicators.rsiStudy, 1);
+
+  indicators.myStrategy.setOption('Enter_Short_after_crossing', `${study.studID}$0`); // important to be before next line
   const myStrategy = new chart.Study(indicators.myStrategy, 2);
 
   myStrategy.onUpdate(() => {
     const { strategyReport: { performance: { all } } } = myStrategy;
-    console.log('Result: ', all.netProfitPercent);
+    console.log('Result: ', all);
     client.end();
   });
 })();
