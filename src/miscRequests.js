@@ -1320,11 +1320,13 @@ module.exports = {
         if (value && typeof value === 'object' && !Array.isArray(value)) {
           const scriptId = value.pine_id;
 
-          const isTvGeneralIndicator = value.pine_id.startsWith('STD;');
-          const isPublicUserIndicator = value.pine_id.startsWith('PUB;');
+          const isTvGeneralIndicator = value.pine_id?.startsWith('STD;');
+          const isPublicUserIndicator = value.pine_id?.startsWith('PUB;');
           const isBuiltinIndicator = !value.pine_id;
 
-          if (isBuiltinIndicator) return reject(Error('[TRADINGVIEW]: TODO:: FIX TV BUILTIN INDICATORS'));
+          if (isBuiltinIndicator) {
+            return reject(Error('[TRADINGVIEW]: TODO:: FIX TV BUILTIN INDICATORS'));
+          }
 
           if (!extIndicators[value.pine_id]) {
             const externalIndicator = await this.getIndicator(scriptId);
