@@ -128,6 +128,15 @@ module.exports = (client) => class ChartSession {
   /** Parent client */
   #client = client;
 
+  studIndex = 1;
+
+  getStudId = () => {
+    const result = this.studIndex;
+    this.studIndex += this.studIndex;
+
+    return result;
+  }
+
   /** @type {StudyListeners} */
   #studyListeners = {};
 
@@ -539,6 +548,7 @@ module.exports = (client) => class ChartSession {
   /** @type {ChartSessionBridge} */
   #chartSession = {
     sessionID: this.#chartSessionID,
+    getStudId: this.getStudId,
     studyListeners: this.#studyListeners,
     indexes: {},
     send: (t, p) => this.#client.send(t, p),
