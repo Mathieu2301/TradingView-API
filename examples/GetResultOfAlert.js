@@ -2,11 +2,15 @@ const TradingView = require('../main');
 
 if (!process.env.SESSION || !process.env.SIGNATURE) throw Error('Please set your sessionid and signature cookies');
 
+// WORKING
 // Replace this with your own alertName
 // const alertQuery = '#22';
 // const alertQuery = '#39';
 // const alertQuery = '#43';
-const alertQuery = '#100';
+
+// NOT WORKING
+const alertQuery = '#99';
+// const alertQuery = '#100';
 
 (async () => {
   const alerts = await TradingView.getAlerts(process.env.SESSION, process.env.SIGNATURE);

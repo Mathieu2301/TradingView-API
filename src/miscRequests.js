@@ -1330,9 +1330,24 @@ module.exports = {
 
           if (!extIndicators[value.pine_id]) {
             const externalIndicator = await this.getIndicator(scriptId);
-            if (isPublicUserIndicator) for (const k in await value.inputs) externalIndicator.inputs[k].value = value.inputs[k];
+            if (isPublicUserIndicator) {
+              for (const k in value.inputs) {
+                const i = externalIndicator.inputs?.[k];
+                if (i && Object.prototype.hasOwnProperty.call(input, 'value')) {
+                  i.value = value.inputs[k];
+                }
+              }
+            }
+
             const study = new chart.Study(externalIndicator);
-            if (isTvGeneralIndicator) for (const k in await value.inputs) externalIndicator.inputs[k].value = value.inputs[k];
+            if (isTvGeneralIndicator) {
+              for (const ke in value.inputs) {
+                const i = externalIndicator.inputs?.[ke];
+                if (i && Object.prototype.hasOwnProperty.call(input, 'value')) {
+                  i.value = value.inputs[ke];
+                }
+              }
+            }
             extIndicators[value.pine_id] = study;
           }
 
