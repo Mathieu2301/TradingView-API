@@ -1311,22 +1311,35 @@ module.exports = {
 
       const indicator = await this.getIndicator(pine_id);
 
+      const extIndicators = {};
+
       for (const key of Object.keys(inputs)) {
         const input = indicator.inputs[key];
         const value = inputs[key];
 
         if (value && typeof value === 'object' && !Array.isArray(value)) {
           const scriptId = value.pine_id;
-          const externalIndicator = await this.getIndicator(scriptId);
 
-          const study = new chart.Study(externalIndicator);
+          const isTvGeneralIndicator = value.pine_id.startsWith('STD;');
+          const isPublicUserIndicator = value.pine_id.startsWith('PUB;');
+          const isBuiltinIndicator = !value.pine_id;
 
-          for (const k in await value.inputs) externalIndicator.inputs[k].value = value.inputs[k];
+          if (isBuiltinIndicator) return reject(Error('[TRADINGVIEW]: TODO:: FIX TV BUILTIN INDICATORS'));
 
-          input.value = `${study.studID}$${value.plot_id.split('_')[1]}`;
+          if (!extIndicators[value.pine_id]) {
+            const externalIndicator = await this.getIndicator(scriptId);
+            if (isPublicUserIndicator) for (const k in await value.inputs) externalIndicator.inputs[k].value = value.inputs[k];
+            const study = new chart.Study(externalIndicator);
+            if (isTvGeneralIndicator) for (const k in await value.inputs) externalIndicator.inputs[k].value = value.inputs[k];
+            extIndicators[value.pine_id] = study;
+          }
+
+          const curStudy = extIndicators[value.pine_id];
+          input.value = `${curStudy.studID}$${value.plot_id.split('_')[1]}`;
           continue;
         }
 
+        if (!input) continue;
         input.value = value;
       }
 
