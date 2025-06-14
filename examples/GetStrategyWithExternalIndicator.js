@@ -37,7 +37,6 @@ const rsiStudyId = 'STD;RSI';
 
   indicators.myStrategy.setOption('Enter_Short_after_crossing', `${study.studID}$0`); // important to be before next line
   const myStrategy = new chart.Study(indicators.myStrategy);
-  console.log(myStrategy.studID);
 
   myStrategy.onUpdate(() => {
     const { strategyReport: { performance: { all } } } = myStrategy;
