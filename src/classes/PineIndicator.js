@@ -122,7 +122,7 @@ module.exports = class PineIndicator {
         throw new Error(`Input '${input.name}' (${propI}) must be a ${types[input.type]} !`);
       }
 
-      if (input.options && !input.options.includes(value) && !value.startsWith('st')) {
+      if (input.options && !input.options.includes(value) && !/^st\d+$/.test(value)) {
         throw new Error(`Input '${input.name}' (${propI}) must be one of these values:`, input.options);
       }
 

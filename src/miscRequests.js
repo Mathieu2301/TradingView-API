@@ -1324,10 +1324,6 @@ module.exports = {
           const isPublicUserIndicator = value.pine_id?.startsWith('PUB;');
           const isBuiltinIndicator = !value.pine_id;
 
-          if (isBuiltinIndicator) {
-            return reject(Error('[TRADINGVIEW]: TODO:: FIX TV BUILTIN INDICATORS'));
-          }
-
           if (!extIndicators[value.pine_id]) {
             const externalIndicator = await this.getIndicator(scriptId);
             if (isPublicUserIndicator) {
@@ -1348,11 +1344,21 @@ module.exports = {
                 }
               }
             }
+            if (isBuiltinIndicator) {
+              for (const k in value.inputs) {
+                const i = externalIndicator.inputs?.[k];
+                if (i && Object.prototype.hasOwnProperty.call(input, 'value')) {
+                  i.value = value.inputs[k];
+                }
+              }
+              // return reject(Error('[TRADINGVIEW]: TODO:: FIX TV BUILTIN INDICATORS'));
+            }
+
             extIndicators[value.pine_id] = study;
           }
 
           const curStudy = extIndicators[value.pine_id];
-          input.value = `${curStudy.studID}$${value.plot_id.split('_')[1]}`;
+          input.value = `${curStudy.studID}$${value.plot_id?.split('_')[1] ?? 0}`;
           continue;
         }
 

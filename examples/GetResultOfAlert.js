@@ -9,8 +9,8 @@ if (!process.env.SESSION || !process.env.SIGNATURE) throw Error('Please set your
 // const alertQuery = '#43';
 
 // NOT WORKING
-const alertQuery = '#99';
-// const alertQuery = '#100';
+// const alertQuery = '#99';
+const alertQuery = '#100';
 
 (async () => {
   const alerts = await TradingView.getAlerts(process.env.SESSION, process.env.SIGNATURE);
