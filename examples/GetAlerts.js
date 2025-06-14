@@ -1,12 +1,10 @@
 const TradingView = require('../main');
 
 /**
- * This example tests the getDrawings function
+ * This example gets all the alerts of the user
  */
 
-if (!process.env.SESSION || !process.env.SIGNATURE) {
-  throw Error('Please set your sessionid and signature cookies');
-}
+if (!process.env.SESSION || !process.env.SIGNATURE) throw Error('Please set your sessionid and signature cookies');
 
 // First parameter must be the layoutID
 // If the layout is private:

@@ -1285,6 +1285,65 @@ module.exports = {
     }
   },
 
+  async alertToBacktest(alert, sessionId, sessionSign, server = 'prodata') {
+    return new Promise(async (resolve, reject) => {
+      const { pine_id, inputs } = alert.condition.series[0];
+      const symbol = alert.symbol.match(/"symbol":"([^"]+)"/)[1];
+
+      const client = new this.Client({
+        server,
+        token: sessionId,
+        signature: sessionSign,
+      });
+
+      client.onError(() => {
+        client.end();
+        return reject(Error('[TRADINGVIEW]: Client error'));
+      });
+
+      const chart = new client.Session.Chart();
+      chart.setMarket(symbol, { timeframe: `${alert.resolution}`, range: 99999 });
+
+      chart.onError(() => {
+        client.end();
+        return reject(Error('[TRADINGVIEW]: chart error'));
+      });
+
+      const indicator = await this.getIndicator(pine_id);
+
+      for (const key of Object.keys(inputs)) {
+        const input = indicator.inputs[key];
+        const value = inputs[key];
+
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+          const scriptId = value.pine_id;
+          const externalIndicator = await this.getIndicator(scriptId);
+
+          const study = new chart.Study(externalIndicator);
+
+          for (const k in await value.inputs) externalIndicator.inputs[k].value = value.inputs[k];
+
+          input.value = `${study.studID}$${value.plot_id.split('_')[1]}`;
+          continue;
+        }
+
+        input.value = value;
+      }
+
+      const study = new chart.Study(indicator);
+
+      study.onUpdate(() => {
+        client.end();
+        return resolve(study);
+      });
+
+      study.onError(() => {
+        client.end();
+        return reject(Error('[TRADINGVIEW]: Study error'));
+      });
+    });
+  },
+
   /**
      * modify multiple alerts
      */

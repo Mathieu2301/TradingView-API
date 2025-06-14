@@ -1491,12 +1491,18 @@ declare module '@mathieuc/tradingview' {
         signature: string
     ): Promise<{ status: 'OK' | 'ERROR', message: string, data?: any }>;
 
+    export function alertToBacktest(
+        alert: Alert,
+        session: string,
+        signature: string
+    ): Promise<{ s: string, id: string, r: null, errmsg?: string, err?: { code: string } }>;
+
     export function modifyAlerts(
         alertIds: number[],
         action: 'stop' | 'restart' | 'clone' | 'delete' | 'modify_restart_alert',
         session: string,
         signature: string
-    ): Promise<{ s: string, id: string, r: null, errmsg?: string, err?: { code: string } }>;
+    ): Promise<{ ChartStudy }>;
 
     export function modifyAlert(
         payload: Alert,
