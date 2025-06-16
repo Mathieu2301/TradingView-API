@@ -377,7 +377,7 @@ module.exports = {
     const { data } = await axios.get(`https://pine-facade.tradingview.com/pine-facade/translate/${indicID}/last`, {
       validateStatus,
       headers: {
-        cookie: `sessionid=${session}${signature ? `;sessionid_sign=${signature};` : ''}`,
+        cookie: genAuthCookies(session, signature),
       },
     });
 
@@ -1309,7 +1309,7 @@ module.exports = {
         return reject(Error('[TRADINGVIEW]: chart error'));
       });
 
-      const indicator = await this.getIndicator(pine_id);
+      const indicator = await this.getIndicator(pine_id, 'last', sessionId, sessionSign);
 
       const extIndicators = {};
 
@@ -1320,12 +1320,15 @@ module.exports = {
         if (value && typeof value === 'object' && !Array.isArray(value)) {
           const scriptId = value.pine_id;
 
+          // const isPersonalIdicator = value.pine_id?.startsWith('USER;');
           const isPublicUserIndicator = value.pine_id?.startsWith('PUB;');
           const isTvGeneralIndicator = value.pine_id?.startsWith('STD;');
           const isBuiltinIndicator = !value.pine_id;
 
           if (!extIndicators[value.pine_id]) {
-            const externalIndicator = isBuiltinIndicator ? await new this.BuiltInIndicator(value.study) : await this.getIndicator(scriptId);
+            const externalIndicator = isBuiltinIndicator
+              ? await new this.BuiltInIndicator(value.study)
+              : await this.getIndicator(scriptId, 'last', sessionId, sessionSign);
 
             if (isPublicUserIndicator) {
               for (const k in value.inputs) {
