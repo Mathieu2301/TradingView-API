@@ -1320,18 +1320,18 @@ module.exports = {
         if (value && typeof value === 'object' && !Array.isArray(value)) {
           const scriptId = value.pine_id;
 
-          const isTvGeneralIndicator = value.pine_id?.startsWith('STD;');
           const isPublicUserIndicator = value.pine_id?.startsWith('PUB;');
+          const isTvGeneralIndicator = value.pine_id?.startsWith('STD;');
           const isBuiltinIndicator = !value.pine_id;
 
           if (!extIndicators[value.pine_id]) {
-            const externalIndicator = await this.getIndicator(scriptId);
+            const externalIndicator = isBuiltinIndicator ? await new this.BuiltInIndicator(value.study) : await this.getIndicator(scriptId);
+
             if (isPublicUserIndicator) {
               for (const k in value.inputs) {
                 const i = externalIndicator.inputs?.[k];
-                if (i && Object.prototype.hasOwnProperty.call(input, 'value')) {
-                  i.value = value.inputs[k];
-                }
+                if (i == null) continue;
+                i.value = value.inputs[k];
               }
             }
 
@@ -1339,26 +1339,25 @@ module.exports = {
             if (isTvGeneralIndicator) {
               for (const ke in value.inputs) {
                 const i = externalIndicator.inputs?.[ke];
-                if (i && Object.prototype.hasOwnProperty.call(input, 'value')) {
-                  i.value = value.inputs[ke];
-                }
+                if (i == null) continue;
+                i.value = value.inputs[ke];
               }
             }
+
             if (isBuiltinIndicator) {
               for (const k in value.inputs) {
-                const i = externalIndicator.inputs?.[k];
-                if (i && Object.prototype.hasOwnProperty.call(input, 'value')) {
-                  i.value = value.inputs[k];
-                }
+                const i = externalIndicator.options?.[k];
+                if (i == null) continue;
+                i.value = value.inputs[k];
               }
-              // return reject(Error('[TRADINGVIEW]: TODO:: FIX TV BUILTIN INDICATORS'));
             }
 
             extIndicators[value.pine_id] = study;
           }
 
           const curStudy = extIndicators[value.pine_id];
-          input.value = `${curStudy.studID}$${value.plot_id?.split('_')[1] ?? 0}`;
+          input.value = `${curStudy.studID}$${value.pine_id ? value.plot_id.split('_')[1] : 0}`;
+
           continue;
         }
 
@@ -1391,6 +1390,21 @@ module.exports = {
         headers: {
           cookie: genAuthCookies(session, signature), Origin: 'https://www.tradingview.com',
         },
+        validateStatus,
+      });
+      return data;
+    } catch (e) {
+      console.error(e);
+      throw new Error(`Failed to fetch alerts: \nReason: ${e}`);
+    }
+  },
+
+  /**
+   * Get basic study templates
+   */
+  async getStudyTemplates() {
+    try {
+      const { data } = await axios.get('https://www.tradingview.com/api/v1/study-templates', {
         validateStatus,
       });
       return data;

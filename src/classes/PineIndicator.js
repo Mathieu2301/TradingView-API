@@ -130,6 +130,14 @@ module.exports = class PineIndicator {
     } else throw new Error(`Input '${key}' not found (${propI}).`);
   }
 
+  // setInputs(inputs) {
+  //   // TODO:: FIX ME
+  // }
+
+  // randomizeInputs(inputs) {
+  //   // TODO:: FIX ME
+  // }
+
   clone() {
     const newInstance = new PineIndicator(JSON.parse(JSON.stringify(this.#options)));
     newInstance.#type = this.#type;
