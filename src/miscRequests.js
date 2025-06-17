@@ -132,10 +132,11 @@ module.exports = {
    * @param {'stock'
    *  | 'futures' | 'forex' | 'cfd'
    *  | 'crypto' | 'index' | 'economic'
-   * } [filter] Caterogy filter
+   * } [filter] Category filter
+   * @param {string} [country] Country filter (e.g., 'US', 'IN', 'JP')
    * @returns {Promise<SearchMarketResult[]>} Search results
    */
-  async searchMarketV3(search, filter = '') {
+  async searchMarketV3(search, filter = '', country = '') {
     const splittedSearch = search.toUpperCase().replace(/ /g, '+').split(':');
 
     const request = await axios.get(
@@ -148,6 +149,7 @@ module.exports = {
           ),
           text: splittedSearch.pop(),
           search_type: filter,
+          country: country || undefined,
         },
         headers: {
           origin: 'https://www.tradingview.com',
