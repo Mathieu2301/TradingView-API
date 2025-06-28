@@ -122,13 +122,21 @@ module.exports = class PineIndicator {
         throw new Error(`Input '${input.name}' (${propI}) must be a ${types[input.type]} !`);
       }
 
-      if (input.options && !input.options.includes(value)) {
+      if (input.options && !input.options.includes(value) && !/^st\d+$/.test(value)) {
         throw new Error(`Input '${input.name}' (${propI}) must be one of these values:`, input.options);
       }
 
       input.value = value;
     } else throw new Error(`Input '${key}' not found (${propI}).`);
   }
+
+  // setInputs(inputs) {
+  //   // TODO:: FIX ME
+  // }
+
+  // randomizeInputs(inputs) {
+  //   // TODO:: FIX ME
+  // }
 
   clone() {
     const newInstance = new PineIndicator(JSON.parse(JSON.stringify(this.#options)));
