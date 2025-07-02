@@ -666,8 +666,6 @@ module.exports = {
       validateStatus,
     });
 
-    console.log(data, headers);
-
     if (data.includes('auth_token')) {
       return {
         session,
@@ -1256,7 +1254,7 @@ module.exports = {
       if (data.err) throw new Error('[Error]: getAlerts ', { cause: data.err });
       return data.r;
     } catch (e) {
-      // console.error(e);
+      console.error(e);
       throw new Error(`Failed to fetch alerts: \nReason: ${e}`);
     }
   },
