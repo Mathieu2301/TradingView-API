@@ -1,20 +1,41 @@
-const os = require('os');
+const UserAgent = require('user-agents');
+const { createHTTP2Adapter } = require('axios-http2-adapter');
 const axios = require('axios');
 const zlib = require('zlib');
-
 const PineIndicator = require('./classes/PineIndicator');
 const { genAuthCookies, toTitleCase } = require('./utils');
 const { createLayoutContentBlob, getMainSeriesSourceFromLayoutContent } = require('./layout/contentBlob');
 
+axios.defaults.adapter = createHTTP2Adapter();
 const validateStatus = (status) => status < 500;
 
 const indicators = ['Recommend.Other', 'Recommend.All', 'Recommend.MA'];
 const builtInIndicList = [];
 
+const defaultHeaders = {
+  'User-agent': new UserAgent().toString(),
+  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+  'Accept-Language': 'en-US,en;q=0.9',
+  Referer: 'https://www.tradingview.com/',
+  DNT: '1',
+  Origin: 'https://www.tradingview.com',
+  Connection: 'keep-alive',
+
+  // extra headers
+  'Accept-Encoding': 'gzip, deflate, br, zstd',
+  'Sec-GPC': '1',
+  'Sec-Fetch-Dest': 'empty',
+  'Sec-Fetch-Mode': 'cors',
+  'Sec-Fetch-Site': 'same-site',
+  Priority: 'u=4',
+  Pragma: 'no-cache',
+  'Cache-Control': 'no-cache',
+};
+
 async function fetchScanData(tickers = [], columns = []) {
   const { data } = await axios.post('https://scanner.tradingview.com/global/scan', {
     symbols: { tickers }, columns,
-  }, { validateStatus });
+  }, { validateStatus, headers: defaultHeaders });
 
   return data;
 }
@@ -96,9 +117,7 @@ module.exports = {
       params: {
         text: search.replace(/ /g, '%20'), type: filter,
       },
-      headers: {
-        origin: 'https://www.tradingview.com',
-      },
+      headers: defaultHeaders,
       validateStatus,
     });
 
@@ -137,9 +156,7 @@ module.exports = {
         text: splittedSearch.pop(),
         search_type: filter,
       },
-      headers: {
-        origin: 'https://www.tradingview.com',
-      },
+      headers: defaultHeaders,
       validateStatus,
     });
 
@@ -192,6 +209,7 @@ module.exports = {
           params: {
             filter: type,
           },
+          headers: defaultHeaders,
           validateStatus,
         });
         builtInIndicList.push(...data);
@@ -202,6 +220,7 @@ module.exports = {
       params: {
         search: search.replace(/ /g, '%20'),
       },
+      headers: defaultHeaders,
       validateStatus,
     });
 
@@ -257,6 +276,7 @@ module.exports = {
 
     const { data } = await axios.get(`https://pine-facade.tradingview.com/pine-facade/translate/${indicID}/${version}`, {
       headers: {
+        ...defaultHeaders,
         cookie: genAuthCookies(session, signature),
       },
       validateStatus,
@@ -335,6 +355,7 @@ module.exports = {
 
     const { data } = await axios.get(`https://pine-facade.tradingview.com/pine-facade/translate/${indicID}/${version}`, {
       headers: {
+        ...defaultHeaders,
         cookie: genAuthCookies(session, signature),
       },
       validateStatus,
@@ -377,6 +398,7 @@ module.exports = {
     const { data } = await axios.get(`https://pine-facade.tradingview.com/pine-facade/translate/${indicID}/last`, {
       validateStatus,
       headers: {
+        ...defaultHeaders,
         cookie: genAuthCookies(session, signature),
       },
     });
@@ -535,14 +557,13 @@ module.exports = {
      * @param {string} [UA] Custom UserAgent
      * @returns {Promise<LoginResponse>} Login response
      */
-  async loginUser(username, password, remember = true, UA = 'TWAPI/3.0') {
+  async loginUser(username, password, remember = true) {
     const {
       data, headers,
     } = await axios.post('https://www.tradingview.com/accounts/signin/', `username=${username}&password=${password}${remember ? '&remember=on' : ''}`, {
       headers: {
-        referer: 'https://www.tradingview.com',
+        ...defaultHeaders,
         'Content-Type': 'application/x-www-form-urlencoded',
-        'User-agent': `${UA} (${os.version()}; ${os.platform()}; ${os.arch()})`,
       },
       validateStatus,
     });
@@ -592,7 +613,7 @@ module.exports = {
      * @param {string} [UA] Custom UserAgent
      * @returns {Promise<LoginResponse>} Login response
      */
-  async twoFactorAuth(code, session, signature, twoFaType = 'sms', UA = 'TWAPI/3.0') {
+  async twoFactorAuth(code, session, signature, twoFaType = 'sms') {
     const type = twoFaType === 'sms' ? 'sms' : 'totp';
 
     const {
@@ -600,9 +621,8 @@ module.exports = {
     } = await axios.post(`https://www.tradingview.com/accounts/two-factor/signin/${type}/`, `code=${code}`, {
       validateStatus,
       headers: {
-        referer: 'https://www.tradingview.com',
+        ...defaultHeaders,
         'Content-Type': 'application/x-www-form-urlencoded',
-        'User-agent': `${UA} (${os.version()}; ${os.platform()}; ${os.arch()})`,
         cookie: `sessionid=${session}${signature ? `;sessionid_sign=${signature};` : ''}`,
       },
     });
@@ -639,6 +659,7 @@ module.exports = {
   async getUser(session, signature = '', location = 'https://www.tradingview.com/') {
     const { data, headers } = await axios.get(location, {
       headers: {
+        ...defaultHeaders,
         cookie: genAuthCookies(session, signature),
       },
       maxRedirects: 0,
@@ -718,9 +739,13 @@ module.exports = {
       };
     }
 
-    if (headers.location !== location) {
-      return this.getUser(session, signature, headers.location);
-    }
+    // TODO:: Uncommented the code below due to if you put wrong credentials, it will do a endless loop
+    // If commenting this out triggers unexpected behaviour, we can also run: this.getUser(params, count + 1)
+    // If maxTries > 3 or 5 then we quit
+
+    // if (headers.location !== location) {
+    //   return this.getUser(session, signature, headers.location);
+    // }
 
     throw new Error('Wrong or expired sessionid/signature');
   },
@@ -735,6 +760,7 @@ module.exports = {
   async getPrivateIndicators(session, signature = '') {
     const { data } = await axios.get('https://pine-facade.tradingview.com/pine-facade/list', {
       headers: {
+        ...defaultHeaders,
         cookie: genAuthCookies(session, signature),
       },
       params: {
@@ -771,6 +797,7 @@ module.exports = {
     const { data: prefetch } = await axios.get('https://www.tradingview.com/pine_perm/list_scripts', {
       validateStatus,
       headers: {
+        ...defaultHeaders,
         cookie: `sessionid=${session}${signature ? `;sessionid_sign=${signature};` : ''}`,
       },
     });
@@ -787,7 +814,7 @@ module.exports = {
     const { data } = await axios.post('https://www.tradingview.com/pubscripts-get/', formData, {
       validateStatus,
       headers: {
-        referer: 'https://www.tradingview.com',
+        ...defaultHeaders,
         'Content-Type': 'application/x-www-form-urlencoded',
         cookie: `sessionid=${session}${signature ? `;sessionid_sign=${signature};` : ''}`,
       },
@@ -818,6 +845,7 @@ module.exports = {
 
     const { data } = await axios.get('https://www.tradingview.com/chart-token', {
       headers: {
+        ...defaultHeaders,
         cookie: genAuthCookies(session, signature),
       },
       params: {
@@ -890,7 +918,8 @@ module.exports = {
     try {
       const { data: layouts } = await axios.get('https://www.tradingview.com/my-charts/', {
         headers: {
-          cookie: genAuthCookies(session, signature), Origin: 'https://www.tradingview.com',
+          ...defaultHeaders,
+          cookie: genAuthCookies(session, signature),
         },
         validateStatus,
       });
@@ -930,7 +959,8 @@ module.exports = {
     try {
       await axios.post('https://www.tradingview.com/charts/', { name }, {
         headers: {
-          cookie: genAuthCookies(session, signature), Origin: 'https://www.tradingview.com',
+          ...defaultHeaders,
+          cookie: genAuthCookies(session, signature),
         },
         validateStatus,
       });
@@ -958,6 +988,7 @@ module.exports = {
   async fetchLayoutContent(chartShortUrl, session, signature) {
     const { data: html } = await axios.get(`https://www.tradingview.com/chart/${chartShortUrl}`, {
       headers: {
+        ...defaultHeaders,
         cookie: genAuthCookies(session, signature),
       },
     });
@@ -983,6 +1014,7 @@ module.exports = {
   async fetchLayoutInitData(chartShortUrl, session, signature) {
     const { data: html } = await axios.get(`https://www.tradingview.com/chart/${chartShortUrl}`, {
       headers: {
+        ...defaultHeaders,
         cookie: genAuthCookies(session, signature),
       },
     });
@@ -1000,7 +1032,6 @@ module.exports = {
           .replace(',};', '}')
           .replaceAll(':', '":')
           .replaceAll(',', ', "');
-        console.log('rawMetaInfo:', rawMetaInfo);
         metaInfo = JSON.parse(rawMetaInfo);
       } catch (e) {
         console.error(e);
@@ -1188,7 +1219,8 @@ module.exports = {
         uid: Array.isArray(chartShortUrl) ? chartShortUrl : [chartShortUrl],
       }, {
         headers: {
-          cookie: genAuthCookies(session, signature), Origin: 'https://www.tradingview.com',
+          ...defaultHeaders,
+          cookie: genAuthCookies(session, signature),
         },
         validateStatus,
       });
@@ -1217,10 +1249,13 @@ module.exports = {
     try {
       const { data } = await axios.get('https://pricealerts.tradingview.com/list_alerts', {
         headers: {
+          ...defaultHeaders,
           cookie: genAuthCookies(session, signature),
         },
         validateStatus,
       });
+
+      if (data.err) throw new Error('[Error]: getAlerts ', { cause: data.err });
       return data.r;
     } catch (e) {
       console.error(e);
@@ -1239,10 +1274,13 @@ module.exports = {
         },
       }, {
         headers: {
-          cookie: genAuthCookies(session, signature), Origin: 'https://www.tradingview.com',
+          ...defaultHeaders,
+          cookie: genAuthCookies(session, signature),
         },
         validateStatus,
       });
+
+      if (data.err) throw new Error('[Error]: modifyAlerts ', { cause: data.err });
       return data;
     } catch (e) {
       console.error(e);
@@ -1274,7 +1312,8 @@ module.exports = {
         },
       }, {
         headers: {
-          cookie: genAuthCookies(session, signature), Origin: 'https://www.tradingview.com',
+          ...defaultHeaders,
+          cookie: genAuthCookies(session, signature),
         },
         validateStatus,
       });
@@ -1391,7 +1430,8 @@ module.exports = {
         payload,
       }, {
         headers: {
-          cookie: genAuthCookies(session, signature), Origin: 'https://www.tradingview.com',
+          ...defaultHeaders,
+          cookie: genAuthCookies(session, signature),
         },
         validateStatus,
       });
@@ -1503,7 +1543,8 @@ module.exports = {
         payload: { ...filter },
       }, {
         headers: {
-          cookie: genAuthCookies(session, signature), Origin: 'https://www.tradingview.com',
+          ...defaultHeaders,
+          cookie: genAuthCookies(session, signature),
         },
         validateStatus,
       });
