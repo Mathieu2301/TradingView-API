@@ -739,9 +739,13 @@ module.exports = {
       };
     }
 
-    if (headers.location !== location) {
-      return this.getUser(session, signature, headers.location);
-    }
+    // TODO:: Uncommented the code below due to if you put wrong credentials, it will do a endless loop
+    // If commenting this out triggers unexpected behaviour, we can also run: this.getUser(params, count + 1)
+    // If maxTries > 3 or 5 then we quit
+
+    // if (headers.location !== location) {
+    //   return this.getUser(session, signature, headers.location);
+    // }
 
     throw new Error('Wrong or expired sessionid/signature');
   },

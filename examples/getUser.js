@@ -6,6 +6,7 @@ const TradingView = require('../main');
 
 if (!process.env.SESSION || !process.env.SIGNATURE) throw Error('Please set your sessionid and signature cookies');
 
+// TradingView.getUser('process.env.SESSION', 'process.env.SIGNATURE').then((data) => {
 TradingView.getUser(process.env.SESSION, process.env.SIGNATURE).then((data) => {
   console.log(data);
 }).catch((err) => {
