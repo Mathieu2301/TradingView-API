@@ -1279,6 +1279,8 @@ module.exports = {
         },
         validateStatus,
       });
+
+      if (data.err) throw new Error('[Error]: modifyAlerts ', { cause: data.err });
       return data;
     } catch (e) {
       console.error(e);
