@@ -1502,7 +1502,7 @@ declare module '@mathieuc/tradingview' {
         action: 'stop' | 'restart' | 'clone' | 'delete' | 'modify_restart_alert',
         session: string,
         signature: string
-    ): Promise<{ ChartStudy }>;
+    ): Promise<any>;
 
     export function modifyAlert(
         payload: Alert,
