@@ -1090,7 +1090,7 @@ declare module '@mathieuc/tradingview' {
          * @param indicator Indicator to use
          * @param config Study configuration
          */
-        new(indicator: PineIndicator | BuiltInIndicator, config: StudyConfig): ChartStudy;
+        constructor(indicator: PineIndicator | BuiltInIndicator, config?: StudyConfig);
 
         /**
          * Change the indicator used by this study
