@@ -1,5 +1,5 @@
 declare module '@mathieuc/tradingview' {
-    import {EventEmitter} from 'events';
+    import { EventEmitter } from 'events';
 
     //src/client
     export interface Session {
@@ -1044,23 +1044,81 @@ declare module '@mathieuc/tradingview' {
         | 'report.history'
         | 'graphic';
 
+    /**
+     * Study event callbacks
+     */
+    export interface StudyCallbacks {
+        /** When study is completed */
+        studyCompleted: Array<() => void>;
+        /** When study updates */
+        update: Array<(changes: UpdateChangeType[]) => void>;
+        /** Generic event handler */
+        event: Array<(ev: string, ...data: any[]) => void>;
+        /** Error handler */
+        error: Array<(...args: any[]) => void>;
+    }
+
+    /**
+     * Study configuration
+     */
+    export interface StudyConfig {
+        /** Study ID */
+        id: string;
+        /** Chart session reference */
+        chartSession: ChartSessionBridge;
+        /** Debug mode flag */
+        debug?: boolean;
+    }
+
+
     export class ChartStudy {
-        constructor(indicator: PineIndicator);
+        /** Study instance ID */
+        readonly id: string;
+        /** Indicator instance */
+        instance: PineIndicator | BuiltInIndicator;
+        /** Period values */
+        readonly periods: Array<Record<string, any>>;
+        /** Graphic drawings */
+        readonly graphic: GraphicData;
+        /** Strategy report */
+        readonly strategyReport: StrategyReport;
+        /** Study callbacks */
+        readonly callbacks: StudyCallbacks;
 
-        get periods(): Record<number, PricePeriod[]>;
+        /**
+         * Creates a new Study instance
+         * @param indicator Indicator to use
+         * @param config Study configuration
+         */
+        new(indicator: PineIndicator | BuiltInIndicator, config: StudyConfig): ChartStudy;
 
-        get graphic(): GraphicData;
+        /**
+         * Change the indicator used by this study
+         * @param indicator New indicator instance
+         */
+        setIndicator(indicator: PineIndicator | BuiltInIndicator): void;
 
-        get strategyReport(): StrategyReport;
-
-        setIndicator(indicator: PineIndicator): void;
-
+        /**
+         * Register ready callback
+         * @param cb Callback when study is ready
+         */
         onReady(cb: () => void): void;
 
+        /**
+         * Register update callback
+         * @param cb Callback when study updates
+         */
         onUpdate(cb: (changes: UpdateChangeType[]) => void): void;
 
+        /**
+         * Register error callback
+         * @param cb Callback when errors occur
+         */
         onError(cb: (...args: any[]) => void): void;
 
+        /**
+         * Remove the study from the chart
+         */
         remove(): void;
     }
 
