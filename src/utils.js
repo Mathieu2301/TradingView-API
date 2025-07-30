@@ -1,10 +1,10 @@
 module.exports = {
   /**
-   * Generates a session id
-   * @function genSessionID
-   * @param {String} type Session type
-   * @returns {string}
-   */
+     * Generates a session id
+     * @function genSessionID
+     * @param {String} type Session type
+     * @returns {string}
+     */
   genSessionID(type = 'xs') {
     let r = '';
     const c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -15,6 +15,14 @@ module.exports = {
   genAuthCookies(sessionId = '', signature = '') {
     if (!sessionId) return '';
     if (!signature) return `sessionid=${sessionId}`;
+
     return `sessionid=${sessionId};sessionid_sign=${signature}`;
+  },
+
+  toTitleCase(string) {
+    return string.replace(
+      /\w\S*/g,
+      (text) => text.charAt(0).toUpperCase() + text.substring(1).toLowerCase(),
+    );
   },
 };

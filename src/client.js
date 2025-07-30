@@ -1,10 +1,12 @@
 const WebSocket = require('ws');
+const util = require('util');
 
 const misc = require('./miscRequests');
 const protocol = require('./protocol');
 
 const quoteSessionGenerator = require('./quote/session');
 const chartSessionGenerator = require('./chart/session');
+const historySessionGenerator = require('./chart/history');
 
 /**
  * @typedef {Object} Session
@@ -158,7 +160,10 @@ module.exports = class Client {
     if (!this.isOpen) return;
 
     protocol.parseWSPacket(str).forEach((packet) => {
-      if (global.TW_DEBUG) console.log('§90§30§107 CLIENT §0 PACKET', packet);
+      if (global.TW_DEBUG === true || global.TW_DEBUG === 'client') {
+        console.log('§90§30§107 CLIENT §0 PACKET', util.inspect(packet, { depth: 3, colors: true }));
+      }
+
       if (typeof packet === 'number') { // Ping
         this.#ws.send(protocol.formatWSPacket(`~h~${packet}`));
         this.#handleEvent('ping', packet);
@@ -207,7 +212,7 @@ module.exports = class Client {
     while (this.isOpen && this.#logged && this.#sendQueue.length > 0) {
       const packet = this.#sendQueue.shift();
       this.#ws.send(packet);
-      if (global.TW_DEBUG) console.log('§90§30§107 > §0', packet);
+      if (global.TW_DEBUG === true || global.TW_DEBUG === 'client') console.log('§90§30§107 > §0', packet);
     }
   }
 
@@ -216,7 +221,7 @@ module.exports = class Client {
    * @prop {string} [token] User auth token (in 'sessionid' cookie)
    * @prop {string} [signature] User auth token signature (in 'sessionid_sign' cookie)
    * @prop {boolean} [DEBUG] Enable debug mode
-   * @prop {'data' | 'prodata' | 'widgetdata'} [server] Server type
+   * @prop {'data' | 'prodata' | 'history-data' | 'widgetdata'} [server] Server type
    * @prop {string} [location] Auth page location (For france: https://fr.tradingview.com/)
    */
 
@@ -240,7 +245,7 @@ module.exports = class Client {
       ).then((user) => {
         this.#sendQueue.unshift(protocol.formatWSPacket({
           m: 'set_auth_token',
-          p: [user.authToken],
+          p: [user.auth_token],
         }));
         this.#logged = true;
         this.sendQueue();
@@ -283,6 +288,7 @@ module.exports = class Client {
   Session = {
     Quote: quoteSessionGenerator(this.#clientBridge),
     Chart: chartSessionGenerator(this.#clientBridge),
+    History: historySessionGenerator(this.#clientBridge),
   };
 
   /**

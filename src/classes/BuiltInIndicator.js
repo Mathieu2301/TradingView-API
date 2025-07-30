@@ -1,7 +1,7 @@
 /**
- * @typedef {'Volume@tv-basicstudies-241'
- *  | 'VbPFixed@tv-basicstudies-241'
- *  | 'VbPFixed@tv-basicstudies-241!'
+ * @typedef {'Volume@tv-basicstudies-251'
+ *  | 'VbPFixed@tv-basicstudies-251'
+ *  | 'VbPFixed@tv-basicstudies-251!'
  *  | 'VbPFixed@tv-volumebyprice-53!'
  *  | 'VbPSessions@tv-volumebyprice-53'
  *  | 'VbPSessionsRough@tv-volumebyprice-53!'
@@ -18,11 +18,11 @@
  */
 
 const defaultValues = {
-  'Volume@tv-basicstudies-241': {
+  'Volume@tv-basicstudies-251': {
     length: 20,
     col_prev_close: false,
   },
-  'VbPFixed@tv-basicstudies-241': {
+  'VbPFixed@tv-basicstudies-251': {
     rowsLayout: 'Number Of Rows',
     rows: 24,
     volume: 'Up/Down',
@@ -33,7 +33,7 @@ const defaultValues = {
     extendToRight: false,
     mapRightBoundaryToBarStartTime: true,
   },
-  'VbPFixed@tv-basicstudies-241!': {
+  'VbPFixed@tv-basicstudies-251!': {
     rowsLayout: 'Number Of Rows',
     rows: 24,
     volume: 'Up/Down',
@@ -133,5 +133,11 @@ module.exports = class BuiltInIndicator {
     }
 
     this.#options[key] = value;
+  }
+
+  clone() {
+    const newInstance = new BuiltInIndicator(JSON.parse(JSON.stringify(this.#options)));
+    newInstance.#type = this.#type;
+    return newInstance;
   }
 };

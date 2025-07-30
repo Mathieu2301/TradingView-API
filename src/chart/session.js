@@ -1,6 +1,7 @@
+const util = require('util');
 const { genSessionID } = require('../utils');
 
-const studyConstructor = require('./study');
+const { studyConstructor } = require('./study');
 
 /**
  * @typedef {'HeikinAshi' | 'Renko' | 'LineBreak' | 'Kagi' | 'PointAndFigure'
@@ -68,7 +69,7 @@ const ChartTypes = {
 
 /**
  * @typedef {Object} MarketInfos
- * @prop {string} series_id            Used series (ex: 'ser_1')
+ * @prop {string} series_id            Used series (ex: 'sds_sym_1')
  * @prop {string} base_currency        Base currency (ex: 'BTC')
  * @prop {string} base_currency_id     Base currency ID (ex: 'XTVCBTC')
  * @prop {string} name                 Market short name (ex: 'BTCEUR')
@@ -127,6 +128,15 @@ module.exports = (client) => class ChartSession {
   /** Parent client */
   #client = client;
 
+  studIndex = 1;
+
+  getStudId = () => {
+    const result = this.studIndex;
+    this.studIndex += this.studIndex;
+
+    return result;
+  }
+
   /** @type {StudyListeners} */
   #studyListeners = {};
 
@@ -184,7 +194,9 @@ module.exports = (client) => class ChartSession {
     this.#client.sessions[this.#chartSessionID] = {
       type: 'chart',
       onData: (packet) => {
-        if (global.TW_DEBUG) console.log('§90§30§106 CHART SESSION §0 DATA', packet);
+        if (global.TW_DEBUG === true || global.TW_DEBUG === 'session') {
+          console.log('§90§30§106 CHART SESSION §0 DATA', util.inspect(packet, { depth: 4, colors: true }));
+        }
 
         if (typeof packet.data[1] === 'string' && this.#studyListeners[packet.data[1]]) {
           this.#studyListeners[packet.data[1]](packet);
@@ -206,8 +218,8 @@ module.exports = (client) => class ChartSession {
 
           Object.keys(packet.data[1]).forEach((k) => {
             changes.push(k);
-            if (k === '$prices') {
-              const periods = packet.data[1].$prices;
+            if (k === 'sds_1') {
+              const periods = packet.data[1].sds_1;
               if (!periods || !periods.s) return;
 
               periods.s.forEach((p) => {
@@ -252,7 +264,7 @@ module.exports = (client) => class ChartSession {
     this.#client.sessions[this.#replaySessionID] = {
       type: 'replay',
       onData: (packet) => {
-        if (global.TW_DEBUG) console.log('§90§30§106 REPLAY SESSION §0 DATA', packet);
+        if (global.TW_DEBUG === true || global.TW_DEBUG === 'session') console.log('§90§30§106 REPLAY SESSION §0 DATA', packet);
 
         if (packet.type === 'replay_ok') {
           if (this.#replayOKCB[packet.data[1]]) {
@@ -289,7 +301,7 @@ module.exports = (client) => class ChartSession {
       },
     };
 
-    this.#client.send('chart_create_session', [this.#chartSessionID]);
+    this.#client.send('chart_create_session', [this.#chartSessionID, '']);
   }
 
   #seriesCreated = false;
@@ -311,13 +323,14 @@ module.exports = (client) => class ChartSession {
 
     this.#periods = {};
 
-    this.#client.send(`${this.#seriesCreated ? 'modify' : 'create'}_series`, [
+    this.#client.send(this.#seriesCreated ? 'modify_series' : 'create_series', [
       this.#chartSessionID,
-      '$prices',
+      'sds_1',
       's1',
-      `ser_${this.#currentSeries}`,
+      `sds_sym_${this.#currentSeries}`,
       timeframe,
       this.#seriesCreated ? '' : calcRange,
+      '',
     ]);
 
     this.#seriesCreated = true;
@@ -389,7 +402,7 @@ module.exports = (client) => class ChartSession {
 
     this.#client.send('resolve_symbol', [
       this.#chartSessionID,
-      `ser_${this.#currentSeries}`,
+      `sds_sym_${this.#currentSeries}`,
       `=${JSON.stringify(chartInit)}`,
     ]);
 
@@ -535,6 +548,7 @@ module.exports = (client) => class ChartSession {
   /** @type {ChartSessionBridge} */
   #chartSession = {
     sessionID: this.#chartSessionID,
+    getStudId: this.getStudId,
     studyListeners: this.#studyListeners,
     indexes: {},
     send: (t, p) => this.#client.send(t, p),

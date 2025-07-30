@@ -13,6 +13,13 @@ module.exports = (quoteSession) => class QuoteMarket {
 
   #session;
 
+  #symbolInfo;
+
+  /** @return {symbolInfo} Get the symbolInfo */
+  get symbolInfo() {
+    return this.#symbolInfo;
+  }
+
   #symbolKey;
 
   #symbolListenerID = 0;
@@ -61,9 +68,13 @@ module.exports = (quoteSession) => class QuoteMarket {
     this.#symbolListenerID = this.#symbolListeners[this.#symbolKey].length;
 
     this.#symbolListeners[this.#symbolKey][this.#symbolListenerID] = (packet) => {
-      if (global.TW_DEBUG) console.log('§90§30§105 MARKET §0 DATA', packet);
+      if (global.TW_DEBUG === true || global.TW_DEBUG === 'market') console.log('§90§30§105 MARKET §0 DATA', packet);
 
       if (packet.type === 'qsd' && packet.data[1].s === 'ok') {
+        if (!packet.data[1].v?.bid || !packet.data[1].v?.ask) {
+          this.#symbolInfo = packet.data[1].v;
+        }
+
         this.#lastData = {
           ...this.#lastData,
           ...packet.data[1].v,

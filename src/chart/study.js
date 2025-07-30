@@ -1,4 +1,4 @@
-const { genSessionID } = require('../utils');
+const util = require('util');
 const { parseCompressed } = require('../protocol');
 const graphicParser = require('./graphicParser');
 
@@ -145,8 +145,8 @@ const parseTrades = (trades) => trades.reverse().map((t) => ({
 /**
  * @param {import('./session').ChartSessionBridge} chartSession
  */
-module.exports = (chartSession) => class ChartStudy {
-  #studID = genSessionID('st');
+const studyConstructor = (chartSession) => class ChartStudy {
+  #studID = `st${chartSession.getStudId()}`;
 
   #studyListeners = chartSession.studyListeners;
 
@@ -159,6 +159,10 @@ module.exports = (chartSession) => class ChartStudy {
   /** @return {{}[]} List of periods values */
   get periods() {
     return Object.values(this.#periods).sort((a, b) => b.$time - a.$time);
+  }
+
+  get studID() {
+    return this.#studID;
   }
 
   /**
@@ -235,7 +239,7 @@ module.exports = (chartSession) => class ChartStudy {
     this.instance = indicator;
 
     this.#studyListeners[this.#studID] = async (packet) => {
-      if (global.TW_DEBUG) console.log('§90§30§105 STUDY §0 DATA', packet);
+      if (global.TW_DEBUG === true || global.TW_DEBUG === 'study') console.log('§90§30§105 STUDY §0 DATA', util.inspect(packet, { depth: 4, colors: true }));
 
       if (packet.type === 'study_completed') {
         this.#handleEvent('studyCompleted');
@@ -362,9 +366,9 @@ module.exports = (chartSession) => class ChartStudy {
 
     chartSession.send('create_study', [
       chartSession.sessionID,
-      `${this.#studID}`,
+      this.#studID,
       'st1',
-      '$prices',
+      'sds_1',
       this.instance.type,
       getInputs(this.instance),
     ]);
@@ -383,7 +387,7 @@ module.exports = (chartSession) => class ChartStudy {
 
     chartSession.send('modify_study', [
       chartSession.sessionID,
-      `${this.#studID}`,
+      this.#studID,
       'st1',
       getInputs(this.instance),
     ]);
@@ -432,4 +436,10 @@ module.exports = (chartSession) => class ChartStudy {
     ]);
     delete this.#studyListeners[this.#studID];
   }
+};
+
+module.exports = {
+  getInputs,
+  parseTrades,
+  studyConstructor,
 };

@@ -39,6 +39,7 @@ function getQuoteFields(fieldsType) {
     'currency_code', 'current_session', 'description',
     'exchange', 'format', 'fractional', 'is_tradable',
     'language', 'local_description', 'logoid', 'lp',
+    'first_bar_time_1m', 'first_bar_time_1s',
     'lp_time', 'minmov', 'minmove2', 'original_name',
     'pricescale', 'pro_name', 'short_name', 'type',
     'update_mode', 'volume', 'ask', 'bid', 'fundamentals',
@@ -76,7 +77,7 @@ module.exports = (client) => class QuoteSession {
     this.#client.sessions[this.#sessionID] = {
       type: 'quote',
       onData: (packet) => {
-        if (global.TW_DEBUG) console.log('§90§30§102 QUOTE SESSION §0 DATA', packet);
+        if (global.TW_DEBUG === true || global.TW_DEBUG === 'quote') console.log('§90§30§102 QUOTE SESSION §0 DATA', packet);
 
         if (packet.type === 'quote_completed') {
           const symbolKey = packet.data[1];
@@ -88,6 +89,8 @@ module.exports = (client) => class QuoteSession {
         }
 
         if (packet.type === 'qsd') {
+          // console.log(this.#client.symbol);
+
           const symbolKey = packet.data[1].n;
           if (!this.#symbolListeners[symbolKey]) {
             this.#client.send('quote_remove_symbols', [this.#sessionID, symbolKey]);
