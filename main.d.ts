@@ -3,14 +3,26 @@ declare module '@mathieuc/tradingview' {
 
     //src/client
     export interface Session {
+        /**
+         * Session type
+         */
         type: 'quote' | 'chart' | 'replay';
+        /**
+         * When there is a data
+         */
         onData: (data: any) => void;
     }
 
+    /**
+     * Session list
+     */
     export interface SessionList {
         [key: string]: Session;
     }
 
+    /**
+     * Send a custom packet
+     */
     export type SendPacket = (t: string, p: string[]) => void;
 
     export interface ClientBridge {
@@ -27,16 +39,34 @@ declare module '@mathieuc/tradingview' {
         | 'error'
         | 'event';
 
+    /**
+     * TradingView client options
+     */
     export interface ClientOptions {
+        /**
+         * User auth token (in 'sessionid' cookie)
+         */
         token?: string;
+        /**
+         * User auth token signature (in 'sessionid_sign' cookie)
+         */
         signature?: string;
+        /**
+         * Enable debug mode
+         */
         DEBUG?: boolean | 'session' | 'client' | 'study' | 'market' | 'quote';
+        /**
+         * Server type
+         */
         server?: 'data' | 'prodata' | 'widgetdata' | 'history-data';
         location?: string;
     }
 
     export type SocketSession = unknown;
 
+    /**
+     * Client object
+     */
     export class Client extends EventEmitter {
         Session: {
             Quote: typeof QuoteSession,
@@ -50,30 +80,75 @@ declare module '@mathieuc/tradingview' {
         #clientBridge: ClientBridge;
         #callbacks: Record<ClientEvent, Array<(...args: any[]) => void>>;
 
+        /**
+         * @param {ClientOptions} clientOptions TradingView client options
+         */
         constructor(clientOptions?: ClientOptions);
 
+        /** If the client is logged in */
         get isLogged(): boolean;
 
+        /** If the cient was closed */
         get isOpen(): boolean;
 
         send(type: string, payload?: string[]): void;
 
+        /** Send all waiting packets */
         sendQueue(): void;
 
+        /**
+         * When client is connected
+         * @param {() => void} cb Callback
+         * @event onConnected
+         */
         onConnected(cb: () => void): void;
 
+        /**
+         * When client is disconnected
+         * @param {() => void} cb Callback
+         * @event onDisconnected
+         */
         onDisconnected(cb: () => void): void;
 
+        /**
+         * When client is logged
+         * @param {(session: SocketSession) => void} cb Callback
+         * @event onLogged
+         */
         onLogged(cb: (session: SocketSession) => void): void;
 
+        /**
+         * When server is pinging the client
+         * @param {(i: number) => void} cb Callback
+         * @event onPing
+         */
         onPing(cb: (i: number) => void): void;
 
+        /**
+         * When unparsed data is received
+         * @param {(...args: any[]) => void} cb Callback
+         * @event onData
+         */
         onData(cb: (...args: any[]) => void): void;
 
+        /**
+         * When a client error happens
+         * @param {(...args: any[]) => void} cb Callback
+         * @event onError
+         */
         onError(cb: (...args: any[]) => void): void;
 
+        /**
+         * When a client event happens
+         * @param {(...args: any[]) => void} cb Callback
+         * @event onEvent
+         */
         onEvent(cb: (...args: any[]) => void): void;
 
+        /**
+         * Close the websocket connection
+         * @return {Promise<void>} When websocket is closed
+         */
         end(): Promise<void>;
 
         #handleEvent(ev: ClientEvent, ...data: any[]): void;
@@ -101,50 +176,112 @@ declare module '@mathieuc/tradingview' {
         '1M': Period;
     }
 
+    /**
+     * User credentials
+     */
     export interface UserCredentials {
+        /** User ID */
         id: number;
+        /** User session ('sessionid' cookie) */
         session: string;
+        /** User session signature ('sessionid_sign' cookie) */
         signature: string;
     }
 
+    /**
+     * Get technical analysis
+     * @function getTA
+     * @param {string} id Full market id (Example: COINBASE:BTCEUR)
+     * @returns {Promise<Periods>} results
+     */
     export function getTA(id: string): Promise<Periods | false>;
 
     export interface SearchMarketResult {
+        /** Market full symbol */
         id: string;
+        /** Market exchange name */
         exchange: string;
+        /** Market exchange full name */
         fullExchange: string;
+        /** Market symbol */
         symbol: string;
+        /** Market description */
         description: string;
+        /** Market type */
         type: string;
         currency: string;
         chartCurrencyId: string;
+        /** Get market technical analysis */
         getTA: () => Promise<Periods>;
     }
 
+    /**
+     * Find a symbol (deprecated)
+     * @function searchMarket
+     * @param {string} search Keywords
+     * @param {'stock'
+     *  | 'futures' | 'forex' | 'cfd'
+     *  | 'crypto' | 'index' | 'economic'
+     * } [filter] Category filter
+     * @returns {Promise<SearchMarketResult[]>} Search results
+     * @deprecated Use searchMarketV3 instead
+     */
     export function searchMarket(
         search: string,
         filter?: 'stock' | 'futures' | 'forex' | 'cfd' | 'crypto' | 'index' | 'economic',
     ): Promise<SearchMarketResult[]>;
 
+    /**
+     * Find a symbol
+     * @function searchMarketV3
+     * @param {string} search Keywords
+     * @param {'stock'
+     *  | 'futures' | 'forex' | 'cfd'
+     *  | 'crypto' | 'index' | 'economic'
+     * } [filter] Category filter
+     * @returns {Promise<SearchMarketResult[]>} Search results
+     */
     export function searchMarketV3(
         search: string,
         filter?: 'stock' | 'futures' | 'forex' | 'cfd' | 'crypto' | 'index' | 'economic',
     ): Promise<SearchMarketResult[]>;
 
     export interface SearchIndicatorResult {
+        /** Script ID */
         id: string;
+        /** Script version */
         version: string;
+        /** Script name */
         name: string;
+        /** Script author */
         author: { id: number; username: string };
+        /** Script image ID */
         image: string;
+        /** Script source */
         source: string | '';
+        /** Script type */
         type: 'study' | 'strategy';
+        /** Script access type */
         access: 'open_source' | 'closed_source' | 'invite_only' | 'private' | 'other';
+        /** Get indicator */
         get: () => Promise<PineIndicator>;
     }
 
+    /**
+     * Find an indicator
+     * @param {string} search Keywords
+     * @returns {Promise<SearchIndicatorResult[]>} Search results
+     */
     export function searchIndicator(search?: string): Promise<SearchIndicatorResult[]>;
 
+    /**
+     * Get an indicator
+     * @param {string} id Indicator ID
+     * @param {string} version Indicator version
+     * @param {string} session User session
+     * @param {string} signature User signature
+     * @returns {Promise<PineIndicator>} Indicator
+     */
     export function getIndicator(
         id: string,
         version?: string,
@@ -176,21 +313,36 @@ declare module '@mathieuc/tradingview' {
         ]
     }
 
+    /**
+     * User
+     */
     export interface User {
+        /** User ID */
         id: number;
+        /** Username */
         username: string;
+        /** First name */
         first_name?: string;
+        /** Last name */
         last_name?: string;
+        /** Reputation */
         reputation: number;
+        /** Following count */
         following: number;
+        /** Followers count */
         followers: number;
+        /** Notifications count */
         notification_count: {
             user: number;
             following: number;
         };
+        /** Session hash */
         session_hash: string;
+        /** Private channel */
         private_channel: string;
+        /** Auth token */
         auth_token: string;
+        /** Join date */
         date_joined: string;
         has_active_email: boolean;
         userpic?: string;
@@ -252,6 +404,14 @@ declare module '@mathieuc/tradingview' {
         two_factor_info?: TwoFactorInfoMessage;
     }
 
+    /**
+     * Login user
+     * @param {string} username Username
+     * @param {string} password Password
+     * @param {boolean} remember Remember session
+     * @param {string} UA User agent
+     * @returns {Promise<LoginResponse>} Login response
+     */
     export function loginUser(
         username: string,
         password: string,
@@ -267,8 +427,21 @@ declare module '@mathieuc/tradingview' {
         UA?: string,
     ): Promise<LoginResponse>;
 
+    /**
+     * Get user
+     * @param {string} session User session
+     * @param {string} signature User signature
+     * @param {string} location Location
+     * @returns {Promise<User>} User
+     */
     export function getUser(session: string, signature?: string, location?: string): Promise<User>;
 
+    /**
+     * Get private indicators
+     * @param {string} session User session
+     * @param {string} signature User signature
+     * @returns {Promise<SearchIndicatorResult[]>} Search results
+     */
     export function getPrivateIndicators(
         session: string,
         signature?: string,
@@ -301,28 +474,62 @@ declare module '@mathieuc/tradingview' {
 
     export function getInviteOnlyScripts(session: string, signature?: string): Promise<InviteOnlyScript[]>;
 
+    /**
+     * Get chart token
+     * @param {string} layout Layout ID
+     * @param {UserCredentials} credentials User credentials
+     * @returns {Promise<string>} Chart token
+     */
     export function getChartToken(layout: string, credentials?: UserCredentials): Promise<string>;
 
+    /**
+     * Drawing point
+     */
     export interface DrawingPoint {
+        /** Point time */
         time_t: number;
+        /** Point price */
         price: number;
+        /** Point offset */
         offset: number;
     }
 
+    /**
+     * Drawing
+     */
     export interface Drawing {
+        /** Drawing ID */
         id: string;
+        /** Symbol */
         symbol: string;
+        /** Owner source */
         ownerSource: string;
+        /** Server update time */
         serverUpdateTime: string;
+        /** Currency ID */
         currencyId: string;
+        /** Unit ID */
         unitId: any;
+        /** Type */
         type: string;
+        /** Points */
         points: DrawingPoint[];
+        /** Z-order */
         zorder: number;
+        /** Link key */
         linkKey: string;
+        /** State */
         state: Record<string, any>;
     }
 
+    /**
+     * Get drawings
+     * @param {string} layout Layout ID
+     * @param {string} symbol Symbol
+     * @param {UserCredentials} credentials User credentials
+     * @param {string} chartID Chart ID
+     * @returns {Promise<Drawing[]>} Drawings
+     */
     export function getDrawings(
         layout: string,
         symbol?: string,
@@ -331,18 +538,41 @@ declare module '@mathieuc/tradingview' {
     ): Promise<Drawing[]>;
 
     // src/protocol
+    /**
+     * TradingView packet
+     */
     export interface TWPacket {
+        /** Packet type */
         m?: string;
+        /** Packet data */
         p?: [string, any];
     }
 
+    /**
+     * Parse websocket packet
+     * @param {string} str Websocket raw data
+     * @returns {TWPacket[]} TradingView packets
+     */
     export function parseWSPacket(str: string): TWPacket[];
 
+    /**
+     * Format websocket packet
+     * @param {TWPacket} packet TradingView packet
+     * @returns {string} Websocket raw data
+     */
     export function formatWSPacket(packet: TWPacket): string;
 
+    /**
+     * Parse compressed data
+     * @param {string} data Compressed data
+     * @returns {Promise<unknown>} Parsed data
+     */
     export function parseCompressed(data: string): Promise<unknown>;
 
     // src/types
+    /**
+     * Timezone
+     */
     export type Timezone =
         | 'Etc/UTC'
         | 'exchange'
@@ -421,6 +651,9 @@ declare module '@mathieuc/tradingview' {
         | 'Pacific/Fakaofo'
         | 'Pacific/Chatham';
 
+    /**
+     * Timeframe
+     */
     export type TimeFrame =
         | '1'
         | '3'
@@ -440,8 +673,19 @@ declare module '@mathieuc/tradingview' {
         | 'M';
 
     // src/utils
+    /**
+     * Generate session ID
+     * @param {string} type Session type
+     * @returns {string} Session ID
+     */
     export function genSessionID(type: string): string;
 
+    /**
+     * Generate auth cookies
+     * @param {string} sessionId Session ID
+     * @param {string} signature Signature
+     * @returns {string} Auth cookies
+     */
     export function genAuthCookies(sessionId: string, signature: string): string;
 
     // src/chart/graphicParser
@@ -492,101 +736,171 @@ declare module '@mathieuc/tradingview' {
         | 'bottom_right';
 
     export interface GraphicLabel {
+        /** Drawing ID */
         id: number;
+        /** X position */
         x: number;
+        /** Y position */
         y: number;
+        /** Y location */
         yLoc: YLocValue;
+        /** Text */
         text: string;
+        /** Style */
         style: LabelStyleValue;
+        /** Color */
         color: number;
+        /** Text color */
         textColor: number;
+        /** Size */
         size: SizeValue;
+        /** Text align */
         textAlign: HAlignValue;
+        /** Tooltip */
         toolTip: string;
     }
 
     export interface GraphicLine {
+        /** Drawing ID */
         id: number;
+        /** X1 position */
         x1: number;
+        /** Y1 position */
         y1: number;
+        /** X2 position */
         x2: number;
+        /** Y2 position */
         y2: number;
+        /** Extend */
         extend: ExtendValue;
+        /** Style */
         style: LineStyleValue;
+        /** Color */
         color: number;
+        /** Width */
         width: number;
     }
 
     export interface GraphicBox {
+        /** Drawing ID */
         id: number;
+        /** X1 position */
         x1: number;
+        /** Y1 position */
         y1: number;
+        /** X2 position */
         x2: number;
+        /** Y2 position */
         y2: number;
+        /** Color */
         color: number;
+        /** Background color */
         bgColor: number;
+        /** Extend */
         extend: ExtendValue;
+        /** Style */
         style: BoxStyleValue;
+        /** Width */
         width: number;
+        /** Text */
         text: string;
+        /** Text size */
         textSize: SizeValue;
+        /** Text color */
         textColor: number;
+        /** Text vertical align */
         textVAlign: VAlignValue;
+        /** Text horizontal align */
         textHAlign: HAlignValue;
+        /** Text wrap */
         textWrap: TextWrapValue;
     }
 
     export interface TableCell {
+        /** Drawing ID */
         id: number;
+        /** Text */
         text: string;
+        /** Width */
         width: number;
+        /** Height */
         height: number;
+        /** Text color */
         textColor: number;
+        /** Text horizontal align */
         textHAlign: HAlignValue;
+        /** Text vertical align */
         textVAlign: VAlignValue;
+        /** Text size */
         textSize: SizeValue;
+        /** Background color */
         bgColor: number;
     }
 
     export interface GraphicTable {
+        /** Drawing ID */
         id: number;
+        /** Position */
         position: TablePositionValue;
+        /** Rows */
         rows: number;
+        /** Columns */
         columns: number;
+        /** Background color */
         bgColor: number;
+        /** Frame color */
         frameColor: number;
+        /** Frame width */
         frameWidth: number;
+        /** Border color */
         borderColor: number;
+        /** Border width */
         borderWidth: number;
 
         cells(): TableCell[][];
     }
 
     export interface GraphicHorizline {
+        /** Drawing ID */
         id: number;
+        /** Level */
         level: number;
+        /** Start index */
         startIndex: number;
+        /** End index */
         endIndex: number;
+        /** Extend right */
         extendRight: boolean;
+        /** Extend left */
         extendLeft: boolean;
     }
 
     export interface GraphicPoint {
+        /** Index */
         index: number;
+        /** Level */
         level: number;
     }
 
     export interface GraphicPolygon {
+        /** Drawing ID */
         id: number;
+        /** Points */
         points: GraphicPoint[];
     }
 
     export interface GraphicHorizHist {
+        /** Drawing ID */
         id: number;
+        /** Price low */
         priceLow: number;
+        /** Price high */
         priceHigh: number;
+        /** First bar time */
         firstBarTime: number;
+        /** Last bar time */
         lastBarTime: number;
+        /** Rate */
         rate: number[];
     }
 
@@ -603,6 +917,9 @@ declare module '@mathieuc/tradingview' {
     export function graphicParse(rawGraphic?: Record<string, any>, indexes?: number[]): GraphicData;
 
     // src/classes/BuiltInIndicator
+    /**
+     * Built-in indicator type
+     */
     export type BuiltInIndicatorType =
         | 'Volume@tv-basicstudies-241'
         | 'VbPFixed@tv-basicstudies-241'
@@ -613,6 +930,9 @@ declare module '@mathieuc/tradingview' {
         | 'VbPSessionsDetailed@tv-volumebyprice-53!'
         | 'VbPVisible@tv-volumebyprice-53';
 
+    /**
+     * Built-in indicator option
+     */
     export type BuiltInIndicatorOption =
         | 'rowsLayout'
         | 'rows'
@@ -633,66 +953,128 @@ declare module '@mathieuc/tradingview' {
         #type: BuiltInIndicatorType;
         #options: IndicatorOptions;
 
+        /**
+         * @param {BuiltInIndicatorType} type Built-in indicator type
+         */
         constructor(type: BuiltInIndicatorType);
 
+        /**
+         * Get indicator type
+         * @returns {BuiltInIndicatorType} Indicator type
+         */
         getType(): BuiltInIndicatorType;
 
+        /**
+         * Get indicator options
+         * @returns {IndicatorOptions} Indicator options
+         */
         getOptions(): IndicatorOptions;
 
+        /**
+         * Set indicator option
+         * @param {BuiltInIndicatorOption} key Option key
+         * @param {any} value Option value
+         * @param {boolean} FORCE Force
+         */
         setOption(key: BuiltInIndicatorOption, value: any, FORCE?: boolean): void;
 
         clone(): PineIndicator;
     }
 
     // src/classes/PineIndicator
+    /**
+     * Indicator input
+     */
     export type IndicatorInput = {
+        /** Name */
         name: string;
+        /** Inline name */
         inline: string;
+        /** Internal ID */
         internalID?: string;
+        /** Tooltip */
         tooltip?: string;
+        /** Type */
         type: 'text' | 'source' | 'integer' | 'float' | 'resolution' | 'bool' | 'color';
+        /** Value */
         value: string | number | boolean;
+        /** Is hidden */
         isHidden: boolean;
+        /** Is fake */
         isFake: boolean;
+        /** Options */
         options?: string[];
     };
 
+    /**
+     * Indicator
+     */
     export type Indicator = {
+        /** Pine ID */
         pineId: string;
+        /** Pine version */
         pineVersion: string;
+        /** Description */
         description: string;
+        /** Short description */
         shortDescription: string;
+        /** Inputs */
         inputs: Record<string, IndicatorInput>;
+        /** Plots */
         plots: Record<string, string>;
+        /** Script */
         script: string;
     };
 
+    /**
+     * Indicator type
+     */
     export type IndicatorType = 'Script@tv-scripting-101!' | 'StrategyScript@tv-scripting-101!';
 
     export class PineIndicator {
         #options: Indicator;
-        #type: IndicatorType = 'Script@tv-scripting-101!';
+        #type: IndicatorType;
 
+        /**
+         * @param {Indicator} options Indicator options
+         */
         constructor(options: Indicator);
 
+        /** Pine ID */
         get pineId(): string;
 
+        /** Pine version */
         get pineVersion(): string;
 
+        /** Description */
         get description(): string;
 
+        /** Short description */
         get shortDescription(): string;
 
+        /** Inputs */
         get inputs(): Record<string, IndicatorInput>;
 
+        /** Plots */
         get plots(): Record<string, string>;
 
+        /** Script */
         get script(): string;
 
+        /** Type */
         get type(): IndicatorType;
 
+        /**
+         * Set indicator type
+         * @param {IndicatorType} type Indicator type
+         */
         setType(type?: IndicatorType): void;
 
+        /**
+         * Set indicator option
+         * @param {number | string} key Option key
+         * @param {any} value Option value
+         */
         setOption(key: number | string, value: any): void;
 
         clone(): PineIndicator;
@@ -770,11 +1152,19 @@ declare module '@mathieuc/tradingview' {
     }
 
     // src/classes/PinePermManager
+    /**
+     * Authorization user
+     */
     export type AuthorizationUser = {
+        /** User ID */
         id: string;
+        /** Username */
         username: string;
+        /** User picture */
         userpic: string;
+        /** Expiration */
         expiration: string;
+        /** Created */
         created: string;
     };
 
@@ -791,14 +1181,42 @@ declare module '@mathieuc/tradingview' {
         #signature: string;
         #pineId: string;
 
+        /**
+         * @param {string} sessionId Session ID
+         * @param {string} signature Signature
+         * @param {string} pineId Pine ID
+         */
         constructor(sessionId: string, signature: string, pineId: string);
 
+        /**
+         * Get users
+         * @param {number} limit Limit
+         * @param {FetchOrder} order Order
+         * @returns {Promise<AuthorizationUser[]>} Users
+         */
         getUsers(limit?: number, order?: FetchOrder): Promise<AuthorizationUser[]>;
 
+        /**
+         * Add user
+         * @param {string} username Username
+         * @param {Date | null} expiration Expiration
+         * @returns {Promise<'ok' | 'exists' | null>} Result
+         */
         addUser(username: string, expiration?: Date | null): Promise<'ok' | 'exists' | null>;
 
+        /**
+         * Modify expiration
+         * @param {string} username Username
+         * @param {Date | null} expiration Expiration
+         * @returns {Promise<'ok' | null>} Result
+         */
         modifyExpiration(username: string, expiration?: Date | null): Promise<'ok' | null>;
 
+        /**
+         * Remove user
+         * @param {string} username Username
+         * @returns {Promise<'ok' | null>} Result
+         */
         removeUser(username: string): Promise<'ok' | null>;
     }
 
@@ -855,12 +1273,28 @@ declare module '@mathieuc/tradingview' {
 
         get symbolInfo(): SymbolInfo;
 
+        /**
+         * On loaded
+         * @param {() => void} cb Callback
+         */
         onLoaded(cb: () => void): void;
 
+        /**
+         * On data
+         * @param {(data: Record<string, any>) => void} cb Callback
+         */
         onData(cb: (data: Record<string, any>) => void): void;
 
+        /**
+         * On event
+         * @param {(...args: any[]) => void} cb Callback
+         */
         onEvent(cb: (...args: any[]) => void): void;
 
+        /**
+         * On error
+         * @param {(...args: any[]) => void} cb Callback
+         */
         onError(cb: (...args: any[]) => void): void;
 
         close(): void;
@@ -879,6 +1313,9 @@ declare module '@mathieuc/tradingview' {
         send: (type: string, payload: any[]) => void;
     };
 
+    /**
+     * Quote field
+     */
     export type QuoteField =
         | 'base-currency-logoid'
         | 'ch'
@@ -929,8 +1366,13 @@ declare module '@mathieuc/tradingview' {
         | 'timezone'
         | 'country_code';
 
+    /**
+     * Quote session options
+     */
     export interface QuoteSessionOptions {
+        /** Fields */
         fields?: 'all' | 'price';
+        /** Custom fields */
         customFields?: QuoteField[];
     }
 
@@ -947,71 +1389,122 @@ declare module '@mathieuc/tradingview' {
     }
 
     // src/chart/study
+    /**
+     * Trade report
+     */
     export type TradeReport = {
+        /** Entry */
         entry: {
             name: string;
             type: 'long' | 'short';
             value: number;
             time: number;
         };
+        /** Exit */
         exit: {
             name: string;
             value: number;
             time: number;
         };
+        /** Quantity */
         quantity: number;
+        /** Profit */
         profit: {
             v: number;
             p: number;
         };
     };
 
+    /**
+     * Performance report
+     */
     export type PerfReport = {
+        /** Average bars in trade */
         avgBarsInTrade: number;
+        /** Average bars in winning trade */
         avgBarsInWinTrade: number;
+        /** Average bars in losing trade */
         avgBarsInLossTrade: number;
+        /** Average trade */
         avgTrade: number;
+        /** Average trade percent */
         avgTradePercent: number;
+        /** Average losing trade */
         avgLosTrade: number;
+        /** Average losing trade percent */
         avgLosTradePercent: number;
+        /** Average winning trade */
         avgWinTrade: number;
+        /** Average winning trade percent */
         avgWinTradePercent: number;
+        /** Commission paid */
         commissionPaid: number;
+        /** Gross loss */
         grossLoss: number;
+        /** Gross loss percent */
         grossLossPercent: number;
+        /** Gross profit */
         grossProfit: number;
+        /** Gross profit percent */
         grossProfitPercent: number;
+        /** Largest losing trade */
         largestLosTrade: number;
+        /** Largest losing trade percent */
         largestLosTradePercent: number;
+        /** Largest winning trade */
         largestWinTrade: number;
+        /** Largest winning trade percent */
         largestWinTradePercent: number;
+        /** Margin calls */
         marginCalls: number;
+        /** Max contracts held */
         maxContractsHeld: number;
+        /** Net profit */
         netProfit: number;
+        /** Net profit percent */
         netProfitPercent: number;
+        /** Number of losing trades */
         numberOfLosingTrades: number;
+        /** Number of winning trades */
         numberOfWinningTrades: number;
+        /** Percent profitable */
         percentProfitable: number;
+        /** Profit factor */
         profitFactor: number;
+        /** Ratio average win / average loss */
         ratioAvgWinAvgLoss: number;
+        /** Total open trades */
         totalOpenTrades: number;
+        /** Total trades */
         totalTrades: number;
     };
 
+    /**
+     * From-to
+     */
     export type FromTo = {
+        /** From */
         from: number;
+        /** To */
         to: number;
     };
 
+    /**
+     * Strategy report
+     */
     export type StrategyReport = {
+        /** Currency */
         currency?: 'EUR' | 'USD' | 'JPY' | '' | 'CHF';
+        /** Settings */
         settings?: {
             dateRange?: {
                 backtest?: FromTo;
                 trade?: FromTo;
             };
         };
+        /** Trades */
         trades: TradeReport[];
+        /** History */
         history: {
             buyHold?: number[];
             buyHoldPercent?: number[];
@@ -1020,6 +1513,7 @@ declare module '@mathieuc/tradingview' {
             equity?: number[];
             equityPercent?: number[];
         };
+        /** Performance */
         performance: {
             all?: PerfReport;
             long?: PerfReport;
@@ -1035,6 +1529,9 @@ declare module '@mathieuc/tradingview' {
         };
     };
 
+    /**
+     * Update change type
+     */
     export type UpdateChangeType =
         | 'plots'
         | 'report.currency'
@@ -1129,12 +1626,21 @@ declare module '@mathieuc/tradingview' {
     export function studyConstructor(chartSession: ChartSessionBridge): typeof ChartStudy;
 
     // src/chart/session
+    /**
+     * Price period
+     */
     export interface PricePeriod {
+        /** Time */
         time: number;
+        /** Open */
         open: number;
+        /** Close */
         close: number;
+        /** Max */
         max: number;
+        /** Min */
         min: number;
+        /** Volume */
         volume: number;
     }
 
@@ -1147,19 +1653,36 @@ declare module '@mathieuc/tradingview' {
 
     export type ChartEvent = 'seriesLoaded' | 'symbolLoaded' | 'update' | 'error';
 
+    /**
+     * Chart type
+     */
     export type ChartType = 'HeikinAshi' | 'Renko' | 'LineBreak' | 'Kagi' | 'PointAndFigure' | 'Range';
 
+    /**
+     * Chart inputs
+     */
     export interface ChartInputs {
+        /** ATR length */
         atrLength?: number;
+        /** Source */
         source?: 'open' | 'high' | 'low' | 'close' | 'hl2' | 'hlc3' | 'ohlc4';
+        /** Style */
         style?: 'ATR' | string;
+        /** Box size */
         boxSize?: number;
+        /** Reversal amount */
         reversalAmount?: number;
+        /** Sources */
         sources?: 'Close';
+        /** Wicks */
         wicks?: boolean;
+        /** Line break */
         lb?: number;
+        /** One step back building */
         oneStepBackBuilding?: boolean;
+        /** Phantom bars */
         phantomBars?: boolean;
+        /** Range */
         range?: number;
     }
 
@@ -1170,47 +1693,91 @@ declare module '@mathieuc/tradingview' {
         name: string;
     }
 
+    /**
+     * Market infos
+     */
     export interface MarketInfos {
+        /** Series ID */
         series_id: string;
+        /** Base currency */
         base_currency: string;
+        /** Base currency ID */
         base_currency_id: string;
+        /** Name */
         name: string;
+        /** Full name */
         full_name: string;
+        /** Pro name */
         pro_name: string;
+        /** Description */
         description: string;
+        /** Short description */
         short_description: string;
+        /** Exchange */
         exchange: string;
+        /** Listed exchange */
         listed_exchange: string;
+        /** Provider ID */
         provider_id: string;
+        /** Currency ID */
         currency_id: string;
+        /** Currency code */
         currency_code: string;
+        /** Variable tick size */
         variable_tick_size: string;
+        /** Pricescale */
         pricescale: number;
+        /** Point value */
         pointvalue: number;
+        /** Session */
         session: string;
+        /** Session display */
         session_display: string;
+        /** Type */
         type: string;
+        /** Has intraday */
         has_intraday: boolean;
+        /** Fractional */
         fractional: boolean;
+        /** Is tradable */
         is_tradable: boolean;
+        /** Min movement */
         minmov: number;
+        /** Min movement 2 */
         minmove2: number;
+        /** Timezone */
         timezone: string;
+        /** Is replayable */
         is_replayable: boolean;
+        /** Has adjustment */
         has_adjustment: boolean;
+        /** Has extended hours */
         has_extended_hours: boolean;
+        /** Bar source */
         bar_source: string;
+        /** Bar transform */
         bar_transform: string;
+        /** Bar fillgaps */
         bar_fillgaps: boolean;
+        /** Allowed adjustment */
         allowed_adjustment: string;
+        /** Subsession ID */
         subsession_id: string;
+        /** Pro permission */
         pro_perm: string;
+        /** Base name */
         base_name: string[];
+        /** Legs */
         legs: string[];
+        /** Subsessions */
         subsessions: Subsession[];
+        /** Typespecs */
         typespecs: string[];
+        /** Resolutions */
         resolutions: string[];
+        /** Aliases */
         aliases: string[];
+        /** Alternatives */
         alternatives: string[];
     }
 
@@ -1234,12 +1801,25 @@ declare module '@mathieuc/tradingview' {
 
         constructor(client?: ClientBridge);
 
+        /** Periods */
         get periods(): PricePeriod[];
 
+        /** Infos */
         get infos(): MarketInfos;
 
+        /**
+         * Set series
+         * @param {string} timeframe Timeframe
+         * @param {number} range Range
+         * @param {number | null} reference Reference
+         */
         setSeries(timeframe?: string, range?: number, reference?: number | null): void;
 
+        /**
+         * Set market
+         * @param {string} symbol Symbol
+         * @param {object} options Options
+         */
         setMarket(
             symbol: string,
             options?: {
@@ -1256,28 +1836,78 @@ declare module '@mathieuc/tradingview' {
             },
         ): void;
 
+        /**
+         * Set timezone
+         * @param {string} timezone Timezone
+         */
         setTimezone(timezone: string): void;
 
+        /**
+         * Fetch more
+         * @param {number} number Number
+         */
         fetchMore(number?: number): void;
 
+        /**
+         * Replay step
+         * @param {number} number Number
+         * @returns {Promise<void>}
+         */
         replayStep(number?: number): Promise<void>;
 
+        /**
+         * Replay start
+         * @param {number} interval Interval
+         * @returns {Promise<void>}
+         */
         replayStart(interval?: number): Promise<void>;
 
+        /**
+         * Replay stop
+         * @returns {Promise<void>}
+         */
         replayStop(): Promise<void>;
 
+        /**
+         * On symbol loaded
+         * @param {() => void} cb Callback
+         */
         onSymbolLoaded(cb: () => void): void;
 
+        /**
+         * On update
+         * @param {(changes: string[]) => void} cb Callback
+         */
         onUpdate(cb: (changes: string[]) => void): void;
 
+        /**
+         * On replay loaded
+         * @param {() => void} cb Callback
+         */
         onReplayLoaded(cb: () => void): void;
 
+        /**
+         * On replay resolution
+         * @param {(timeframe: string, index: number) => void} cb Callback
+         */
         onReplayResolution(cb: (timeframe: string, index: number) => void): void;
 
+        /**
+         * On replay end
+         * @param {() => void} cb Callback
+         */
         onReplayEnd(cb: () => void): void;
 
+        /**
+         * On replay point
+         * @param {(index: number) => void} cb Callback
+         */
         onReplayPoint(cb: (index: number) => void): void;
 
+        /**
+         * On error
+         * @param {(...args: any[]) => void} cb Callback
+         */
         onError(cb: (...args: any[]) => void): void;
 
         delete(): void;
