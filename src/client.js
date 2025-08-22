@@ -271,6 +271,10 @@ module.exports = class Client {
       this.#handleEvent('disconnected');
     });
 
+    this.#ws.on('error', (err) => {
+      this.#handleError('WebSocket error:', err.message);
+    });
+
     this.#ws.on('message', (data) => this.#parsePacket(data));
   }
 
