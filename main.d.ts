@@ -2162,6 +2162,14 @@ declare module '@mathieuc/tradingview' {
         watchlist_color?: string | null;
     };
 
+    export function strategyToCsv(
+        studyId: string,
+        values: Record<string, string | number | boolean>,
+    ): Promise<{ 
+      csvData: string, 
+      externalSources: any, // TODO:: fix this type
+    }>;
+
     export function createAlert(
         payload: CreateAlertPayload,
         session: string,
