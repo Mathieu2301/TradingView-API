@@ -4,23 +4,6 @@ if (!process.env.SESSION || !process.env.SIGNATURE) throw Error('Please set your
 
 const studyId = 'STD;RSI%1Strategy';
 
-const client = new Client({
-  server: 'prodata',
-  token: process.env.SESSION,
-  signature: process.env.SIGNATURE,
-  // DEBUG: true,
-});
-
-const chart = new client.Session.Chart();
-chart.setMarket('BYBIT:LINKUSDT.P', {
-  timeframe: '60',
-  range: 99999,
-});
-
-chart.onError((...err) => {
-  console.log(err);
-});
-
 const values = {
   pineFeatures: '{"strategy":1,"ta":1}',
   in_0: 7,
@@ -56,6 +39,4 @@ const values = {
 (async () => {
   const { csvData } = await strategyToCsv(studyId, values);
   console.log(csvData);
-
-  client.end();
 })();
