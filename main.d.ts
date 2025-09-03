@@ -1,6 +1,8 @@
 declare module '@mathieuc/tradingview' {
     import { EventEmitter } from 'events';
 
+    export * from './src/constants';
+
     //src/client
     export interface Session {
         /**
