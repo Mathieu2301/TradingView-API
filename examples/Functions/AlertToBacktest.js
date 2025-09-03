@@ -1,4 +1,4 @@
-const TradingView = require('../main');
+const TradingView = require('../../main');
 
 if (!process.env.SESSION || !process.env.SIGNATURE) throw Error('Please set your sessionid and signature cookies');
 

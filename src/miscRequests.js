@@ -1130,6 +1130,7 @@ module.exports = {
      */
   async createLayout(name, currencyId, symbol, interval, studyId, indicatorId, indicatorValues, session, signature) {
     const layout = await module.exports.createBlankLayout(name, session, signature);
+
     const layoutShortUrl = await module.exports.replaceLayout(layout, currencyId, symbol, interval, studyId, indicatorId, indicatorValues, session, signature);
     return layoutShortUrl;
   },

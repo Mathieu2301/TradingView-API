@@ -1,4 +1,4 @@
-const { getIndicator, Client, strategyToCsv } = require('../main');
+const { strategyToCsv } = require('../../main');
 
 if (!process.env.SESSION || !process.env.SIGNATURE) throw Error('Please set your sessionid and signature cookies');
 
