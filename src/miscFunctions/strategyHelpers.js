@@ -37,32 +37,24 @@ const calculateLinReg = (data) => {
 };
 
 export const calculateRSquared = (actual) => {
-  try {
-    const { slope, intercept } = calculateLinReg(actual);
+  const { slope, intercept } = calculateLinReg(actual);
 
-    const predicted = actual.map((_, index) => slope * index + intercept);
-    const meanActual = actual.reduce((sum, value) => sum + value, 0) / actual.length;
+  const predicted = actual.map((_, index) => slope * index + intercept);
+  const meanActual = actual.reduce((sum, value) => sum + value, 0) / actual.length;
 
-    let sse = 0;
-    let sst = 0;
+  let sse = 0;
+  let sst = 0;
 
-    for (let i = 0; i < actual.length; i + 1) {
-      sse += Math.pow(actual[i] - predicted[i], 2);
-      sst += Math.pow(actual[i] - meanActual, 2);
-    }
-
-    const r2 = 1 - sse / sst;
-    return {
-      rSquared: r2.toFixed(2),
-      predicted: predicted.map((num) => Math.round((num / 100) * 100) / 100),
-    };
-  } catch (error) {
-    console.log(error);
-    return {
-      rSquared: 0,
-      predicted: 0,
-    };
+  for (let i = 0; i < actual.length; i++) {
+    sse += Math.pow(actual[i] - predicted[i], 2);
+    sst += Math.pow(actual[i] - meanActual, 2);
   }
+
+  const r2 = 1 - sse / sst;
+  return {
+    rSquared: r2.toFixed(2),
+    predicted: predicted.map((num) => Math.round((num / 100) * 100) / 100),
+  };
 };
 
 module.exports = {
