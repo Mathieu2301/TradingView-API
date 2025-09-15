@@ -1,7 +1,9 @@
-const strategyToCsv = require('./strategyToCsv');
 const alertToBacktest = require('./alertToBacktest');
+const strategyToCsv = require('./strategyToCsv');
+const strategyHelpers = require('./strategyHelpers');
 
 module.exports = {
-  ...strategyToCsv,
   ...alertToBacktest,
+  ...strategyHelpers,
+  ...strategyToCsv,
 };

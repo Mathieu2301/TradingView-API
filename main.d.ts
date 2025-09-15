@@ -2244,6 +2244,16 @@ declare module '@mathieuc/tradingview' {
         signature: string
     ): Promise<{ s: string, id: string, r: AlertCreated, errmsg?: string, err?: { code: string } }>;
 
+    export function getPnlByDaysAgo(
+      trades: any[],
+      equity: number[],
+      profit: number
+    ): {pnl90: number, pnl30: number, pnl7: number};
+
+    export function calculateCGR(startValue: number, endValue: number, periods: number): number
+    
+    export function calculateRSquared(actual: number[]): {rSquared: string, predicted: number[]}
+
     export function createAlertForChart(
         chartId: string,
         name: string,
