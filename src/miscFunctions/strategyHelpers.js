@@ -21,7 +21,7 @@ const getPnlByDaysAgo = (trades, equity, profit) => {
   };
 };
 
-export const calculateCGR = (startValue, endValue, periods) => Math.round(((endValue / startValue) ** (1 / periods) - 1) * 100 * 100) / 100;
+export const calculateCGR = (startValue, endValue, periods) => Math.round((Math.pow(endValue / startValue, 1 / periods) - 1) * 100 * 100) / 100;
 
 const calculateLinReg = (data) => {
   const n = data.length;
@@ -46,8 +46,8 @@ export const calculateRSquared = (actual) => {
   let sst = 0;
 
   for (let i = 0; i < actual.length; i + 1) {
-    sse += (actual[i] - predicted[i]) ** 2;
-    sst += (actual[i] - meanActual) ** 2;
+    sse += Math.pow(actual[i] - predicted[i], 2);
+    sst += Math.pow(actual[i] - meanActual, 2);
   }
 
   const r2 = 1 - sse / sst;
