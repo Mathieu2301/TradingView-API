@@ -123,7 +123,7 @@ module.exports = (client) => class HistorySession {
      * @param {number} to Deep backtest ending point (Timestamp)
      * @param {PineIndicator} indicator PineIndicator with options set
      * @param {Object} options Chart options
-     * @param {import('../types').TimeFrame} [options.timeframe] Chart period timeframe (Default is 5)
+     * @param {import('../constants').TimeFrame} [options.timeframe] Chart period timeframe (Default is 5)
      * @param {number} [options.from] First available timestamp (Default is 2010-01-01)
      * @param {number} [options.to] Last candle timestamp (Default is now)
      * @param {'splits' | 'dividends'} [options.adjustment] Market adjustment

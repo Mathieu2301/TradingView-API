@@ -309,7 +309,7 @@ module.exports = (client) => class ChartSession {
   #currentSeries = 0;
 
   /**
-   * @param {import('../types').TimeFrame} timeframe Chart period timeframe
+   * @param {import('../constants').TimeFrame} timeframe Chart period timeframe
    * @param {number} [range] Number of loaded periods/candles (Default: 100)
    * @param {number} [reference] Reference candle timestamp (Default is now)
    */
@@ -340,7 +340,7 @@ module.exports = (client) => class ChartSession {
    * Set the chart market
    * @param {string} symbol Market symbol
    * @param {Object} [options] Chart options
-   * @param {import('../types').TimeFrame} [options.timeframe] Chart period timeframe
+   * @param {import('../constants').TimeFrame} [options.timeframe] Chart period timeframe
    * @param {number} [options.range] Number of loaded periods/candles (Default: 100)
    * @param {number} [options.to] Last candle timestamp (Default is now)
    * @param {'splits' | 'dividends'} [options.adjustment] Market adjustment
@@ -411,7 +411,7 @@ module.exports = (client) => class ChartSession {
 
   /**
    * Set the chart timezone
-   * @param {import('../types').Timezone} timezone New timezone
+   * @param {import('../constants').Timezone} timezone New timezone
    */
   setTimezone(timezone) {
     this.#periods = {};
@@ -509,7 +509,7 @@ module.exports = (client) => class ChartSession {
   /**
    * When the replay session has new resolution
    * @param {(
-   *   timeframe: import('../types').TimeFrame,
+   *   timeframe: import('../constants').TimeFrame,
    *   index: number,
    * ) => void} cb
    * @event

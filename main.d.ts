@@ -1,6 +1,74 @@
 declare module '@mathieuc/tradingview' {
     import { EventEmitter } from 'events';
 
+    //src/constants
+    export const fieldType = {
+      INTEGER: 'integer',
+      FLOAT: 'float',
+      BOOLEAN: 'bool',
+      TEXT: 'text',
+      SOURCE: 'source',
+      RESOLUTION: 'resolution',
+      SESSION: 'session',
+      TIME: 'time',
+    } as const;
+
+    export type FieldType = typeof fieldType[keyof typeof fieldType];
+
+    export const canRemoveStrategyFields = [
+      'pyramiding',
+      'default_qty_type',
+      'default_qty_value',
+      'initial_capital',
+      'currency',
+      'slippage',
+      'commission_type',
+      'commission_value',
+      'use_bar_magnifier',
+    ] as const;
+
+    export type CanRemoveStrategyField = typeof canRemoveStrategyFields[number];
+
+    export const canHideStrategyFields = [
+      'pineFeatures',
+      'calc_on_order_fills',
+      'calc_on_every_tick',
+      'backtest_fill_limits_assumption',
+      'process_orders_on_close',
+      'close_entries_rule',
+      'margin_long',
+      'margin_short',
+      'risk_free_rate',
+      'fill_orders_on_standard_ohlc',
+      'run_mode',
+      'alert_message',
+      'alert_type',
+      'trim_orders',
+      'exclude_from_report',
+      '__profile',
+    ] as const;
+
+    export type CanHideStrategyField = typeof canHideStrategyFields[number];
+
+    export const valuesFieldResolution = [
+      { value: '', label: 'Chart' },
+      { value: '30S', label: '30 seconds' },
+      { value: '1', label: '1 minute' },
+      { value: '5', label: '5 minutes' },
+      { value: '15', label: '15 minutes' },
+      { value: '30', label: '30 minutes' },
+      { value: '60', label: '1 hour' },
+      { value: '120', label: '2 hours' },
+      { value: '240', label: '4 hours' },
+      { value: 'D', label: '1 day' },
+      { value: 'W', label: '1 week' },
+      { value: 'M', label: '1 month' },
+    ] as const;
+
+    export type ValuesFieldResolution =
+      typeof valuesFieldResolution[number]['value'];
+
+      
     //src/client
     export interface Session {
         /**
@@ -2162,11 +2230,29 @@ declare module '@mathieuc/tradingview' {
         watchlist_color?: string | null;
     };
 
+    export function strategyToCsv(
+        studyId: string,
+        values: Record<string, string | number | boolean>,
+    ): Promise<{ 
+      csvData: string, 
+      externalSources: any, // TODO:: fix this type
+    }>;
+
     export function createAlert(
         payload: CreateAlertPayload,
         session: string,
         signature: string
     ): Promise<{ s: string, id: string, r: AlertCreated, errmsg?: string, err?: { code: string } }>;
+
+    export function getPnlByDaysAgo(
+      trades: any[],
+      equity: number[],
+      profit: number
+    ): {pnl90: number, pnl30: number, pnl7: number};
+
+    export function calculateCGR(startValue: number, endValue: number, periods: number): number
+    
+    export function calculateRSquared(actual: number[]): {rSquared: string, predicted: number[]}
 
     export function createAlertForChart(
         chartId: string,

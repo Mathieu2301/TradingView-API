@@ -34,7 +34,6 @@ const rsiStudyId = 'STD;RSI';
 
   indicators.rsiStudy.setOption('RSI_Length', 9);
   const study = new chart.Study(indicators.rsiStudy);
-
   indicators.myStrategy.setOption('Enter_Short_after_crossing', `${study.studID}$0`); // important to be before next line
   const myStrategy = new chart.Study(indicators.myStrategy);
 

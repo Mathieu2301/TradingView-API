@@ -1130,6 +1130,7 @@ module.exports = {
      */
   async createLayout(name, currencyId, symbol, interval, studyId, indicatorId, indicatorValues, session, signature) {
     const layout = await module.exports.createBlankLayout(name, session, signature);
+
     const layoutShortUrl = await module.exports.replaceLayout(layout, currencyId, symbol, interval, studyId, indicatorId, indicatorValues, session, signature);
     return layoutShortUrl;
   },
@@ -1322,103 +1323,6 @@ module.exports = {
       console.error(e);
       throw new Error(`Failed to modify alert: \nReason: ${e}`);
     }
-  },
-
-  async alertToBacktest(alert, sessionId, sessionSign, server = 'prodata') {
-    return new Promise(async (resolve, reject) => {
-      const { pine_id, inputs } = alert.condition.series[0];
-      const symbol = alert.symbol.match(/"symbol":"([^"]+)"/)[1];
-
-      const client = new this.Client({
-        server,
-        token: sessionId,
-        signature: sessionSign,
-      });
-
-      client.onError(() => {
-        client.end();
-        return reject(Error('[TRADINGVIEW]: Client error'));
-      });
-
-      const chart = new client.Session.Chart();
-      chart.setMarket(symbol, { timeframe: `${alert.resolution}`, range: 99999 });
-
-      chart.onError(() => {
-        client.end();
-        return reject(Error('[TRADINGVIEW]: chart error'));
-      });
-
-      const indicator = await this.getIndicator(pine_id, 'last', sessionId, sessionSign);
-
-      const extIndicators = {};
-
-      for (const key of Object.keys(inputs)) {
-        const input = indicator.inputs[key];
-        const value = inputs[key];
-
-        if (value && typeof value === 'object' && !Array.isArray(value)) {
-          const scriptId = value.pine_id;
-
-          // const isPersonalIdicator = value.pine_id?.startsWith('USER;');
-          const isPublicUserIndicator = value.pine_id?.startsWith('PUB;');
-          const isTvGeneralIndicator = value.pine_id?.startsWith('STD;');
-          const isBuiltinIndicator = !value.pine_id;
-
-          if (!extIndicators[value.pine_id]) {
-            const externalIndicator = isBuiltinIndicator
-              ? await new this.BuiltInIndicator(value.study)
-              : await this.getIndicator(scriptId, 'last', sessionId, sessionSign);
-
-            if (isPublicUserIndicator) {
-              for (const k in value.inputs) {
-                const i = externalIndicator.inputs?.[k];
-                if (i == null) continue;
-                i.value = value.inputs[k];
-              }
-            }
-
-            const study = new chart.Study(externalIndicator);
-            if (isTvGeneralIndicator) {
-              for (const ke in value.inputs) {
-                const i = externalIndicator.inputs?.[ke];
-                if (i == null) continue;
-                i.value = value.inputs[ke];
-              }
-            }
-
-            if (isBuiltinIndicator) {
-              for (const k in value.inputs) {
-                const i = externalIndicator.options?.[k];
-                if (i == null) continue;
-                i.value = value.inputs[k];
-              }
-            }
-
-            extIndicators[value.pine_id] = study;
-          }
-
-          const curStudy = extIndicators[value.pine_id];
-          input.value = `${curStudy.studID}$${value.pine_id ? value.plot_id.split('_')[1] : 0}`;
-
-          continue;
-        }
-
-        if (!input) continue;
-        input.value = value;
-      }
-
-      const study = new chart.Study(indicator);
-
-      study.onUpdate(() => {
-        client.end();
-        return resolve(study);
-      });
-
-      study.onError(() => {
-        client.end();
-        return reject(Error('[TRADINGVIEW]: Study error'));
-      });
-    });
   },
 
   /**
