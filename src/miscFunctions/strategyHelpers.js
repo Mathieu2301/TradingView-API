@@ -1,3 +1,16 @@
+const calculateLinReg = (data) => {
+  const n = data.length;
+  const sumX = data.reduce((sum, _, index) => sum + index, 0); // Assuming indices as x values
+  const sumY = data.reduce((sum, value) => sum + value, 0);
+  const sumXY = data.reduce((sum, value, index) => sum + index * value, 0);
+  const sumXX = data.reduce((sum, _, index) => sum + index * index, 0);
+
+  const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+  const intercept = (sumY - slope * sumX) / n;
+
+  return { slope, intercept };
+};
+
 const getPnlByDaysAgo = (trades, equity, profit) => {
   let { pnlAtDay90, pnlAtDay30, pnlAtDay7 } = { pnlAtDay90: 0, pnlAtDay30: 0, pnlAtDay7: 0 };
 
@@ -21,22 +34,9 @@ const getPnlByDaysAgo = (trades, equity, profit) => {
   };
 };
 
-export const calculateCGR = (startValue, endValue, periods) => Math.round((Math.pow(endValue / startValue, 1 / periods) - 1) * 100 * 100) / 100;
+const calculateCGR = (startValue, endValue, periods) => Math.round((Math.pow(endValue / startValue, 1 / periods) - 1) * 100 * 100) / 100;
 
-const calculateLinReg = (data) => {
-  const n = data.length;
-  const sumX = data.reduce((sum, _, index) => sum + index, 0); // Assuming indices as x values
-  const sumY = data.reduce((sum, value) => sum + value, 0);
-  const sumXY = data.reduce((sum, value, index) => sum + index * value, 0);
-  const sumXX = data.reduce((sum, _, index) => sum + index * index, 0);
-
-  const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-  const intercept = (sumY - slope * sumX) / n;
-
-  return { slope, intercept };
-};
-
-export const calculateRSquared = (actual) => {
+const calculateRSquared = (actual) => {
   const { slope, intercept } = calculateLinReg(actual);
 
   const predicted = actual.map((_, index) => slope * index + intercept);
