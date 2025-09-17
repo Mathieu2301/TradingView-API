@@ -1,6 +1,7 @@
 const { genSessionID } = require('../utils');
 const { parseCompressed } = require('../protocol');
 const { getInputs, parseTrades } = require('./study');
+const { studyConstructor } = require('./study');
 
 /**
  * @param {import('../client').ClientBridge} client
@@ -24,6 +25,18 @@ module.exports = (client) => class HistorySession {
       history: {},
       performance: {},
     };
+
+    studIndex = 1;
+
+    getStudId = () => {
+      const result = this.studIndex;
+      this.studIndex += this.studIndex;
+
+      return result;
+    }
+
+    /** @type {StudyListeners} */
+    #studyListeners = {};
 
     /** @return {StrategyReport} Get the strategy report if available */
     get strategyReport() {
@@ -49,6 +62,11 @@ module.exports = (client) => class HistorySession {
         type: 'history',
         onData: async (packet) => {
           if (global.TW_DEBUG) console.log('§90§30§106 HISTORY SESSION §0 DATA', packet);
+
+          if (typeof packet.data[1] === 'string' && this.#studyListeners[packet.data[1]]) {
+            this.#studyListeners[packet.data[1]](packet);
+            return;
+          }
 
           if (packet.type === 'request_data') {
             const data = packet.data[2];
@@ -175,8 +193,12 @@ module.exports = (client) => class HistorySession {
     /** @type {HistorySessionBridge} */
     #historySession = {
       sessionID: this.#historySessionID,
+      getStudId: this.getStudId,
+      studyListeners: this.#studyListeners,
       send: (t, p) => this.#client.send(t, p),
     };
+
+    Study = studyConstructor(this.#historySession);
 
     /** Delete the chart session */
     delete() {
