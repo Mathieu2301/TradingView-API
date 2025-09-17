@@ -26,6 +26,18 @@ module.exports = (client) => class HistorySession {
       performance: {},
     };
 
+    studIndex = 1;
+
+    getStudId = () => {
+      const result = this.studIndex;
+      this.studIndex += this.studIndex;
+
+      return result;
+    }
+
+    /** @type {StudyListeners} */
+    #studyListeners = {};
+
     /** @return {StrategyReport} Get the strategy report if available */
     get strategyReport() {
       return this.#strategyReport;
@@ -176,10 +188,12 @@ module.exports = (client) => class HistorySession {
     /** @type {HistorySessionBridge} */
     #historySession = {
       sessionID: this.#historySessionID,
+      getStudId: this.getStudId,
+      studyListeners: this.#studyListeners,
       send: (t, p) => this.#client.send(t, p),
     };
 
-    Study = studyConstructor(this.#historySessionID);
+    Study = studyConstructor(this.#historySession);
 
     /** Delete the chart session */
     delete() {
