@@ -1,6 +1,7 @@
 const { genSessionID } = require('../utils');
 const { parseCompressed } = require('../protocol');
 const { getInputs, parseTrades } = require('./study');
+const { studyConstructor } = require('./study');
 
 /**
  * @param {import('../client').ClientBridge} client
@@ -177,6 +178,8 @@ module.exports = (client) => class HistorySession {
       sessionID: this.#historySessionID,
       send: (t, p) => this.#client.send(t, p),
     };
+
+    Study = studyConstructor(this.#historySessionID);
 
     /** Delete the chart session */
     delete() {

@@ -41,6 +41,7 @@ const fieldType = {
   SOURCE: 'source',
   RESOLUTION: 'resolution',
   SESSION: 'session',
+  COLOR: 'color',
   TIME: 'time',
 };
 
