@@ -133,9 +133,10 @@ module.exports = {
    *  | 'futures' | 'forex' | 'cfd'
    *  | 'crypto' | 'index' | 'economic'
    * } [filter] Caterogy filter
+   * @param {number} offset Pagination offset
    * @returns {Promise<SearchMarketResult[]>} Search results
    */
-  async searchMarketV3(search, filter = '') {
+  async searchMarketV3(search, filter = '', offset = 0) {
     const splittedSearch = search.toUpperCase().replace(/ /g, '+').split(':');
 
     const request = await axios.get(
@@ -148,6 +149,7 @@ module.exports = {
           ),
           text: splittedSearch.pop(),
           search_type: filter,
+          start: offset,
         },
         headers: {
           origin: 'https://www.tradingview.com',
