@@ -149,7 +149,7 @@ module.exports = {
           ),
           text: splittedSearch.pop(),
           search_type: filter,
-          start: offset
+          start: offset,
         },
         headers: {
           origin: 'https://www.tradingview.com',
