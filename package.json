@@ -1,6 +1,6 @@
 {
   "name": "@mathieuc/tradingview",
-  "version": "3.5.1",
+  "version": "3.5.2",
   "description": "Tradingview instant stocks API, indicator alerts, trading bot, and more !",
   "main": "main.js",
   "scripts": {
