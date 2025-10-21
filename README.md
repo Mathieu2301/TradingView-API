@@ -74,3 +74,4 @@ ___
 
  If you have errors in console or unwanted behavior,
  please create an issue [here](https://github.com/Mathieu2301/Tradingview-API/issues).
+
