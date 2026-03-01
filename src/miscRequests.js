@@ -429,7 +429,11 @@ module.exports = {
    * @param {string} [location] Auth page location (For france: https://fr.tradingview.com/)
    * @returns {Promise<User>} Token
    */
-  async getUser(session, signature = '', location = 'https://www.tradingview.com/') {
+  async getUser(session, signature = '', location = 'https://www.tradingview.com/', redirectCount = 0) {
+    if (redirectCount > 5) {
+      throw new Error('Too many redirects - invalid session/signature');
+    }
+
     const { data, headers } = await axios.get(location, {
       headers: {
         cookie: genAuthCookies(session, signature),
@@ -461,7 +465,7 @@ module.exports = {
     }
 
     if (headers.location !== location) {
-      return this.getUser(session, signature, headers.location);
+      return this.getUser(session, signature, headers.location, redirectCount + 1);
     }
 
     throw new Error('Wrong or expired sessionid/signature');

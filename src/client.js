@@ -228,8 +228,14 @@ module.exports = class Client {
     if (clientOptions.DEBUG) global.TW_DEBUG = clientOptions.DEBUG;
 
     const server = clientOptions.server || 'data';
-    this.#ws = new WebSocket(`wss://${server}.tradingview.com/socket.io/websocket?type=chart`, {
+    this.#ws = new WebSocket(`wss://${server}.tradingview.com/socket.io/websocket?from=chart&type=chart`, {
       origin: 'https://www.tradingview.com',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Cache-Control': 'no-cache',
+        Pragma: 'no-cache',
+      },
     });
 
     if (clientOptions.token) {
