@@ -184,13 +184,14 @@ describe('AllErrors', () => {
     expect(error).toEqual([
       {
         ctx: {
-          length: -1,
-          nameInvalidValue: 'factor',
+          argName: 'factor',
           bar_index: 0,
-          operation: '>',
+          code: 'RE10001',
           funName: '\'supertrend\'',
+          op: '>',
+          value: -1,
         },
-        error: 'Error on bar {bar_index}: Invalid value of the \'{nameInvalidValue}\' argument ({length}) in the \'{funName}\' function. It must be {operation} 0.',
+        error: 'Error on bar {bar_index}: Invalid value of the \'{argName}\' argument ({value}) in the \'{funName}\' function. It must be {op} 0.',
         stack_trace: [{ n: '#main', p: 7 }],
       },
       'undefined',
