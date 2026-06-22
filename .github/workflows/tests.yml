@@ -14,6 +14,9 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
+      # TradingView authenticated tests use the same account/session secrets.
+      # Running every Node matrix job at once makes the external websocket tests flaky.
+      max-parallel: 1
       matrix:
         node-version: [14.x, 18.x, 19.x]
 
