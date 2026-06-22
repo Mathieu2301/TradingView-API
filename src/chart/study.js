@@ -64,7 +64,7 @@ const parseTrades = (trades) => trades.reverse().map((t) => ({
 
  * @prop {Object} exit Trade exit
  * @prop {'' | string} exit.name Trade name ('' if false exit)
- * @prop {number} exit.value Exit value
+ * @prop {number} exit.value Exit price value
  * @prop {number} exit.time Exit timestamp
 
  * @prop {number} quantity Trade quantity
@@ -92,7 +92,8 @@ const parseTrades = (trades) => trades.reverse().map((t) => ({
  * @prop {number} grossProfitPercent Gross profit percent
  * @prop {number} largestLosTrade Largest losing trade gain
  * @prop {number} largestLosTradePercent Largent losing trade performance (percentage)
- * @prop {number} largestWinTrade Largest winning trade performance (percentage)
+ * @prop {number} largestWinTrade Largest winning trade gain
+ * @prop {number} largestWinTradePercent Largest winning trade performance (percentage)
  * @prop {number} marginCalls Margin calls
  * @prop {number} maxContractsHeld Max Contracts Held
  * @prop {number} netProfit Net profit
