@@ -119,7 +119,11 @@ describe('Indicators', () => {
 
     const lastResult: any = await new Promise((resolve) => {
       CipherB.onUpdate(() => {
-        resolve(CipherB.periods[0]);
+        const lastPeriod = CipherB.periods[0];
+
+        if (lastPeriod?.VWAP !== undefined && lastPeriod?.rsiMFI !== undefined) {
+          resolve(lastPeriod);
+        }
       });
     });
 
@@ -135,7 +139,7 @@ describe('Indicators', () => {
     expect(lastResult.Buy_and_sell_circle).toBeTypeOf('number');
 
     CipherB.remove();
-  });
+  }, 30000);
 
   it.skipIf(noAuth)('removes chart', () => {
     console.log('Closing the chart...');
