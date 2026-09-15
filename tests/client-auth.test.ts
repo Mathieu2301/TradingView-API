@@ -1,7 +1,11 @@
 import { EventEmitter } from 'events';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { Module } from 'module';
+import {
+  afterEach, beforeEach, describe, expect, it, vi,
+} from 'vitest';
 
 const axios = require('axios');
+
 const chartURL = 'https://www.tradingview.com/chart/';
 
 describe('Client authentication location', () => {
@@ -11,14 +15,18 @@ describe('Client authentication location', () => {
   let originalClient;
   let socket;
   let get;
+  let Client;
 
   beforeEach(() => {
     originalWS = require.cache[wsPath];
     originalClient = require.cache[clientPath];
     class FakeWebSocket extends EventEmitter {
       OPEN = 1;
+
       readyState = 1;
+
       send = vi.fn();
+
       close = vi.fn();
 
       constructor() {
@@ -26,8 +34,14 @@ describe('Client authentication location', () => {
         socket = this;
       }
     }
-    require.cache[wsPath] = { exports: FakeWebSocket } as any;
+    const wsModule = new Module(wsPath);
+    wsModule.exports = FakeWebSocket;
+    wsModule.loaded = true;
+    require.cache[wsPath] = wsModule;
     delete require.cache[clientPath];
+    // Load Client after replacing its CommonJS WebSocket dependency.
+    // eslint-disable-next-line global-require
+    Client = require('../src/client');
     get = vi.spyOn(axios, 'get').mockImplementation(async (url) => ({
       status: 200,
       data: url.endsWith('/chart/')
@@ -45,27 +59,24 @@ describe('Client authentication location', () => {
     else delete require.cache[clientPath];
   });
 
-  it.each([undefined, '', 'https://fr.tradingview.com/chart/'])(
-    'authenticates and sends the token with location %s', async (location) => {
-      const Client = require('../src/client');
-      const client = new Client({ token: 'fake_session', signature: 'fake_signature', location });
-      const onError = vi.fn();
-      client.onError(onError);
-      await new Promise((resolve) => setImmediate(resolve));
+  const locations = [undefined, '', 'https://fr.tradingview.com/chart/'];
+  it.each(locations)('authenticates with location %s', async (location) => {
+    const client = new Client({ token: 'fake_session', signature: 'fake_signature', location });
+    const onError = vi.fn();
+    client.onError(onError);
+    await new Promise((resolve) => { setImmediate(resolve); });
 
-      expect(get).toHaveBeenCalledTimes(1);
-      expect(get).toHaveBeenCalledWith(location || chartURL, expect.any(Object));
-      expect(client.isLogged).toBe(true);
-      expect(socket.send).toHaveBeenCalledWith(expect.stringContaining(
-        '"m":"set_auth_token","p":["test_auth_token"]',
-      ));
-      expect(onError).not.toHaveBeenCalled();
-      await client.end();
-    },
-  );
+    expect(get).toHaveBeenCalledTimes(1);
+    expect(get).toHaveBeenCalledWith(location || chartURL, expect.any(Object));
+    expect(client.isLogged).toBe(true);
+    expect(socket.send).toHaveBeenCalledWith(expect.stringContaining(
+      '"m":"set_auth_token","p":["test_auth_token"]',
+    ));
+    expect(onError).not.toHaveBeenCalled();
+    await client.end();
+  });
 
   it('does not request account information for a public client', async () => {
-    const Client = require('../src/client');
     const client = new Client();
     expect(get).not.toHaveBeenCalled();
     expect(socket.send).toHaveBeenCalledWith(expect.stringContaining('unauthorized_user_token'));

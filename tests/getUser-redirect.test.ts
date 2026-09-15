@@ -1,8 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterEach, beforeEach, describe, expect, it, vi,
+} from 'vitest';
 
 // Spy on the same axios instance required by the CommonJS library.
 const axios = require('axios');
 const misc = require('../src/miscRequests');
+
 const chartURL = 'https://www.tradingview.com/chart/';
 const authenticatedResponse = {
   status: 200,
@@ -11,7 +14,7 @@ const authenticatedResponse = {
 };
 
 describe('getUser authentication and redirects', () => {
-  let get: ReturnType<typeof vi.spyOn>;
+  let get;
 
   beforeEach(() => {
     get = vi.spyOn(axios, 'get');
@@ -25,8 +28,11 @@ describe('getUser authentication and redirects', () => {
       : { status: 200, data: '<html>homepage without token</html>', headers: {} }));
 
     await expect(misc.getUser('fake_session', 'fake_signature')).resolves.toMatchObject({
-      id: '123', username: 'test_user', authToken: 'test_auth_token',
-      session: 'fake_session', signature: 'fake_signature',
+      id: '123',
+      username: 'test_user',
+      authToken: 'test_auth_token',
+      session: 'fake_session',
+      signature: 'fake_signature',
     });
     expect(get).toHaveBeenCalledTimes(1);
     expect(get).toHaveBeenCalledWith(chartURL, expect.objectContaining({
