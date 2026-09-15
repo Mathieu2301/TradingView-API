@@ -426,15 +426,15 @@ module.exports = {
    * @function getUser
    * @param {string} session User 'sessionid' cookie
    * @param {string} [signature] User 'sessionid_sign' cookie
-   * @param {string} [location] Auth page location (For france: https://fr.tradingview.com/)
+   * @param {string} [location] Auth page location (For France: https://fr.tradingview.com/chart/)
    * @returns {Promise<User>} Token
    */
-  async getUser(session, signature = '', location = 'https://www.tradingview.com/', redirectCount = 0) {
+  async getUser(session, signature = '', location = 'https://www.tradingview.com/chart/', redirectCount = 0) {
     if (redirectCount > 5) {
       throw new Error('Too many redirects - possible WAF or geo-restriction');
     }
 
-    const { data, headers } = await axios.get(location, {
+    const { data, headers, status } = await axios.get(location, {
       headers: {
         cookie: genAuthCookies(session, signature),
       },
@@ -464,8 +464,15 @@ module.exports = {
       };
     }
 
-    if (headers.location !== location) {
-      return this.getUser(session, signature, headers.location, redirectCount + 1);
+    if (status >= 300 && status < 400 && headers.location) {
+      const redirect = new URL(headers.location, location);
+      if (redirect.protocol !== 'https:' || (
+        redirect.hostname !== 'tradingview.com'
+        && !redirect.hostname.endsWith('.tradingview.com')
+      )) {
+        throw new Error('Unexpected authentication redirect destination');
+      }
+      return this.getUser(session, signature, redirect.href, redirectCount + 1);
     }
 
     throw new Error('Wrong or expired sessionid/signature');
