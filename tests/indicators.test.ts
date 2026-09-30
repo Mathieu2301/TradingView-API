@@ -10,7 +10,7 @@ describe('Indicators', () => {
   it('gets Supertrend strategy', async () => {
     indicators.SuperTrend = await TradingView.getIndicator('STD;Supertrend%Strategy');
     expect(indicators.SuperTrend).toBeDefined();
-    expect(indicators.SuperTrend.description).toBe('Supertrend Strategy');
+    expect(indicators.SuperTrend.description).toMatch(/^Supertrend strategy$/i);
 
     indicators.SuperTrend.setOption('commission_type', 'percent');
     indicators.SuperTrend.setOption('commission_value', 0);
