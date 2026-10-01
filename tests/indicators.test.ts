@@ -70,7 +70,12 @@ describe('Indicators', () => {
 
     let QTY = 10;
     let done = false;
-    const retryTimers = new Set<NodeJS.Timeout>();
+    let retryTimer: NodeJS.Timeout | undefined;
+    const stopRetries = () => {
+      done = true;
+      if (retryTimer) clearTimeout(retryTimer);
+      retryTimer = undefined;
+    };
     const perfResult = await new Promise((resolve) => {
       SuperTrend.onUpdate(() => {
         if (done) return;
@@ -100,31 +105,27 @@ describe('Indicators', () => {
         });
 
         if (perfReport?.all?.totalTrades !== undefined && QTY >= 50) {
-          done = true;
-          retryTimers.forEach((timer) => clearTimeout(timer));
-          retryTimers.clear();
+          stopRetries();
           resolve(true);
           return;
         }
 
         QTY += 10;
         console.log('TRY WITH', QTY, '%');
-        const timer = setTimeout(() => {
-          retryTimers.delete(timer);
+        if (retryTimer) clearTimeout(retryTimer);
+        retryTimer = setTimeout(() => {
+          retryTimer = undefined;
           if (done) return;
 
           indicators.SuperTrend.setOption('default_qty_value', QTY);
           SuperTrend.setIndicator(indicators.SuperTrend);
         }, 1000);
-        retryTimers.add(timer);
       });
     });
 
     expect(perfResult).toBe(true);
 
-    done = true;
-    retryTimers.forEach((timer) => clearTimeout(timer));
-    retryTimers.clear();
+    stopRetries();
     SuperTrend.remove();
   }, 30000);
 
