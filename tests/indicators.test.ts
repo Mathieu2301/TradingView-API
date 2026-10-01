@@ -69,8 +69,12 @@ describe('Indicators', () => {
     const SuperTrend = new chart.Study(indicators.SuperTrend);
 
     let QTY = 10;
+    let done = false;
+    const retryTimers = new Set<NodeJS.Timeout>();
     const perfResult = await new Promise((resolve) => {
       SuperTrend.onUpdate(() => {
+        if (done) return;
+
         // SuperTrend is a strategy so it sends a strategy report
         const perfReport = SuperTrend.strategyReport.performance;
 
@@ -96,21 +100,31 @@ describe('Indicators', () => {
         });
 
         if (perfReport?.all?.totalTrades !== undefined && QTY >= 50) {
+          done = true;
+          retryTimers.forEach((timer) => clearTimeout(timer));
+          retryTimers.clear();
           resolve(true);
           return;
         }
 
         QTY += 10;
         console.log('TRY WITH', QTY, '%');
-        setTimeout(() => {
+        const timer = setTimeout(() => {
+          retryTimers.delete(timer);
+          if (done) return;
+
           indicators.SuperTrend.setOption('default_qty_value', QTY);
           SuperTrend.setIndicator(indicators.SuperTrend);
         }, 1000);
+        retryTimers.add(timer);
       });
     });
 
     expect(perfResult).toBe(true);
 
+    done = true;
+    retryTimers.forEach((timer) => clearTimeout(timer));
+    retryTimers.clear();
     SuperTrend.remove();
   }, 30000);
 
