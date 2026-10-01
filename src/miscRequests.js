@@ -120,7 +120,7 @@ module.exports = {
         symbol: s.symbol,
         description: s.description,
         type: s.type,
-        getTA: () => this.getTA(id),
+        getTA: () => module.exports.getTA(id),
       };
     });
   },
@@ -171,7 +171,7 @@ module.exports = {
         symbol: s.symbol,
         description: s.description,
         type: s.type,
-        getTA: () => this.getTA(id),
+        getTA: () => module.exports.getTA(id),
       };
     });
   },
@@ -465,7 +465,7 @@ module.exports = {
     }
 
     if (headers.location !== location) {
-      return this.getUser(session, signature, headers.location, redirectCount + 1);
+      return module.exports.getUser(session, signature, headers.location, redirectCount + 1);
     }
 
     throw new Error('Wrong or expired sessionid/signature');
