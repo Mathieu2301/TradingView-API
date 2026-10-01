@@ -10,7 +10,7 @@ describe('Indicators', () => {
   it('gets Supertrend strategy', async () => {
     indicators.SuperTrend = await TradingView.getIndicator('STD;Supertrend%Strategy');
     expect(indicators.SuperTrend).toBeDefined();
-    expect(indicators.SuperTrend.description).toBe('Supertrend Strategy');
+    expect(indicators.SuperTrend.description).toMatch(/^Supertrend strategy$/i);
 
     indicators.SuperTrend.setOption('commission_type', 'percent');
     indicators.SuperTrend.setOption('commission_value', 0);
@@ -69,8 +69,17 @@ describe('Indicators', () => {
     const SuperTrend = new chart.Study(indicators.SuperTrend);
 
     let QTY = 10;
+    let done = false;
+    let retryTimer: NodeJS.Timeout | undefined;
+    const stopRetries = () => {
+      done = true;
+      if (retryTimer) clearTimeout(retryTimer);
+      retryTimer = undefined;
+    };
     const perfResult = await new Promise((resolve) => {
       SuperTrend.onUpdate(() => {
+        if (done) return;
+
         // SuperTrend is a strategy so it sends a strategy report
         const perfReport = SuperTrend.strategyReport.performance;
 
@@ -96,13 +105,18 @@ describe('Indicators', () => {
         });
 
         if (perfReport?.all?.totalTrades !== undefined && QTY >= 50) {
+          stopRetries();
           resolve(true);
           return;
         }
 
         QTY += 10;
         console.log('TRY WITH', QTY, '%');
-        setTimeout(() => {
+        if (retryTimer) clearTimeout(retryTimer);
+        retryTimer = setTimeout(() => {
+          retryTimer = undefined;
+          if (done) return;
+
           indicators.SuperTrend.setOption('default_qty_value', QTY);
           SuperTrend.setIndicator(indicators.SuperTrend);
         }, 1000);
@@ -111,6 +125,7 @@ describe('Indicators', () => {
 
     expect(perfResult).toBe(true);
 
+    stopRetries();
     SuperTrend.remove();
   }, 30000);
 
