@@ -43,7 +43,7 @@ const worker = await watchCandles(
 await worker.stop();
 ```
 
-Para testar **a partir do código-fonte** (Node 18+ ou Bun): `git clone https://github.com/Mathieu2301/TradingView-API.git`, depois `npm ci && npm run build:agent`, e importe `./agent.js` ou `./agent.ts`. O caminho npm acima só estará disponível após a próxima publicação. Mais detalhes no [guia para agentes](agent-api.md).
+Para testar **a partir do código-fonte** (Node 18+ ou Bun): `git clone https://github.com/Mathieu2301/TradingView-API.git`, depois `npm ci && npm run build:agent`, e importe `./agent.js` . O caminho npm acima só estará disponível após a próxima publicação. Mais detalhes no [guia para agentes](agent-api.md).
 
 A modernização TypeScript/Bun é gradual. Pesquisa de estratégias, backtests, CLI/MCP e fluxos hospedados estão **planejados, ainda não disponíveis**. [Conte o que você precisa](https://github.com/Mathieu2301/TradingView-API/issues/new/choose).
 

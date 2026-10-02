@@ -3,7 +3,7 @@
  * https://www.npmjs.com/package/@mathieuc/tradingview
  */
 import { describe, expect, it, vi } from 'vitest';
-import { fetchCandles, TradingViewProvider, watchCandles } from '../agent';
+import { fetchCandles, TradingViewProvider, watchCandles } from '../agent.ts';
 
 const bar = (time: number, close: number) => ({
   time, open: close - 1, max: close + 1, min: close - 2, close, volume: 3,

@@ -7,7 +7,7 @@ This is a **development preview**. Build it from source with `npm ci && npm run 
 ## One-shot
 
 ```ts
-import { fetchCandles } from './agent';
+import { fetchCandles } from './agent.js';
 
 const controller = new AbortController();
 const candles = await fetchCandles({
@@ -24,7 +24,7 @@ const candles = await fetchCandles({
 ## Realtime worker
 
 ```ts
-import { watchCandles } from './agent';
+import { watchCandles } from './agent.js';
 
 const worker = await watchCandles(
   { symbol: 'BINANCE:BTCUSDT', timeframe: '1' },

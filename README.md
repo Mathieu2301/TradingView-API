@@ -78,7 +78,7 @@ npm ci
 npm run build:agent
 ```
 
-From that checkout, import `./agent.js` or `./agent.ts`. The stable npm package does **not** have this subpath yet; it will be released after review and validation. See the [full agent API guide](docs/agent-api.md) for error handling, lifecycle and provider adapters.
+From that checkout, import `./agent.js` . The stable npm package does **not** have this subpath yet; it will be released after review and validation. See the [full agent API guide](docs/agent-api.md) for error handling, lifecycle and provider adapters.
 
 ## What is next?
 
