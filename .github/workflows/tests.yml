@@ -47,5 +47,6 @@ jobs:
         cache: 'npm'
     - run: npm ci
     - run: npm run build:agent
+    - run: npm run lint:agent
     - run: npm test -- --run tests/agent.test.ts
     - run: npm pack --dry-run

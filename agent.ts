@@ -43,8 +43,17 @@ export interface MarketDataProvider {
   watchCandles(query: CandleQuery, handlers: CandleHandlers): Promise<CandleWorker>;
 }
 
+interface LegacyBar {
+  time: number;
+  open: number;
+  max: number;
+  min: number;
+  close: number;
+  volume: number;
+}
+
 interface LegacyChart {
-  readonly periods: ReadonlyArray<{ time: number; open: number; max: number; min: number; close: number; volume: number }>;
+  readonly periods: ReadonlyArray<LegacyBar>;
   setMarket(symbol: string, options: { timeframe?: string; range?: number }): void;
   onSymbolLoaded(callback: () => void): void;
   onUpdate(callback: () => void): void;
@@ -67,7 +76,7 @@ export interface TradingViewProviderOptions {
 }
 
 function asError(messages: unknown[]): Error {
-  return new Error(messages.map((value) => value instanceof Error ? value.message : String(value)).join(' '));
+  return new Error(messages.map((value) => (value instanceof Error ? value.message : String(value))).join(' '));
 }
 
 function validate(query: CandleQuery): void {
@@ -95,7 +104,11 @@ export class TradingViewProvider implements MarketDataProvider {
 
     // The old entry point remains untouched for existing users.
     const createClient = this.options.clientFactory ?? ((options) => {
-      const { Client } = require('../main.js') as { Client: new (clientOptions?: TradingViewProviderOptions['clientOptions']) => LegacyClient };
+      // Resolve from dist/ after compilation; the legacy entry stays at package root.
+      // eslint-disable-next-line global-require, import/no-unresolved, import/extensions
+      const { Client } = require('../main.js') as {
+        Client: new (clientOptions?: TradingViewProviderOptions['clientOptions']) => LegacyClient;
+      };
       return new Client(options);
     });
     const client = createClient(this.options.clientOptions);
@@ -151,8 +164,12 @@ export class TradingViewProvider implements MarketDataProvider {
     const emit = (): void => {
       if (!active || !symbolLoaded || chart.periods.length === 0) return;
       latest = Object.freeze(chart.periods.map((bar) => Object.freeze({
-        time: bar.time, open: bar.open, high: bar.max, low: bar.min,
-        close: bar.close, volume: bar.volume,
+        time: bar.time,
+        open: bar.open,
+        high: bar.max,
+        low: bar.min,
+        close: bar.close,
+        volume: bar.volume,
       })).sort((a, b) => a.time - b.time));
       try { handlers.onData(latest); } catch (error) {
         try { handlers.onError?.(asError([error])); } catch { /* Isolate user callbacks. */ }
@@ -191,7 +208,9 @@ export async function fetchCandles(
   provider: MarketDataProvider = new TradingViewProvider(),
 ): Promise<readonly Candle[]> {
   let snapshot: readonly Candle[] = [];
-  const worker = await provider.watchCandles(query, { onData: (candles) => { snapshot = candles; } });
+  const worker = await provider.watchCandles(query, {
+    onData: (candles) => { snapshot = candles; },
+  });
   try {
     return snapshot;
   } finally {

@@ -2,7 +2,9 @@
  * https://github.com/Mathieu2301/TradingView-API
  * https://www.npmjs.com/package/@mathieuc/tradingview
  */
-import { describe, expect, it, vi } from 'vitest';
+import {
+  describe, expect, it, vi,
+} from 'vitest';
 import { fetchCandles, TradingViewProvider, watchCandles } from '../agent.ts';
 
 const bar = (time: number, close: number) => ({
@@ -14,27 +16,46 @@ function transport() {
   let client: any;
   class Chart {
     periods: ReturnType<typeof bar>[] = [];
+
     symbolLoaded?: () => void;
+
     update?: () => void;
+
     error?: (...messages: unknown[]) => void;
+
     delete = vi.fn();
+
     setMarket = vi.fn();
+
     onSymbolLoaded(cb: () => void) { this.symbolLoaded = cb; }
+
     onUpdate(cb: () => void) { this.update = cb; }
+
     onError(cb: (...messages: unknown[]) => void) { this.error = cb; }
+
     constructor() { chart = this; }
   }
   class Client {
     Session = { Chart };
+
     disconnected?: () => void;
+
     error?: (...messages: unknown[]) => void;
+
     end = vi.fn(async () => {});
+
     onDisconnected(cb: () => void) { this.disconnected = cb; }
+
     onError(cb: (...messages: unknown[]) => void) { this.error = cb; }
+
     constructor() { client = this; }
   }
   const provider = new TradingViewProvider({ clientFactory: () => new Client() as any });
-  return { provider, get chart() { return chart as Chart; }, get client() { return client as Client; } };
+  return {
+    provider,
+    get chart() { return chart as Chart; },
+    get client() { return client as Client; },
+  };
 }
 
 describe('agent-friendly candles API', () => {
@@ -45,8 +66,12 @@ describe('agent-friendly candles API', () => {
     fake.chart.symbolLoaded?.();
     const candles = await pending;
     expect(candles).toEqual([
-      { time: 100, open: 9, high: 11, low: 8, close: 10, volume: 3 },
-      { time: 200, open: 19, high: 21, low: 18, close: 20, volume: 3 },
+      {
+        time: 100, open: 9, high: 11, low: 8, close: 10, volume: 3,
+      },
+      {
+        time: 200, open: 19, high: 21, low: 18, close: 20, volume: 3,
+      },
     ]);
     expect(fake.chart.setMarket).toHaveBeenCalledWith('BINANCE:BTCUSDT', { timeframe: 'D', range: 2 });
     expect(fake.chart.delete).toHaveBeenCalledTimes(1);
