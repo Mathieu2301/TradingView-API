@@ -115,7 +115,8 @@ describe('agent-friendly candles API', () => {
     expect(fake.chart.delete).toHaveBeenCalledTimes(1);
   });
 
-  it('aborts a pending request and releases the transport', async () => {
+  const abortTest = typeof AbortController === 'undefined' ? it.skip : it;
+  abortTest('aborts a pending request and releases the transport', async () => {
     const fake = transport();
     const controller = new AbortController();
     const pending = fetchCandles({ symbol: 'BINANCE:BTCUSDT', signal: controller.signal }, fake.provider);
