@@ -1,8 +1,8 @@
-# Agent API guide
+# High-level API guide (development preview)
 
 [Repository](https://github.com/Mathieu2301/TradingView-API) · [npm package](https://www.npmjs.com/package/@mathieuc/tradingview) · [Open an issue](https://github.com/Mathieu2301/TradingView-API/issues/new/choose)
 
-This is a **development preview**. Build it from source with `npm ci && npm run build:agent`; the current npm release does not include `@mathieuc/tradingview/agent` yet. The historic `require('@mathieuc/tradingview')` API is unchanged.
+This is a **development preview** of a simpler data-access layer for any application, not an agent-only interface. It hides chart-session lifecycle and other low-level TradingView details. The temporary `/agent` subpath and `build:agent` script names predate the planned TypeScript/Bun redesign and do not define the final syntax. Build it from source with `npm ci && npm run build:agent`; the current npm release does not include `@mathieuc/tradingview/agent` yet. The historic `require('@mathieuc/tradingview')` API is unchanged.
 
 ## One-shot
 
@@ -50,6 +50,6 @@ try {
 
 ## Providers
 
-`MarketDataProvider` is a small adapter contract. `TradingViewProvider` is the first implementation. Applications can inject another provider into `fetchCandles(query, provider)` or `watchCandles(query, handlers, provider)` without changing their callers. The same interface makes isolated agent tests possible without network traffic.
+`MarketDataProvider` is a small adapter contract. `TradingViewProvider` is the first implementation. Applications can inject another provider into `fetchCandles(query, provider)` or `watchCandles(query, handlers, provider)` without changing their callers. The same interface makes isolated tests possible without network traffic.
 
 Use only accounts and data sources for which you have the necessary permissions. Never paste session cookies or API keys into issues, source files, or agent instructions.
