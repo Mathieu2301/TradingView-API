@@ -22,6 +22,10 @@ TV_V3_ENTRY=/tmp/tradingview-v3-baseline/node_modules/@mathieuc/tradingview/main
 
 `npm run probe:endurance -- --minutes=120 --cycle-seconds=600` streams one-minute BTCUSDT candles and quotes for two hours, rotates the connection every ten minutes, and emits JSON lines with startup counts, updates, heartbeats and errors. It exits nonzero on a startup failure, an early watcher close or missing data. It never reads or logs account credentials. A one-minute smoke run on 2 October 2026 completed three cycles with 16 candle updates, 18 quote updates, five heartbeats and zero errors. The two-hour result should only be recorded after the run ends. The probe also accepts `--symbol`, `--timeframe` and `--chart-type` for issue-specific checks. For example, issue #236 can be investigated with `--symbol=OANDA:EURUSD --chart-type=HeikinAshi`, though a closed forex market cannot prove that quote updates remain live.
 
+## Account redirect regression
+
+V4 now starts the account lookup at `/chart/` and follows `Location` only on HTTP 3xx responses. A deterministic test covers HTTP 200 with a misleading `Location` header. This ports the relevant guard from legacy PR #322; it does not claim to solve CAPTCHA/WAF challenges. The account path still needs the authenticated manual CI run after this change.
+
 ## Remaining beta limitations
 
 - The 17 anonymous live tests and five authenticated tests from the [coverage matrix](v4-coverage.md) exercise short-lived calls. The authenticated subset requires `SESSION` and `SIGNATURE` in the manual GitHub Actions run; it was not rerun locally for this pass.

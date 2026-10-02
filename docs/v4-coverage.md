@@ -6,7 +6,7 @@ This matrix lists every capability of v3 (`main.js`, `src/`, examples, tests) an
 
 **Evidence columns**
 
-- **Unit**: deterministic test in `tests/unit/` (`npm test` with Vitest on Node, `npm run test:bun` with Bun's runner; 108 tests, both green). Websocket tests use a scripted fake server (`tests/helpers/fake-server.ts`) or packets captured from TradingView (`tests/fixtures/live-session.json`); HTTP tests use a mocked `fetch`.
+- **Unit**: deterministic test in `tests/unit/` (`npm test` with Vitest on Node, `npm run test:bun` with Bun's runner; 109 tests, both green). Websocket tests use a scripted fake server (`tests/helpers/fake-server.ts`) or packets captured from TradingView (`tests/fixtures/live-session.json`); HTTP tests use a mocked `fetch`.
 - **Live**: result of `npm run test:live` (`tests/live/`) and examples against TradingView on **2 October 2026**: 17 anonymous tests locally (including connection recovery) and 21 tests (including five authenticated) in the [manual GitHub Actions run](https://github.com/Mathieu2301/TradingView-API/actions/runs/37075296707):
   - ✅ verified live anonymously;
   - 🔒 path or variant not exercised live (often requires a specific account asset); deterministic tests only;

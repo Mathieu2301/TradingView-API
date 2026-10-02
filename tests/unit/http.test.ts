@@ -175,6 +175,15 @@ describe('accounts', () => {
     });
   });
 
+  it('getUser uses the chart page and ignores a Location header on HTTP 200', async () => {
+    const noToken = mockFetch(() => new Response('no token', {
+      status: 200, headers: { location: 'https://fr.tradingview.com/chart/' },
+    }));
+    await expect(getUser({ session: 's' }, { fetch: noToken.fetch }))
+      .rejects.toMatchObject({ code: 'AUTH_ERROR', message: 'Wrong or expired sessionid/signature' });
+    expect(noToken.calls.map((call) => call.url.pathname)).toEqual(['/chart/']);
+  });
+
   it('getUser stops redirect loops and rejects wrong sessions', async () => {
     const loop = mockFetch((url) => new Response('', {
       status: 302,
