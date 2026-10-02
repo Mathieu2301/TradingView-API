@@ -1,14 +1,30 @@
 # TradingView-API
 
-**Get started:** Use a hosted agent, your coding assistant, or a local install. [Choose a setup below](#get-started).
+**Build with market data, from your first chart to a running watcher.** Fetch candles, explore indicators, and turn ideas into working tools. An independent community project, not an official TradingView API.
 
-<a href="https://trendshift.io/repositories/26416?utm_source=repository-badge&amp;utm_medium=badge&amp;utm_campaign=badge-repository-26416" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/repositories/26416" alt="Mathieu2301/TradingView-API | #1 Repo Of The Day on Trendshift" width="250" height="55"/></a>
+[Get started](#get-started) · [Explore examples](examples) · [Read the API guide](docs/agent-api.md)
 
 **Language:** English · [Français](docs/README.fr.md) · [Español](docs/README.es.md) · [Português](docs/README.pt.md)
 
 [![Tests](https://github.com/Mathieu2301/TradingView-API/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/Mathieu2301/TradingView-API/actions/workflows/tests.yml) [![npm](https://badgen.net/npm/v/@mathieuc/tradingview)](https://www.npmjs.com/package/@mathieuc/tradingview) [![Stars](https://img.shields.io/github/stars/Mathieu2301/TradingView-API?style=social)](https://github.com/Mathieu2301/TradingView-API)
 
-**Market data and indicators for builders.** Start with one chart, then grow into real-time workers, research tools, and agent-assisted workflows. This is an independent community project, not an official TradingView API.
+![Recorded demonstration: fetchCandles returns 40 daily BTC/USDT candles, visualized as a line chart](assets/readme-demo.gif)
+
+*An actual `fetchCandles()` result, recorded on 2 October 2026 and visualized for this demo. Prices are not live. The high-level API shown here is a [development preview](docs/agent-api.md), available from source; the [stable npm package](https://www.npmjs.com/package/@mathieuc/tradingview) still uses the `Client` API.*
+
+### One request, real data
+
+After [building the preview from source](#3-install-manually), try the same request:
+
+```js
+const { fetchCandles } = require('./agent.js');
+
+fetchCandles({ symbol: 'BINANCE:BTCUSDT', timeframe: 'D', limit: 40 })
+  .then((candles) => console.log(candles.at(-1))) // time, open, high, low, close, volume
+  .catch(console.error);
+```
+
+Prefer to start without code? The setup paths below work for both the stable library and the preview.
 
 ## Get started
 
@@ -104,6 +120,7 @@ This repository is being modernized incrementally in TypeScript/Bun while keepin
 ## Project links
 
 - [GitHub repository](https://github.com/Mathieu2301/TradingView-API)
+- [Trendshift community highlight](https://trendshift.io/repositories/26416)
 - [npm package](https://www.npmjs.com/package/@mathieuc/tradingview)
 - [Examples](examples)
 - [Report a bug or ask for a feature](https://github.com/Mathieu2301/TradingView-API/issues/new/choose)
