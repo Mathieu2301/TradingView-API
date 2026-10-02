@@ -1,52 +1,74 @@
 {
   "name": "@mathieuc/tradingview",
-  "version": "3.5.2",
-  "description": "Tradingview instant stocks API, indicator alerts, trading bot, and more !",
-  "main": "main.js",
+  "version": "4.0.0-beta.0",
+  "description": "TradingView market data for JavaScript and TypeScript: candles, quotes, indicators and strategies, with a simple data API and full low-level access.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./data": {
+      "types": "./dist/data/index.d.ts",
+      "import": "./dist/data/index.js",
+      "default": "./dist/data/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "docs"
+  ],
+  "sideEffects": false,
   "scripts": {
-    "test": "vitest",
-    "example": "node --env-file=.env",
-    "example:dev": "nodemon --env-file=.env",
-    "build:agent": "tsc -p tsconfig.agent.json",
-    "prepack": "npm run build:agent",
-    "lint:agent": "eslint agent.ts tests/agent.test.ts"
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:bun": "bun test tests/unit",
+    "test:watch": "vitest",
+    "test:live": "vitest run --config vitest.live.config.ts",
+    "smoke": "node scripts/smoke.mjs",
+    "check": "npm run typecheck && npm run lint && npm test && npm run build && npm run smoke",
+    "prepack": "npm run build"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Mathieu2301/TradingView-API.git"
   },
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=20.0.0"
   },
   "keywords": [
-    "tradingwiew",
-    "market",
+    "tradingview",
+    "market-data",
+    "candles",
+    "quotes",
     "stocks",
     "crypto",
     "forex",
     "indicator",
-    "bitcoin",
+    "pine",
+    "websocket",
     "api"
   ],
   "author": "Mathieu Colmon",
   "license": "ISC",
   "dependencies": {
-    "axios": "^1.5.0",
-    "jszip": "^3.7.1",
-    "ws": "^7.4.3"
+    "ws": "^8.18.0"
   },
   "devDependencies": {
-    "@babel/eslint-parser": "^7.15.7",
-    "@mathieuc/console": "^1.0.1",
-    "@types/node": "^20.19.43",
-    "@typescript-eslint/eslint-plugin": "^5.62.0",
-    "@typescript-eslint/parser": "^5.62.0",
-    "dotenv": "^16.3.1",
-    "eslint": "^7.25.0",
-    "eslint-config-airbnb-base": "^14.2.1",
-    "eslint-plugin-import": "^2.22.1",
-    "typescript": "^5.9.3",
-    "vitest": "^0.31.4"
+    "@eslint/js": "^9.39.0",
+    "@types/node": "^22.20.5",
+    "@types/ws": "^8.18.1",
+    "eslint": "^9.39.0",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.46.0",
+    "vitest": "^3.2.4"
   },
   "homepage": "https://github.com/Mathieu2301/TradingView-API#readme",
   "bugs": {

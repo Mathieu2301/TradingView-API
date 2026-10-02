@@ -2,11 +2,22 @@
 # https://github.com/Mathieu2301/TradingView-API
 # https://www.npmjs.com/package/@mathieuc/tradingview
 
-Independent community library for market data and indicators. Not an official TradingView API.
-Stable npm entry point: require('@mathieuc/tradingview').
-Development-preview agent API: agent.ts / agent.js, built with npm run build:agent.
-One-shot: fetchCandles({ symbol, timeframe?, limit?, timeoutMs?, signal? }).
-Realtime: await watchCandles(query, { onData, onError? }); await worker.stop().
-Full guide: docs/agent-api.md. Human guide: README.md. Examples: examples/.
-MCP, CLI, backtesting and hosted trading API are not shipped. Do not claim otherwise.
+Independent community library for TradingView market data. Not an official TradingView API.
+Version 4 beta: TypeScript, ESM, Node >= 20 or Bun. Breaking rewrite of v3 (no compatibility layer). Currently available from repository source only; npm still serves v3.
+
+Simple data API (import from '@mathieuc/tradingview/data' or the root entry):
+- getCandles({ symbol, timeframe?, count?, from?, to?, chartType?, ... }) -> Candle[] oldest first, time in Unix seconds.
+- watchCandles(query, { onData, onError? }) -> watcher { latest, stop(), closed }.
+- getQuote(symbol), getQuotes({ symbols }), watchQuotes({ symbols }, { onData }).
+- getSymbolInfo(symbol), getIndicatorData({ symbol, indicator, inputs? }), watchIndicator(...).
+- searchMarkets(text), searchIndicators(text), getTechnicalAnalysis(symbol).
+- Websocket data calls accept timeoutMs, signal (AbortSignal), credentials ({ session, signature }) and client (shared TradingViewClient). HTTP lookups accept signal in options.
+- Candle calls can use a custom MarketDataProvider; TradingViewProvider is the default source adapter.
+- Errors are TradingViewError with a code (SYMBOL_ERROR, TIMEOUT, STUDY_ERROR, NO_DATA...).
+
+Low-level API: TradingViewClient, client.createChart() (ChartSession: setMarket, setTimeframe, fetchMore, replay, createStudy), client.createQuoteSession(), PineIndicator, BuiltInIndicator, HTTP functions (loginUser, getUser, getIndicator, getPrivateIndicators, getDrawings, PinePermissionManager).
+
+Pine studies need a TradingView account (session cookies). Built-in studies and candles/quotes work anonymously, with history limits.
+Docs: docs/data-api.md, docs/low-level-api.md, docs/migration-v4.md, docs/v4-coverage.md. Examples: examples/.
+No CLI, MCP server, backtesting engine or hosted trading API is shipped. Do not claim otherwise.
 Questions and bugs: https://github.com/Mathieu2301/TradingView-API/issues/new/choose
