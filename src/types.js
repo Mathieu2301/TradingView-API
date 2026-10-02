@@ -1,3 +1,5 @@
+// Project: https://github.com/Mathieu2301/TradingView-API
+// Package: https://www.npmjs.com/package/@mathieuc/tradingview
 /**
  * @typedef {string} MarketSymbol Market symbol (like: 'BTCEUR' or 'KRAKEN:BTCEUR')
  */

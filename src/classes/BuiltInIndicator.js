@@ -1,3 +1,5 @@
+// Project: https://github.com/Mathieu2301/TradingView-API
+// Package: https://www.npmjs.com/package/@mathieuc/tradingview
 /**
  * @typedef {'Volume@tv-basicstudies-241'
  *  | 'VbPFixed@tv-basicstudies-241'

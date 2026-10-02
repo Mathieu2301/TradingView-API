@@ -6,7 +6,10 @@
   "scripts": {
     "test": "vitest",
     "example": "node --env-file=.env",
-    "example:dev": "nodemon --env-file=.env"
+    "example:dev": "nodemon --env-file=.env",
+    "build:agent": "tsc -p tsconfig.agent.json",
+    "prepack": "npm run build:agent",
+    "lint:agent": "eslint agent.ts tests/agent.test.ts"
   },
   "repository": {
     "type": "git",
@@ -35,10 +38,18 @@
   "devDependencies": {
     "@babel/eslint-parser": "^7.15.7",
     "@mathieuc/console": "^1.0.1",
+    "@types/node": "^20.19.43",
+    "@typescript-eslint/eslint-plugin": "^5.62.0",
+    "@typescript-eslint/parser": "^5.62.0",
     "dotenv": "^16.3.1",
     "eslint": "^7.25.0",
     "eslint-config-airbnb-base": "^14.2.1",
     "eslint-plugin-import": "^2.22.1",
+    "typescript": "^5.9.3",
     "vitest": "^0.31.4"
+  },
+  "homepage": "https://github.com/Mathieu2301/TradingView-API#readme",
+  "bugs": {
+    "url": "https://github.com/Mathieu2301/TradingView-API/issues"
   }
 }
