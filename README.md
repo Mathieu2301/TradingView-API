@@ -1,6 +1,6 @@
 # TradingView-API
 
-**Explore it with a hosted agent:** [Discover what you can build on Molted Studio](https://molted.studio/dreams/market-watch-alerts) — no local setup.
+**Get started:** Use a hosted agent, your coding assistant, or a local install. [Choose a setup below](#get-started).
 
 <a href="https://trendshift.io/repositories/26416?utm_source=repository-badge&amp;utm_medium=badge&amp;utm_campaign=badge-repository-26416" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/repositories/26416" alt="Mathieu2301/TradingView-API | #1 Repo Of The Day on Trendshift" width="250" height="55"/></a>
 
@@ -10,24 +10,48 @@
 
 **Market data and indicators for builders.** Start with one chart, then grow into real-time workers, research tools, and agent-assisted workflows. This is an independent community project, not an official TradingView API.
 
-> **Need help, found a bug, or want a feature? [Open an issue](https://github.com/Mathieu2301/TradingView-API/issues/new/choose).** Questions and early ideas are welcome. You do not need a perfect reproduction before asking.
+## Get started
 
-## Choose your path
+Choose the setup that works for you. The current npm release provides the stable `Client` API; the simpler [high-level API](docs/agent-api.md) is a **development preview available from source**, not yet in the npm package.
 
-| If you want to… | Start here |
-| --- | --- |
-| Use the stable npm library today | [Install](#stable-library) and browse [examples](examples) |
-| Use simple market data without managing chart or widget sessions | [High-level API preview](docs/agent-api.md) — for any application, including agent-built ones |
-| Avoid local setup | [Molted](https://molted.cloud/) hosts an agent workspace; ask it to work from this repository |
-| Contribute or request something | [Open an issue](https://github.com/Mathieu2301/TradingView-API/issues/new/choose) |
+### 1. Molted.cloud — recommended, no local setup
 
-Molted is optional. The library remains open source and usable locally. The new high-level API below is **a development preview**, not yet included in the current npm release.
+[Create an agent on Molted.cloud](https://molted.cloud/) and share this repository with it. Describe what you want to build; the agent can read the docs, set up a workspace, and help you get from an idea to a working project. For example, ask it to build a market-data watcher using the API that is currently available. [See an example on Molted Studio](https://molted.studio/dreams/market-watch-alerts).
 
-## Stable library
+### 2. Claude Code, Codex, or another coding assistant
+
+Open your project in your preferred coding assistant and give it the [repository link](https://github.com/Mathieu2301/TradingView-API). You can start with:
+
+> Read the TradingView-API README and the high-level API guide. Install the stable npm package for my project, or use the development preview from source if the high-level API is needed. Build a small example and show me how to run it.
+
+The assistant can handle the setup, but you keep the project in your own environment.
+
+### 3. Install manually
+
+For the **stable release**, add the package to your project:
 
 ```bash
-npm install @mathieuc/tradingview
+bun add @mathieuc/tradingview
+# Or: npm install @mathieuc/tradingview
 ```
+
+For the **high-level API preview**, clone the repository and build it from source (Bun or Node 18+):
+
+```bash
+git clone https://github.com/Mathieu2301/TradingView-API.git
+cd TradingView-API
+bun install
+bun run build:agent
+# With npm instead: npm ci && npm run build:agent
+```
+
+Import `./agent.js` from that checkout; the stable npm package does not include this subpath yet. Continue with the [stable library example](#stable-library) or the [high-level API guide](docs/agent-api.md).
+
+### Want to contribute?
+
+[Open an issue](https://github.com/Mathieu2301/TradingView-API/issues/new/choose) to discuss a feature or report a bug, or send a pull request. Questions and early ideas are welcome; you do not need a perfect reproduction to start a conversation.
+
+## Stable library
 
 ```js
 const TradingView = require('@mathieuc/tradingview');
@@ -53,7 +77,7 @@ The existing `Client`, chart and quote sessions, Pine indicators, replay feature
 This first TypeScript slice offers simple data access without managing chart sessions, widgets or deep-history internals. It is useful in any application, whether you write it yourself or with an agent:
 
 ```ts
-import { fetchCandles, watchCandles } from '@mathieuc/tradingview/agent';
+import { fetchCandles, watchCandles } from './agent.js';
 
 // One-shot: data arrives through a single await; the connection closes automatically.
 const candles = await fetchCandles({ symbol: 'BINANCE:BTCUSDT', timeframe: 'D', limit: 100 });
@@ -71,16 +95,7 @@ await worker.stop();
 
 Snapshots are oldest-first, with conventional `high`/`low` fields. The first usable snapshot has a timeout (15 seconds by default), and `AbortSignal` is supported. Keep credentials in your own environment; do not put them in prompts or issues.
 
-**Preview setup from source** (Node 18+ or Bun):
-
-```bash
-git clone https://github.com/Mathieu2301/TradingView-API.git
-cd TradingView-API
-npm ci
-npm run build:agent
-```
-
-From that checkout, import `./agent.js` . The stable npm package does **not** have this subpath yet; it will be released after review and validation. See the [high-level API guide](docs/agent-api.md) for error handling, lifecycle and provider adapters.
+For installation from source, follow [manual setup](#3-install-manually). See the [high-level API guide](docs/agent-api.md) for error handling, lifecycle and provider adapters.
 
 ## What is next?
 
