@@ -7,7 +7,7 @@ This matrix lists every capability of v3 (`main.js`, `src/`, examples, tests) an
 **Evidence columns**
 
 - **Unit**: deterministic test in `tests/unit/` (`npm test` with Vitest on Node, `npm run test:bun` with Bun's runner; 109 tests, both green). Websocket tests use a scripted fake server (`tests/helpers/fake-server.ts`) or packets captured from TradingView (`tests/fixtures/live-session.json`); HTTP tests use a mocked `fetch`.
-- **Live**: result of `npm run test:live` (`tests/live/`) and examples against TradingView on **2 October 2026**: 17 anonymous tests locally (including connection recovery) and 21 tests (including five authenticated) in the [manual GitHub Actions run](https://github.com/Mathieu2301/TradingView-API/actions/runs/37075296707):
+- **Live**: result of `npm run test:live` (`tests/live/`) and examples against TradingView on **2 October 2026**: 17 anonymous tests locally (including connection recovery) and 22 tests (including five authenticated) in the [manual GitHub Actions run](https://github.com/Mathieu2301/TradingView-API/actions/runs/37078178729):
   - ✅ verified live anonymously;
   - 🔒 path or variant not exercised live (often requires a specific account asset); deterministic tests only;
   - ➖ not applicable (no network involved).
@@ -189,4 +189,4 @@ These v3 behaviours were changed on purpose; none removes a capability.
 
 ## Not verified live for this release
 
-The 21-test manual live workflow verified authenticated connection, account lookup, a public Pine RSI, a Supertrend strategy report, the private-indicators listing endpoint, and recent historical `to` with an account. It did **not** verify password login, actual private/invite-only scripts, compressed strategy reports against a live response, older history beyond server limits, second-based/custom timeframes, the `prodata` server, owned layouts/drawings, or Pine permission changes. Those paths have deterministic tests but need the corresponding account assets to verify live. Run `SESSION=... SIGNATURE=... npm run test:live` to repeat the authenticated subset.
+The 22-test manual live workflow verified authenticated connection, account lookup, a public Pine RSI, a Supertrend strategy report, the private-indicators listing endpoint, and recent historical `to` with an account. It did **not** verify password login, actual private/invite-only scripts, compressed strategy reports against a live response, older history beyond server limits, second-based/custom timeframes, the `prodata` server, owned layouts/drawings, or Pine permission changes. Those paths have deterministic tests but need the corresponding account assets to verify live. Run `SESSION=... SIGNATURE=... npm run test:live` to repeat the authenticated subset.

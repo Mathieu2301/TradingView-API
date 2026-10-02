@@ -24,10 +24,10 @@ TV_V3_ENTRY=/tmp/tradingview-v3-baseline/node_modules/@mathieuc/tradingview/main
 
 ## Account redirect regression
 
-V4 now starts the account lookup at `/chart/` and follows `Location` only on HTTP 3xx responses. A deterministic test covers HTTP 200 with a misleading `Location` header. This ports the relevant guard from legacy PR #322; it does not claim to solve CAPTCHA/WAF challenges. The account path still needs the authenticated manual CI run after this change.
+V4 now starts the account lookup at `/chart/` and follows `Location` only on HTTP 3xx responses. A deterministic test covers HTTP 200 with a misleading `Location` header. This ports the relevant guard from legacy PR #322; it does not claim to solve CAPTCHA/WAF challenges. The authenticated manual CI run passed all 22 live tests after this change.
 
 ## Remaining beta limitations
 
-- The 17 anonymous live tests and five authenticated tests from the [coverage matrix](v4-coverage.md) exercise short-lived calls. The authenticated subset requires `SESSION` and `SIGNATURE` in the manual GitHub Actions run; it was not rerun locally for this pass.
+- The 17 anonymous live tests and five authenticated tests from the [coverage matrix](v4-coverage.md) exercise short-lived calls. The authenticated subset requires `SESSION` and `SIGNATURE`; all five tests passed in the manual GitHub Actions run on 2 October 2026.
 - `prodata`, private/invite-only scripts, owned layouts and drawings, Pine permission changes, password login and a live compressed strategy report still require suitable account assets. Deterministic tests cover their known packet shapes but are not live proof.
 - The scheduled/manual live CI job is currently non-blocking. A red live run must be reviewed before a stable V4 release.
