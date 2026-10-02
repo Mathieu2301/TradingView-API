@@ -40,8 +40,12 @@ describe.skipIf(!LIVE || !credentials)('live: authenticated', () => {
     expect(Array.isArray(list)).toBe(true);
   });
 
-  it('uses account timeframes', async () => {
-    const candles = await getCandles({ symbol: 'BINANCE:BTCEUR', timeframe: '240', count: 2, to: 1_700_000_000, credentials: auth });
-    expect(candles.at(-1)?.time).toBeLessThanOrEqual(1_700_000_000);
+  it('uses an account timeframe with a recent historical reference', async () => {
+    // Older references can be refused with data_completed=limit even for paid accounts.
+    const to = Math.floor(Date.now() / 1000) - 7 * 86_400;
+    const candles = await getCandles({ symbol: 'BINANCE:BTCEUR', timeframe: '240', count: 2, to, credentials: auth });
+    expect(candles).toHaveLength(2);
+    expect(candles.at(-1)?.time).toBeLessThanOrEqual(to);
+    expect(candles[1].time - candles[0].time).toBe(4 * 3_600);
   });
 });

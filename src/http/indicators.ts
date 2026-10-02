@@ -87,12 +87,9 @@ export interface GetIndicatorOptions extends AuthHttpOptions {
 
 const sanitise = (value: string) => value.replace(/ /g, '_').replace(/[^a-zA-Z0-9_]/g, '');
 
-/** Converts a `pine-facade/translate` result into a `PineIndicator`. */
-export function parseIndicatorDefinition(result: any, id: string, version: string): PineIndicator {
-  const meta = result.metaInfo;
+function parseInputs(items: any[]): Record<string, PineInput> {
   const inputs: Record<string, PineInput> = {};
-
-  for (const input of meta.inputs) {
+  for (const input of items) {
     if (['text', 'pineId', 'pineVersion'].includes(input.id)) continue;
     const inlineName = sanitise(String(input.name ?? input.id));
     inputs[input.id] = {
@@ -107,9 +104,12 @@ export function parseIndicatorDefinition(result: any, id: string, version: strin
       ...(input.options ? { options: input.options } : {}),
     };
   }
+  return inputs;
+}
 
+function parsePlots(styles: Record<string, any>, items: any[]): Record<string, string> {
   const plots: Record<string, string> = {};
-  for (const [plotId, style] of Object.entries<any>(meta.styles ?? {})) {
+  for (const [plotId, style] of Object.entries(styles)) {
     const title = sanitise(String(style.title ?? plotId));
     const titles = Object.values(plots);
     if (titles.includes(title)) {
@@ -118,18 +118,23 @@ export function parseIndicatorDefinition(result: any, id: string, version: strin
       plots[plotId] = `${title}_${i}`;
     } else plots[plotId] = title;
   }
-  for (const plot of meta.plots ?? []) {
+  for (const plot of items) {
     if (!plot.target) continue;
     plots[plot.id] = `${plots[plot.target] ?? plot.target}_${plot.type}`;
   }
+  return plots;
+}
 
+/** Converts a `pine-facade/translate` result into a `PineIndicator`. */
+export function parseIndicatorDefinition(result: any, id: string, version: string): PineIndicator {
+  const meta = result.metaInfo;
   return new PineIndicator({
     id: meta.scriptIdPart || id,
     version: meta.pine?.version || version,
     description: meta.description,
     shortDescription: meta.shortDescription,
-    inputs,
-    plots,
+    inputs: parseInputs(meta.inputs),
+    plots: parsePlots(meta.styles ?? {}, meta.plots ?? []),
     script: result.ilTemplate,
   });
 }

@@ -57,33 +57,43 @@ export async function loginUser(options: LoginOptions): Promise<User> {
   if (data.error) throw new TradingViewError('AUTH_ERROR', String(data.error), { details: data });
   if (!data.user) throw new TradingViewError('AUTH_ERROR', 'Sign-in response has no user', { details: data });
 
-  const cookies = getSetCookies(headers);
-  const cookie = (name: string) => {
-    for (const line of cookies) {
-      const match = new RegExp(`(?:^|[;\\s])${name}=([^;]*)`).exec(line);
-      if (match) return match[1];
-    }
-    return '';
-  };
+  return userFromLogin(data.user, headers);
+}
 
-  const { user } = data;
+function cookieValue(headers: Headers, name: string): string {
+  for (const line of getSetCookies(headers)) {
+    const found = new RegExp(`(?:^|[;\\s])${name}=([^;]*)`).exec(line);
+    if (found) return found[1];
+  }
+  return '';
+}
+
+function textOrEmpty(value: unknown): string {
+  return String(value ?? '');
+}
+
+function numberOrZero(value: unknown): number {
+  return Number(value ?? 0);
+}
+
+function userFromLogin(user: any, headers: Headers): User {
   return {
-    id: Number(user.id),
+    id: numberOrZero(user.id),
     username: user.username,
-    firstName: user.first_name ?? '',
-    lastName: user.last_name ?? '',
-    reputation: Number(user.reputation ?? 0),
-    following: Number(user.following ?? 0),
-    followers: Number(user.followers ?? 0),
+    firstName: textOrEmpty(user.first_name),
+    lastName: textOrEmpty(user.last_name),
+    reputation: numberOrZero(user.reputation),
+    following: numberOrZero(user.following),
+    followers: numberOrZero(user.followers),
     notifications: {
-      user: Number(user.notification_count?.user ?? 0),
-      following: Number(user.notification_count?.following ?? 0),
+      user: numberOrZero(user.notification_count?.user),
+      following: numberOrZero(user.notification_count?.following),
     },
-    session: cookie('sessionid'),
-    signature: cookie('sessionid_sign'),
-    sessionHash: user.session_hash ?? '',
-    privateChannel: user.private_channel ?? '',
-    authToken: user.auth_token ?? '',
+    session: cookieValue(headers, 'sessionid'),
+    signature: cookieValue(headers, 'sessionid_sign'),
+    sessionHash: textOrEmpty(user.session_hash),
+    privateChannel: textOrEmpty(user.private_channel),
+    authToken: textOrEmpty(user.auth_token),
     joinDate: new Date(user.date_joined),
   };
 }
@@ -97,6 +107,14 @@ export interface GetUserOptions extends HttpOptions {
 
 function match(page: string, pattern: RegExp): string | undefined {
   return pattern.exec(page)?.[1];
+}
+
+function pageNumber(page: string, pattern: RegExp): number {
+  return parseFloat(match(page, pattern) ?? '0') || 0;
+}
+
+function pageText(page: string, pattern: RegExp): string {
+  return match(page, pattern) ?? '';
 }
 
 function trustedAccountLocation(location: string): string {
@@ -115,23 +133,23 @@ function trustedAccountLocation(location: string): string {
 /** Parses the account embedded in a TradingView HTML page. */
 export function parseUserPage(page: string, credentials: Credentials): User {
   return {
-    id: Number(match(page, /"id":([0-9]{1,10}),/) ?? 0),
-    username: match(page, /"username":"(.*?)"/) ?? '',
-    firstName: match(page, /"first_name":"(.*?)"/) ?? '',
-    lastName: match(page, /"last_name":"(.*?)"/) ?? '',
-    reputation: parseFloat(match(page, /"reputation":(.*?),/) ?? '0') || 0,
-    following: parseFloat(match(page, /,"following":([0-9]*?),/) ?? '0') || 0,
-    followers: parseFloat(match(page, /,"followers":([0-9]*?),/) ?? '0') || 0,
+    id: pageNumber(page, /"id":([0-9]{1,10}),/),
+    username: pageText(page, /"username":"(.*?)"/),
+    firstName: pageText(page, /"first_name":"(.*?)"/),
+    lastName: pageText(page, /"last_name":"(.*?)"/),
+    reputation: pageNumber(page, /"reputation":(.*?),/),
+    following: pageNumber(page, /,"following":([0-9]*?),/),
+    followers: pageNumber(page, /,"followers":([0-9]*?),/),
     notifications: {
-      following: parseFloat(match(page, /"notification_count":\{"following":([0-9]*),/) ?? '0') || 0,
-      user: parseFloat(match(page, /"notification_count":\{"following":[0-9]*,"user":([0-9]*)/) ?? '0') || 0,
+      following: pageNumber(page, /"notification_count":\{"following":([0-9]*),/),
+      user: pageNumber(page, /"notification_count":\{"following":[0-9]*,"user":([0-9]*)/),
     },
     session: credentials.session,
     signature: credentials.signature ?? '',
-    sessionHash: match(page, /"session_hash":"(.*?)"/) ?? '',
-    privateChannel: match(page, /"private_channel":"(.*?)"/) ?? '',
-    authToken: match(page, /"auth_token":"(.*?)"/) ?? '',
-    joinDate: new Date(match(page, /"date_joined":"(.*?)"/) ?? 0),
+    sessionHash: pageText(page, /"session_hash":"(.*?)"/),
+    privateChannel: pageText(page, /"private_channel":"(.*?)"/),
+    authToken: pageText(page, /"auth_token":"(.*?)"/),
+    joinDate: new Date(pageText(page, /"date_joined":"(.*?)"/) || 0),
   };
 }
 

@@ -52,29 +52,45 @@ export interface HttpResponse {
   data: any;
 }
 
-/** Performs a request. Like the historical client, 5xx statuses throw. */
-export async function request(url: string, init: RequestInit, options: HttpOptions = {}): Promise<HttpResponse> {
+function requestUrl(url: string, query: RequestInit['query']): URL {
   const target = new URL(url);
-  for (const [key, value] of Object.entries(init.query ?? {})) {
+  for (const [key, value] of Object.entries(query ?? {})) {
     if (value !== undefined && value !== null) target.searchParams.set(key, String(value));
   }
+  return target;
+}
 
-  const headers: Record<string, string> = { ...options.headers, ...init.headers };
-  const cookie = authCookies(init.credentials);
-  if (cookie) headers.cookie = cookie;
-
-  let body: string | undefined;
+function requestBody(init: RequestInit, headers: Record<string, string>): string | undefined {
   if (init.form) {
     const form = new URLSearchParams();
     for (const [key, value] of Object.entries(init.form)) {
       if (value !== undefined && value !== null) form.set(key, String(value));
     }
-    body = form.toString();
     headers['content-type'] = 'application/x-www-form-urlencoded';
-  } else if (init.json !== undefined) {
-    body = JSON.stringify(init.json);
-    headers['content-type'] = 'application/json';
+    return form.toString();
   }
+  if (init.json !== undefined) {
+    headers['content-type'] = 'application/json';
+    return JSON.stringify(init.json);
+  }
+  return undefined;
+}
+
+function responseData(text: string): unknown {
+  try {
+    return text ? JSON.parse(text) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Performs a request. Like the historical client, 5xx statuses throw. */
+export async function request(url: string, init: RequestInit, options: HttpOptions = {}): Promise<HttpResponse> {
+  const target = requestUrl(url, init.query);
+  const headers: Record<string, string> = { ...options.headers, ...init.headers };
+  const cookie = authCookies(init.credentials);
+  if (cookie) headers.cookie = cookie;
+  const body = requestBody(init, headers);
 
   const fetchImpl = options.fetch ?? globalThis.fetch;
   let response: Response;
@@ -91,21 +107,13 @@ export async function request(url: string, init: RequestInit, options: HttpOptio
   }
 
   const text = await response.text();
-  let data: unknown;
-  try {
-    data = text ? JSON.parse(text) : undefined;
-  } catch {
-    data = undefined;
-  }
-
   if (response.status >= 500) {
     throw new TradingViewError('HTTP_ERROR', `${target.host} answered HTTP ${response.status}`, {
       details: { status: response.status, body: text.slice(0, 500) },
     });
   }
-
   return {
-    status: response.status, headers: response.headers, url: target.toString(), text, data,
+    status: response.status, headers: response.headers, url: target.toString(), text, data: responseData(text),
   };
 }
 
