@@ -1,6 +1,6 @@
 # TradingView-API
 
-**Try it with a hosted agent:** [Build a market watcher on Molted Studio](https://molted.studio/dreams/market-watch-alerts) — no local setup.
+**Explore it with a hosted agent:** [Discover what you can build on Molted Studio](https://molted.studio/dreams/market-watch-alerts) — no local setup.
 
 <a href="https://trendshift.io/repositories/26416?utm_source=repository-badge&amp;utm_medium=badge&amp;utm_campaign=badge-repository-26416" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/repositories/26416" alt="Mathieu2301/TradingView-API | #1 Repo Of The Day on Trendshift" width="250" height="55"/></a>
 
@@ -17,11 +17,11 @@
 | If you want to… | Start here |
 | --- | --- |
 | Use the stable npm library today | [Install](#stable-library) and browse [examples](examples) |
-| Let an AI agent build with you | [Agent guide](docs/agent-api.md) — works with Claude Code, Codex, OpenClaw and similar tools |
+| Use simple market data without managing chart or widget sessions | [High-level API preview](docs/agent-api.md) — for any application, including agent-built ones |
 | Avoid local setup | [Molted](https://molted.cloud/) hosts an agent workspace; ask it to work from this repository |
 | Contribute or request something | [Open an issue](https://github.com/Mathieu2301/TradingView-API/issues/new/choose) |
 
-Molted is optional. The library remains open source and usable locally. The new agent API below is **a development preview**, not yet included in the current npm release.
+Molted is optional. The library remains open source and usable locally. The new high-level API below is **a development preview**, not yet included in the current npm release.
 
 ## Stable library
 
@@ -48,9 +48,9 @@ chart.setMarket('BINANCE:BTCUSDT', { timeframe: 'D' });
 
 The existing `Client`, chart and quote sessions, Pine indicators, replay features and [examples](examples) remain available during the migration.
 
-## Agent-friendly API — development preview
+## High-level API — development preview
 
-The first TypeScript slice adds two simple patterns on top of the existing transport:
+This first TypeScript slice offers simple data access without managing chart sessions, widgets or deep-history internals. It is useful in any application, whether you write it yourself or with an agent:
 
 ```ts
 import { fetchCandles, watchCandles } from '@mathieuc/tradingview/agent';
@@ -80,7 +80,7 @@ npm ci
 npm run build:agent
 ```
 
-From that checkout, import `./agent.js` . The stable npm package does **not** have this subpath yet; it will be released after review and validation. See the [full agent API guide](docs/agent-api.md) for error handling, lifecycle and provider adapters.
+From that checkout, import `./agent.js` . The stable npm package does **not** have this subpath yet; it will be released after review and validation. See the [high-level API guide](docs/agent-api.md) for error handling, lifecycle and provider adapters.
 
 ## What is next?
 
