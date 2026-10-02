@@ -34,7 +34,9 @@
     "test:live": "vitest run --config vitest.live.config.ts",
     "smoke": "node scripts/smoke.mjs",
     "check": "npm run typecheck && npm run lint && npm test && npm run build && npm run smoke",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "probe:endurance": "npm run build && node scripts/endurance.mjs",
+    "probe:parity": "npm run build && node scripts/parity.mjs"
   },
   "repository": {
     "type": "git",

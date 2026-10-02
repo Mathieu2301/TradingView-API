@@ -25,7 +25,7 @@ console.log(candles.at(-1)); // { time, open, high, low, close, volume }
 
 Prefer to start without code? The setup paths below work too.
 
-> **Version 4 is a breaking rewrite** in TypeScript, with a new API and no compatibility layer. Coming from v3? Read the [migration guide](docs/migration-v4.md). Every v3 feature is still available: see the [coverage matrix](docs/v4-coverage.md). npm versions 3.x keep the previous `Client` API; check the [npm page](https://www.npmjs.com/package/@mathieuc/tradingview) for the version you install.
+> **Version 4 is a breaking rewrite** in TypeScript, with a new API and no compatibility layer. Coming from v3? Read the [migration guide](docs/migration-v4.md). Every v3 feature is still available: see the [coverage matrix](docs/v4-coverage.md) and [reliability evidence](docs/v4-reliability.md). npm versions 3.x keep the previous `Client` API; check the [npm page](https://www.npmjs.com/package/@mathieuc/tradingview) for the version you install.
 
 ## Get started
 
