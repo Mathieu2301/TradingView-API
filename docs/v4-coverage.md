@@ -6,10 +6,10 @@ This matrix lists every capability of v3 (`main.js`, `src/`, examples, tests) an
 
 **Evidence columns**
 
-- **Unit**: deterministic test in `tests/unit/` (`npm test` with Vitest on Node, `npm run test:bun` with Bun's runner; 105 tests, both green). Websocket tests use a scripted fake server (`tests/helpers/fake-server.ts`) or packets captured from TradingView (`tests/fixtures/live-session.json`); HTTP tests use a mocked `fetch`.
-- **Live**: result of `npm run test:live` (`tests/live/`) and of running examples against TradingView on **2 October 2026, without an account**:
+- **Unit**: deterministic test in `tests/unit/` (`npm test` with Vitest on Node, `npm run test:bun` with Bun's runner; 108 tests, both green). Websocket tests use a scripted fake server (`tests/helpers/fake-server.ts`) or packets captured from TradingView (`tests/fixtures/live-session.json`); HTTP tests use a mocked `fetch`.
+- **Live**: result of `npm run test:live` (`tests/live/`) and examples against TradingView on **2 October 2026**: 16 anonymous tests locally and 21 tests (including five authenticated) in the [manual GitHub Actions run](https://github.com/Mathieu2301/TradingView-API/actions/runs/37075296707):
   - ✅ verified live anonymously;
-  - 🔒 needs an account: covered by `tests/live/authenticated.test.ts` or an example, **not verified live** for this release (no credentials were available);
+  - 🔒 path or variant not exercised live (often requires a specific account asset); deterministic tests only;
   - ➖ not applicable (no network involved).
 
 Test names are abbreviated as `file › test`.
@@ -31,7 +31,7 @@ Test names are abbreviated as `file › test`.
 | --- | --- | --- | --- |
 | `protocol.parseWSPacket` (frame split, heartbeat as number, invalid JSON warning) | `protocol.decodeFrames` (length-based, UTF-16 lengths, typed frames, lenient fallback, invalid frames reported) | `protocol › decodes several frames...`, `keeps payloads containing frame markers intact`, `reports invalid JSON...`, `falls back to splitting malformed input`, `decodes every message of a captured live session` | ✅ (fixture captured live; UTF-16 lengths checked on Japanese/Korean descriptions) |
 | `protocol.formatWSPacket` | `protocol.encodeFrame`, `encodePacket`, `encodeHeartbeat` | `protocol › encodes packets with UTF-16 lengths` | ✅ |
-| `protocol.parseCompressed` (ZIP via jszip, base64 normalisation, zlib/raw/gzip fallbacks) | `protocol.decodeCompressed` (built-in ZIP reader: stored, deflated, data descriptors, empty entry names; zlib, raw deflate, gzip, plain JSON) and `normaliseBase64`, `readFirstZipEntry` | `protocol › compressed payloads › *` (ZIP fixtures generated independently with Python `zipfile`) | 🔒 (strategy reports need Pine studies, which need an account) |
+| `protocol.parseCompressed` (ZIP via jszip, base64 normalisation, zlib/raw/gzip fallbacks) | `protocol.decodeCompressed` (built-in ZIP reader: stored, deflated, data descriptors, empty entry names; zlib, raw deflate, gzip, plain JSON) and `normaliseBase64`, `readFirstZipEntry` | `protocol › compressed payloads › *` (ZIP fixtures generated independently with Python `zipfile`) | 🔒 live compressed strategy payload not captured; plain report verified |
 | `utils.genSessionID` | `protocol.createSessionId` (crypto-random) | `protocol › ids` | ➖ |
 | `utils.genAuthCookies` | Internal cookie builder used by every HTTP call | `http › * with credentials` (cookie headers asserted) | ➖ |
 | Websocket URL `wss://<server>.tradingview.com/socket.io/websocket?from=chart&type=chart`, Origin and browser headers | Same, in `TradingViewClient`; transport is pluggable (`transport` option, default `ws`) | `client › connects with browser-like headers...` | ✅ Node and Bun (Bun needed the Origin header fix) |
@@ -46,7 +46,7 @@ Test names are abbreviated as `file › test`.
 | v3 capability | v4 | Unit evidence | Live |
 | --- | --- | --- | --- |
 | `new Client()` anonymous (`unauthorized_user_token`) | `new TradingViewClient()` | `client › connects with ... an anonymous token` | ✅ |
-| `token` + `signature` options → `getUser` → `set_auth_token` | `credentials: { session, signature }` (and new `authToken`) | `client › loads the auth token from credentials...`, `uses an explicit auth token` | 🔒 |
+| `token` + `signature` options → `getUser` → `set_auth_token` | `credentials: { session, signature }` (and new `authToken`) | `client › loads the auth token from credentials...`, `uses an explicit auth token` | ✅ (`authenticated › gets the account`, `opens an authenticated connection`) |
 | `location` option | `location` | `client › loads the auth token...` (asserts the regional URL) | 🔒 |
 | `server` option (`data`, `prodata`, `widgetdata`) | `server` | `client › connects with browser-like headers...` (`prodata` URL) | ✅ `data`; 🔒 `prodata` |
 | `headers` option | `headers` | `client › connects with browser-like headers...` | ✅ |
@@ -65,10 +65,10 @@ Test names are abbreviated as `file › test`.
 | `new client.Session.Chart()` / `chart_create_session` | `client.createChart()` | `chart › creates a session, resolves the symbol...` | ✅ |
 | `setMarket(symbol, { timeframe, range })` | `setMarket(symbol, { timeframe, count })` | `chart › creates a session...`; `data › getCandles › *` | ✅ |
 | Candles `chart.periods` (newest first, `max`/`min`) | `chart.candles` (oldest first, `high`/`low`), `lastCandle` | `chart › creates a session...`, `parses a captured live chart session` | ✅ |
-| `to` reference (`['bar_count', to, range]`) | `to` option; `getCandles({ to })` | `chart › encodes market options...`, `data › loads a from/to range...` | ✅ encoding; 🔒 effect (anonymous reference times were ignored/capped by the server) |
+| `to` reference (`['bar_count', to, range]`) | `to` option; `getCandles({ to })` | `chart › encodes market options...`, `data › loads a from/to range...` | ✅ recent past reference with account (`authenticated › uses an account timeframe...`); older history remains server-limited |
 | Negative `range` (bars after `to`), "fake replay" | Negative `count` + `fetchMore(-n)` | `chart › encodes market options...` | ✅ (`sessions › loads bars after a past reference...`, `examples/fake-replay.js`) |
 | `fetchMore(n)` / deep history | `chart.fetchMore(n)`; automatic batching in `getCandles` (`count` or `from`), stops on `data_completed` | `chart › fetches more history...`, `data › loads deep history in batches...`, `stops when the server has no more history` | ✅ (3 000 hourly and 6 600 hourly bars; anonymous cap observed as `data_completed: "limit"`) |
-| (new) From/to date ranges | `getCandles({ from, to, maxCount })` | `data › loads a from/to range...` | ✅ (`from` only); 🔒 past `to` |
+| (new) From/to date ranges | `getCandles({ from, to, maxCount })` | `data › loads a from/to range...` | ✅ (`from` anonymously, recent past `to` with account) |
 | `adjustment` (`splits`/`dividends`) | `adjustment` | `chart › encodes market options...` | ✅ default; ➖ dividends |
 | `backadjustment` | `backAdjustment` | `chart › encodes market options...`, `data › passes chart options...` | ➖ (encoding only) |
 | `session` (`regular`/`extended`) | `session` | same | ➖ (encoding only) |
@@ -77,7 +77,7 @@ Test names are abbreviated as `file › test`.
 | `setSeries(timeframe)` | `setTimeframe(timeframe)` | `chart › modifies the series on later setMarket/setTimeframe calls...` | ✅ (D → 15) |
 | `setSeries` before market → error | `INVALID_STATE` thrown | `chart › modifies the series...` | ✅ (`examples/errors.js`) |
 | `setTimezone(tz)` | `setTimezone(tz)`; `getCandles({ timezone })` | `chart › fetches more history and switches timezone` | ✅ |
-| Custom timeframes (`1S`, `20`...) | Any `Timeframe` string | `data › passes chart options...` | 🔒 (`examples/custom-timeframe.js`) |
+| Custom timeframes (`1S`, `20`...) | Any `Timeframe` string | `data › passes chart options...` | ✅ account timeframe `240`; 🔒 `1S`/`20` not exercised |
 | `onSymbolLoaded`, `chart.infos` | `symbolLoaded` event, `symbolInfo`; `getSymbolInfo()` | `chart › creates a session...`, `data › getSymbolInfo` | ✅ |
 | `onUpdate(changes)` | `update` event | `chart › creates a session...` | ✅ |
 | (new) `series_loading` / `series_completed` | `seriesLoading`, `seriesCompleted` (`dataCompleted: end|limit`) | `chart › fetches more history...` | ✅ |
@@ -97,12 +97,12 @@ Test names are abbreviated as `file › test`.
 
 | v3 capability | v4 | Unit evidence | Live |
 | --- | --- | --- | --- |
-| `new chart.Study(indicator)` with instance check | `chart.createStudy(indicator)` (`INVALID_ARGUMENT` otherwise) | `study › creates a Pine study...`, `modifies and removes a study` | ✅ built-in; 🔒 Pine |
-| Pine inputs serialisation (`text`, `pineId`, `pineVersion`, `{ v, f, t }`, colours by index) | `PineIndicator.toStudyInputs()` | `indicators › serialises inputs for create_study...` | 🔒 |
+| `new chart.Study(indicator)` with instance check | `chart.createStudy(indicator)` (`INVALID_ARGUMENT` otherwise) | `study › creates a Pine study...`, `modifies and removes a study` | ✅ built-in and public Pine RSI with account |
+| Pine inputs serialisation (`text`, `pineId`, `pineVersion`, `{ v, f, t }`, colours by index) | `PineIndicator.toStudyInputs()` | `indicators › serialises inputs for create_study...` | ✅ public Pine RSI inputs; colour variant unit-tested |
 | `study.periods` with plot names, `plot_N` fallback for unnamed/duplicate plots | `study.values` (oldest first) | `study › creates a Pine study, names plots...`, `chart › parses a captured live chart session` | ✅ (built-in volume rows) |
 | `study.graphic` (labels, lines, boxes, tables + cells, polygons, horizLines, horizHists, raw) and `graphicsCmds` erase/create | `study.graphics` (`cells` array, `raw` object) | `study › reads graphics commands...`, `applies erase commands` | ✅ horizontal histograms (volume profile); 🔒 Pine drawings |
 | Bars-back translation of graphic X indexes | Same | `study › reads graphics commands...` | ✅ |
-| `study.strategyReport` (plain `data.report` and compressed `dataCompressed`; trades, performance, history, currency, settings) | Same | `study › decodes plain and compressed strategy reports`, `reports undecodable strategy reports as PARSE_ERROR` | 🔒 |
+| `study.strategyReport` (plain `data.report` and compressed `dataCompressed`; trades, performance, history, currency, settings) | Same | `study › decodes plain and compressed strategy reports`, `reports undecodable strategy reports as PARSE_ERROR` | ✅ Supertrend strategy report with account; compressed variant unit-tested |
 | `study.setIndicator()` (`modify_study`) | Same | `study › modifies and removes a study` | 🔒 |
 | `study.remove()` | Same (idempotent) | same | ✅ |
 | `onReady`, `onUpdate`, `onError`, `study_error` | `ready`, `loading`, `update`, `error` (`STUDY_ERROR`, message formatted with server context) | `study › formats study errors with their context` | ✅ (anonymous Pine refusal reported as `STUDY_ERROR`) |
@@ -110,7 +110,7 @@ Test names are abbreviated as `file › test`.
 | `PineIndicator.setOption` (by `in_N`, number, inline name, internal ID; type and option checks) | `setInput`, `setInputs`, `findInput` | `indicators › finds inputs by ID...` | ✅ (definition-level) |
 | `BuiltInIndicator(type)`, defaults for Volume and volume profiles, `setOption(key, value, FORCE)` | Same (+ initial options; time defaults computed per instance instead of at import) | `indicators › BuiltInIndicator › *` | ✅ (`Volume`, `VbPFixed@tv-basicstudies-241!`) |
 | `getIndicator(id, version, session, signature)` (pine-facade translate, input/plot naming) | `getIndicator(id, { version, credentials })`, `parseIndicatorDefinition` | `indicators › parseIndicatorDefinition...`, `http › loads an indicator definition...`, `throws NOT_FOUND...` | ✅ public scripts; 🔒 private/invite-only |
-| (new) One-shot / streaming indicator values | `getIndicatorData`, `watchIndicator` | `data › indicator data › *` | ✅ built-in; 🔒 Pine |
+| (new) One-shot / streaming indicator values | `getIndicatorData`, `watchIndicator` | `data › indicator data › *` | ✅ built-in and one-shot Pine RSI with account; Pine stream unit-tested |
 
 ## Quotes
 
@@ -135,9 +135,9 @@ Test names are abbreviated as `file › test`.
 | `getTA(symbol)` (8 periods × All/MA/Other, scaled) | `getTechnicalAnalysis(symbol)` (`null` instead of `false` without data) | `http › getTechnicalAnalysis › *` | ✅ |
 | `searchIndicator(text)` (built-in lists cached + community suggestions, access mapping) | `searchIndicators(text)`, `clearIndicatorCache()` | `http › searches built-in and community indicators` | ✅ |
 | `result.get()` on indicator results | `getIndicator(result.id, { version: result.version })` | `http › loads an indicator definition...` | ✅ |
-| `getPrivateIndicators(session, signature)` | `getPrivateIndicators(credentials)` | `http › lists private indicators with credentials` | 🔒 |
+| `getPrivateIndicators(session, signature)` | `getPrivateIndicators(credentials)` | `http › lists private indicators with credentials` | ✅ authenticated listing endpoint; actual private item not available |
 | `loginUser(username, password, remember, UA)` | `loginUser({ username, password, remember, userAgent })` (form now URL-encoded) | `http › loginUser posts an encoded form and reads cookies` | 🔒 |
-| `getUser(session, signature, location)` with redirect-loop protection | `getUser(credentials, { location, maxRedirects })` (relative redirects resolved) | `http › getUser parses the account page...`, `getUser stops redirect loops...` | 🔒 (wrong cookie rejection ✅) |
+| `getUser(session, signature, location)` with redirect-loop protection | `getUser(credentials, { location, maxRedirects })` (relative redirects resolved) | `http › getUser parses the account page...`, `getUser stops redirect loops...` | ✅ authenticated success and wrong-cookie rejection |
 | `getChartToken(layout, credentials)` | `getChartToken(layoutId, { userId, credentials })` | `http › gets a chart token...` | 🔒 (needs a layout ID) |
 | `getDrawings(layout, symbol, credentials, chartID)` | `getDrawings(layoutId, { symbol, chartId, userId, credentials })` | `http › lists drawings with merged state` | 🔒 |
 | `PinePermManager(session, signature, pineId)`: `getUsers`, `addUser`, `modifyExpiration`, `removeUser` | `PinePermissionManager(pineId, { credentials })`, same methods | `http › PinePermissionManager › *` | 🔒 (needs an owned invite-only script) |
@@ -189,4 +189,4 @@ These v3 behaviours were changed on purpose; none removes a capability.
 
 ## Not verified live for this release
 
-Everything marked 🔒 above has unit tests against mocked servers but was **not** exercised against TradingView with an account, because no credentials were available: authenticated connections, `loginUser`/`getUser` success paths, private and invite-only indicators, Pine studies and strategy reports, past reference times (`to`), custom/second timeframes, the `prodata` server, layouts/drawings and Pine permission management. Run `SESSION=... SIGNATURE=... npm run test:live` to check the authenticated subset.
+The 21-test manual live workflow verified authenticated connection, account lookup, a public Pine RSI, a Supertrend strategy report, the private-indicators listing endpoint, and recent historical `to` with an account. It did **not** verify password login, actual private/invite-only scripts, compressed strategy reports against a live response, older history beyond server limits, second-based/custom timeframes, the `prodata` server, owned layouts/drawings, or Pine permission changes. Those paths have deterministic tests but need the corresponding account assets to verify live. Run `SESSION=... SIGNATURE=... npm run test:live` to repeat the authenticated subset.
