@@ -1,0 +1,114 @@
+{
+ "zipDeflated": "UEsDBBQAAAAIAAAAIQDv7s2LOAEAACQDAAAAAAAAjVI7b8MgEP4rEXNUAaqbqHMjdegQpe1kZSD22bFqQ4Jxk8jyfy/nF9iSpbIA30PHd1xNNFyUNuR1VZOo0hpk9LAXsvs+kPWKGC1iKC0Q1gQ6EbIfSqYtfcFbDnjGI6MU0QKPG+pWY9G7s+/umRktbGrZvjyPliuCQ5ma/LYVeh99YiiJliktHcUdxZGLY8eNFGWN5SZBP8/YnDFpCf95tpfUNSbw5WzDt5OUfDElDWYxuRczmOdk0xZ4MV0HKG+aI95AJ0oXQkZdYJHn7W6UEfnX8PHok2D2WiWZactjkwhcq8zgpIS2JD+OyB50BBKFoX3D2pZryVP1eFd53OuZB/kGK0cm1uL2pm6yx5iPzeT2z5AtwZhMpmX7/lgYOAiZdqlOIvoxUHYTnmhVDDOlMEwzzPgCjesPUEsBAhQDFAAAAAgAAAAhAO/uzYs4AQAAJAMAAAAAAAAAAAAAAAAAAIABAAAAAFBLBQYAAAAAAQABAC4AAABWAQAAAAA=",
+ "zipStored": "UEsDBBQAAAAAAK0CQ13v7s2LJAMAACQDAAALAAAAcmVwb3J0Lmpzb257InJlcG9ydCI6IHsiY3VycmVuY3kiOiAiRVVSIiwgInRyYWRlcyI6IFt7ImUiOiB7ImMiOiAiTG9uZyIsICJ0cCI6ICJsZSIsICJwIjogMTAwLCAidG0iOiAxNzAwMDAwMDAwMDAwfSwgIngiOiB7ImMiOiAiRXhpdCIsICJwIjogMTEwLCAidG0iOiAxNzAwMDg2NDAwMDAwfSwgInEiOiAxLCAidHAiOiB7InYiOiAxMCwgInAiOiAwLjF9LCAiY3AiOiB7InYiOiAxMCwgInAiOiAwLjF9LCAicm4iOiB7InYiOiAxMiwgInAiOiAwLjEyfSwgImRkIjogeyJ2IjogMSwgInAiOiAwLjAxfX0sIHsiZSI6IHsiYyI6ICJTaG9ydCIsICJ0cCI6ICJzZSIsICJwIjogMTEwLCAidG0iOiAxNzAwMDg2NDAwMDAwfSwgIngiOiB7ImMiOiAiIiwgInAiOiAxMDUsICJ0bSI6IDE3MDAxNzI4MDAwMDB9LCAicSI6IDIsICJ0cCI6IHsidiI6IDEwLCAicCI6IDAuMDV9LCAiY3AiOiB7InYiOiAyMCwgInAiOiAwLjE1fSwgInJuIjogeyJ2IjogMTEsICJwIjogMC4xfSwgImRkIjogeyJ2IjogMiwgInAiOiAwLjAyfX1dLCAicGVyZm9ybWFuY2UiOiB7ImFsbCI6IHsidG90YWxUcmFkZXMiOiAyLCAibmV0UHJvZml0IjogMjB9fSwgImVxdWl0eSI6IFsxLCAyXSwgImVxdWl0eVBlcmNlbnQiOiBbMC4xLCAwLjJdLCAiYnV5SG9sZCI6IFsxLCAxXSwgImJ1eUhvbGRQZXJjZW50IjogWzAsIDBdLCAiZHJhd0Rvd24iOiBbMCwgMV0sICJkcmF3RG93blBlcmNlbnQiOiBbMCwgMC4wMV0sICJzZXR0aW5ncyI6IHsiZGF0ZVJhbmdlIjogeyJiYWNrdGVzdCI6IHsiZnJvbSI6IDEsICJ0byI6IDJ9LCAidHJhZGUiOiB7ImZyb20iOiAxLCAidG8iOiAyfX19fX1QSwECFAMUAAAAAACtAkNd7-7NiyQDAAAkAwAACwAAAAAAAAAAAAAAgAEAAAAAcmVwb3J0Lmpzb25QSwUGAAAAAAEAAQA5AAAATQMAAAAA",
+ "zipStreamed": "UEsDBBQACAAIAAAAIQAAAAAAAAAAAAAAAAANAAAAc3RyZWFtZWQuanNvbo1SO2/DIBD+KxFzVAGqm6hzI3XoEKXtZGUg9tmxakOCcZPI8n8v5xfYkqWyAN9Dx3dcTTRclDbkdVWTqNIaZPSwF7L7PpD1ihgtYigtENYEOhGyH0qmLX3BWw54xiOjFNECjxvqVmPRu7Pv7pkZLWxq2b48j5YrgkOZmvy2FXoffWIoiZYpLR3FHcWRi2PHjRRljeUmQT/P2JwxaQn/ebaX1DUm8OVsw7eTlHwxJQ1mMbkXM5jnZNMWeDFdByhvmiPeQCdKF0JGXWCR5+1ulBH51/Dx6JNg9lolmWnLY5MIXKvM4KSEtiQ/jsgedAQShaF9w9qWa8lT9XhXedzrmQf5BitHJtbi9qZusseYj83k9s+QLcGYTKZl+/5YGDgImXapTiL6MVB2E55oVQwzpTBMM8z4Ao3rD1BLBwjv7s2LOAEAACQDAABQSwECFAMUAAgACAAAACEA7+7NizgBAAAkAwAADQAAAAAAAAAAAAAAgAEAAAAAc3RyZWFtZWQuanNvblBLBQYAAAAAAQABADsAAABzAQAAAAA=",
+ "report": {
+  "report": {
+   "currency": "EUR",
+   "trades": [
+    {
+     "e": {
+      "c": "Long",
+      "tp": "le",
+      "p": 100,
+      "tm": 1700000000000
+     },
+     "x": {
+      "c": "Exit",
+      "p": 110,
+      "tm": 1700086400000
+     },
+     "q": 1,
+     "tp": {
+      "v": 10,
+      "p": 0.1
+     },
+     "cp": {
+      "v": 10,
+      "p": 0.1
+     },
+     "rn": {
+      "v": 12,
+      "p": 0.12
+     },
+     "dd": {
+      "v": 1,
+      "p": 0.01
+     }
+    },
+    {
+     "e": {
+      "c": "Short",
+      "tp": "se",
+      "p": 110,
+      "tm": 1700086400000
+     },
+     "x": {
+      "c": "",
+      "p": 105,
+      "tm": 1700172800000
+     },
+     "q": 2,
+     "tp": {
+      "v": 10,
+      "p": 0.05
+     },
+     "cp": {
+      "v": 20,
+      "p": 0.15
+     },
+     "rn": {
+      "v": 11,
+      "p": 0.1
+     },
+     "dd": {
+      "v": 2,
+      "p": 0.02
+     }
+    }
+   ],
+   "performance": {
+    "all": {
+     "totalTrades": 2,
+     "netProfit": 20
+    }
+   },
+   "equity": [
+    1,
+    2
+   ],
+   "equityPercent": [
+    0.1,
+    0.2
+   ],
+   "buyHold": [
+    1,
+    1
+   ],
+   "buyHoldPercent": [
+    0,
+    0
+   ],
+   "drawDown": [
+    0,
+    1
+   ],
+   "drawDownPercent": [
+    0,
+    0.01
+   ],
+   "settings": {
+    "dateRange": {
+     "backtest": {
+      "from": 1,
+      "to": 2
+     },
+     "trade": {
+      "from": 1,
+      "to": 2
+     }
+    }
+   }
+  }
+ }
+}

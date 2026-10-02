@@ -1,121 +1,130 @@
 # TradingView-API
 
-**Build with market data, from your first chart to a running watcher.** Fetch candles, explore indicators, and turn ideas into working tools. An independent community project, not an official TradingView API.
+**Build with market data, from your first chart to a running watcher.** Fetch candles and quotes, run indicators and strategies, and turn ideas into working tools. An independent community project, not an official TradingView API.
 
-[Get started](#get-started) · [Explore examples](examples) · [Read the API guide](docs/agent-api.md)
+[Get started](#get-started) · [Explore examples](examples) · [Read the data API guide](docs/data-api.md)
 
 **Language:** English · [Français](docs/README.fr.md) · [Español](docs/README.es.md) · [Português](docs/README.pt.md)
 
 [![Tests](https://github.com/Mathieu2301/TradingView-API/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/Mathieu2301/TradingView-API/actions/workflows/tests.yml) [![npm](https://badgen.net/npm/v/@mathieuc/tradingview)](https://www.npmjs.com/package/@mathieuc/tradingview) [![Stars](https://img.shields.io/github/stars/Mathieu2301/TradingView-API?style=social)](https://github.com/Mathieu2301/TradingView-API)
 
-![Recorded demonstration: fetchCandles returns 40 daily BTC/USDT candles, visualized as a line chart](assets/readme-demo.gif)
+![Recorded demonstration: a candle request returns 40 daily BTC/USDT candles, visualized as a line chart](assets/readme-demo.gif)
 
-*An actual `fetchCandles()` result, recorded on 2 October 2026 and visualized for this demo. Prices are not live. The high-level API shown here is a [development preview](docs/agent-api.md), available from source; the [stable npm package](https://www.npmjs.com/package/@mathieuc/tradingview) still uses the `Client` API.*
+*An actual candle request, recorded on 2 October 2026 with the development preview (`fetchCandles`, called `getCandles` in version 4) and visualized for this demo. Prices are not live.*
 
 ### One request, real data
 
-After [building the preview from source](#3-install-manually), try the same request:
+> **V4 beta is currently available from this repository, not from npm.** Build the source as shown below before running this example. The latest npm release is still v3 and does not export `getCandles`.
 
 ```js
-const { fetchCandles } = require('./agent.js');
+import { getCandles } from '@mathieuc/tradingview/data';
 
-fetchCandles({ symbol: 'BINANCE:BTCUSDT', timeframe: 'D', limit: 40 })
-  .then((candles) => console.log(candles.at(-1))) // time, open, high, low, close, volume
-  .catch(console.error);
+const candles = await getCandles({ symbol: 'BINANCE:BTCUSDT', timeframe: 'D', count: 40 });
+console.log(candles.at(-1)); // { time, open, high, low, close, volume }
 ```
 
-Prefer to start without code? The setup paths below work for both the stable library and the preview.
+Prefer to start without code? The setup paths below work too.
+
+> **Version 4 is a breaking rewrite** in TypeScript, with a new API and no compatibility layer. Coming from v3? Read the [migration guide](docs/migration-v4.md). Every v3 feature is still available: see the [coverage matrix](docs/v4-coverage.md). npm versions 3.x keep the previous `Client` API; check the [npm page](https://www.npmjs.com/package/@mathieuc/tradingview) for the version you install.
 
 ## Get started
 
-Choose the setup that works for you. The current npm release provides the stable `Client` API; the simpler [high-level API](docs/agent-api.md) is a **development preview available from source**, not yet in the npm package.
-
 ### 1. Molted.cloud — recommended, no local setup
 
-[Create an agent on Molted.cloud](https://molted.cloud/) and share this repository with it. Describe what you want to build; the agent can read the docs, set up a workspace, and help you get from an idea to a working project. For example, ask it to build a market-data watcher using the API that is currently available. [See an example on Molted Studio](https://molted.studio/dreams/market-watch-alerts).
+[Create an agent on Molted.cloud](https://molted.cloud/) and share this repository with it. Describe what you want to build; the agent can read the docs, set up a workspace, and help you get from an idea to a working project. For example, ask it to build a market-data watcher with this library. [See an example on Molted Studio](https://molted.studio/dreams/market-watch-alerts).
 
 ### 2. Claude Code, Codex, or another coding assistant
 
 Open your project in your preferred coding assistant and give it the [repository link](https://github.com/Mathieu2301/TradingView-API). You can start with:
 
-> Read the TradingView-API README and the high-level API guide. Install the stable npm package for my project, or use the development preview from source if the high-level API is needed. Build a small example and show me how to run it.
+> Read the TradingView-API README and the data API guide. Build the V4 beta from source, make a small example that fetches candles and watches a quote, and show me how to run it.
 
 The assistant can handle the setup, but you keep the project in your own environment.
 
 ### 3. Install manually
 
-For the **stable release**, add the package to your project:
-
-```bash
-bun add @mathieuc/tradingview
-# Or: npm install @mathieuc/tradingview
-```
-
-For the **high-level API preview**, clone the repository and build it from source (Bun or Node 18+):
+The V4 beta requires Node.js 20 or later, or Bun. **Until the V4 npm release, install it from source:**
 
 ```bash
 git clone https://github.com/Mathieu2301/TradingView-API.git
 cd TradingView-API
-bun install
-bun run build:agent
-# With npm instead: npm ci && npm run build:agent
+npm ci && npm run build
+node examples/candles.js
+# Or use Bun: bun install && bun run build && bun examples/candles.js
 ```
 
-Import `./agent.js` from that checkout; the stable npm package does not include this subpath yet. Continue with the [stable library example](#stable-library) or the [high-level API guide](docs/agent-api.md).
+Inside this built checkout, the examples and package self-imports use the V4 API. Running `npm install @mathieuc/tradingview` or `bun add @mathieuc/tradingview` in another project currently installs **v3**, which has the old `Client` API. Do not copy the V4 imports into a project that has v3 installed.
+
+The V4 package is ESM with TypeScript declarations. CommonJS projects can `require()` it on Node 20.19+ or 22.12+, or use `await import()`.
 
 ### Want to contribute?
 
-[Open an issue](https://github.com/Mathieu2301/TradingView-API/issues/new/choose) to discuss a feature or report a bug, or send a pull request. Questions and early ideas are welcome; you do not need a perfect reproduction to start a conversation.
+[Open an issue](https://github.com/Mathieu2301/TradingView-API/issues/new/choose) to discuss a feature or report a bug, or send a pull request. Questions and early ideas are welcome; you do not need a perfect reproduction to start a conversation. `npm run check` runs the type check, lint, tests, build and package smoke test.
 
-## Stable library
+## Data API
 
-```js
-const TradingView = require('@mathieuc/tradingview');
-const client = new TradingView.Client();
-const chart = new client.Session.Chart();
-
-chart.onError((...error) => console.error('Chart error:', ...error));
-chart.onUpdate(() => {
-  const latest = chart.periods[0];
-  if (latest) console.log(latest.close);
-});
-chart.setMarket('BINANCE:BTCUSDT', { timeframe: 'D' });
-
-// When your application is finished:
-// chart.delete();
-// await client.end();
-```
-
-The existing `Client`, chart and quote sessions, Pine indicators, replay features and [examples](examples) remain available during the migration.
-
-## High-level API — development preview
-
-This first TypeScript slice offers simple data access without managing chart sessions, widgets or deep-history internals. It is useful in any application, whether you write it yourself or with an agent:
+The data API handles connections, sessions, timeouts and cleanup for you. It suits any application: scripts, servers, dashboards, bots or agents.
 
 ```ts
-import { fetchCandles, watchCandles } from './agent.js';
+import {
+  getCandles, watchCandles, getQuote, getIndicatorData, searchMarkets,
+} from '@mathieuc/tradingview/data';
 
-// One-shot: data arrives through a single await; the connection closes automatically.
-const candles = await fetchCandles({ symbol: 'BINANCE:BTCUSDT', timeframe: 'D', limit: 100 });
-console.log(candles.at(-1)?.close);
+// One-shot: resolves with complete data, then releases everything.
+const hourly = await getCandles({ symbol: 'BINANCE:BTCUSDT', timeframe: '60', count: 500 });
+const lastWeek = await getCandles({ symbol: 'NASDAQ:AAPL', timeframe: '15', from: new Date(Date.now() - 7 * 86_400_000) });
+const quote = await getQuote('BINANCE:BTCUSDT');
+const [market] = await searchMarkets('ethereum', { type: 'crypto' });
 
-// Worker: keeps receiving fresh snapshots until stopped.
-const worker = await watchCandles(
-  { symbol: 'BINANCE:BTCUSDT', timeframe: '1' },
-  { onData: (snapshot) => console.log(snapshot[snapshot.length - 1]?.close),
-    onError: console.error },
-);
-// ...later:
-await worker.stop();
+// Watcher: keeps streaming until stopped.
+const watcher = await watchCandles({ symbol: 'BINANCE:BTCUSDT', timeframe: '1' }, {
+  onData: (candles) => console.log(candles.at(-1)?.close),
+  onError: (error) => console.error(error.code, error.message),
+});
+await watcher.stop();
+
+// Indicators and strategies (Pine scripts need an account).
+const { values } = await getIndicatorData({
+  symbol: 'BINANCE:BTCUSDT', indicator: 'STD;RSI', credentials: { session, signature },
+});
 ```
 
-Snapshots are oldest-first, with conventional `high`/`low` fields. The first usable snapshot has a timeout (15 seconds by default), and `AbortSignal` is supported. Keep credentials in your own environment; do not put them in prompts or issues.
+| Need | Function |
+| --- | --- |
+| Candles: latest bars, deep history, date ranges, Heikin Ashi/Renko/... | `getCandles`, `watchCandles` |
+| Quotes: last price, change, bid/ask, volume... | `getQuote`, `getQuotes`, `watchQuotes` |
+| Indicator values, drawings and strategy reports | `getIndicatorData`, `watchIndicator` |
+| Symbol metadata | `getSymbolInfo` |
+| Search and ratings | `searchMarkets`, `searchIndicators`, `getTechnicalAnalysis` |
 
-For installation from source, follow [manual setup](#3-install-manually). See the [high-level API guide](docs/agent-api.md) for error handling, lifecycle and provider adapters.
+Websocket data functions accept `timeoutMs`, an `AbortSignal`, account `credentials`, and an optional shared `client`. HTTP lookups accept an `AbortSignal` through their options. Errors are `TradingViewError`s with a `code` such as `SYMBOL_ERROR`, `TIMEOUT` or `STUDY_ERROR`. Read the [data API guide](docs/data-api.md) for every option.
 
-## What is next?
+## Low-level API
 
-This repository is being modernized incrementally in TypeScript/Bun while keeping current users working. The first slice is data access; strategy research, backtesting, CLI/MCP and hosted workflows are **planned, not shipped**. Tell us which workflow would save you time in an [issue](https://github.com/Mathieu2301/TradingView-API/issues/new/choose).
+For full control (several charts and studies on one connection, replay mode, raw packets), use the client and sessions directly:
+
+```ts
+import { TradingViewClient, getIndicator } from '@mathieuc/tradingview';
+
+const client = new TradingViewClient({ credentials: { session, signature } }); // Credentials are optional
+const chart = client.createChart();
+
+chart.on('update', () => console.log(chart.lastCandle?.close));
+chart.on('error', (error) => console.error(error.message));
+chart.setMarket('BINANCE:BTCUSDT', { timeframe: '60', count: 300 });
+
+const supertrend = chart.createStudy(await getIndicator('STD;Supertrend'));
+supertrend.on('update', () => console.log(supertrend.values.at(-1)));
+
+// When your application is finished:
+await client.close();
+```
+
+The [low-level API reference](docs/low-level-api.md) covers charts, replay, studies, quotes, account and layout functions, Pine permissions, custom transports and protocol helpers. The [examples](examples) show each feature.
+
+## Accounts and limits
+
+Without an account, TradingView serves limited data: shorter intraday history, no Pine studies, and possibly delayed or substitute feeds. With your `sessionid` and `sessionid_sign` cookies (`credentials`), you get what your account can access. Keep them in environment variables or a secret store; never put them in source files, issues or prompts.
 
 ## Project links
 
