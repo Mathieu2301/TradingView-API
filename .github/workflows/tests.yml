@@ -1,3 +1,5 @@
+# Project: https://github.com/Mathieu2301/TradingView-API
+# Package: https://www.npmjs.com/package/@mathieuc/tradingview
 name: Tests
 
 on:
@@ -34,3 +36,16 @@ jobs:
       env:
         SESSION: ${{ secrets.TW_SESSION }}
         SIGNATURE: ${{ secrets.TW_SIGNATURE }}
+
+  Agent-API:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+        cache: 'npm'
+    - run: npm ci
+    - run: npm run build:agent
+    - run: npm test -- --run tests/agent.test.ts
+    - run: npm pack --dry-run

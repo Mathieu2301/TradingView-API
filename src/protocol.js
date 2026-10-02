@@ -1,3 +1,5 @@
+// Project: https://github.com/Mathieu2301/TradingView-API
+// Package: https://www.npmjs.com/package/@mathieuc/tradingview
 const zlib = require('zlib');
 const JSZip = require('jszip');
 

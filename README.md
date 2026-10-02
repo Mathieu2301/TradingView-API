@@ -1,76 +1,94 @@
-# TradingView API [![GitHub stars](https://img.shields.io/github/stars/Mathieu2301/TradingView-API.svg?style=social&label=Star&maxAge=2592000)](https://GitHub.com/Mathieu2301/TradingView-API/stargazers/)
+# TradingView-API
 
-[![Tests](https://github.com/Mathieu2301/TradingView-API/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/Mathieu2301/TradingView-API/actions/workflows/tests.yml)
-[![CodeFactor](https://www.codefactor.io/repository/github/mathieu2301/tradingview-api/badge/main)](https://www.codefactor.io/repository/github/mathieu2301/tradingview-api/overview/main)
-[![GitHub latest commit](https://img.shields.io/github/last-commit/Mathieu2301/TradingView-API)](https://GitHub.com/Mathieu2301/TradingView-API/commit/)
-[![Npm package yearly downloads](https://badgen.net/npm/dt/@mathieuc/tradingview)](https://npmjs.com/@mathieuc/tradingview)
-[![Minimum node.js version](https://badgen.net/npm/node/@mathieuc/tradingview)](https://npmjs.com/@mathieuc/tradingview)
-[![Npm package version](https://badgen.net/npm/v/@mathieuc/tradingview)](https://npmjs.com/package/@mathieuc/tradingview)
+<a href="https://trendshift.io/repositories/26416?utm_source=repository-badge&amp;utm_medium=badge&amp;utm_campaign=badge-repository-26416" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/repositories/26416" alt="Mathieu2301/TradingView-API | #1 Repo Of The Day on Trendshift" width="250" height="55"/></a>
 
-Get realtime market prices and indicator values from Tradingview !
+**Language:** English · [Français](docs/README.fr.md) · [Español](docs/README.es.md) · [Português](docs/README.pt.md)
 
-## 🟢 Need help with your project?
+[![Tests](https://github.com/Mathieu2301/TradingView-API/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/Mathieu2301/TradingView-API/actions/workflows/tests.yml) [![npm](https://badgen.net/npm/v/@mathieuc/tradingview)](https://www.npmjs.com/package/@mathieuc/tradingview) [![Stars](https://img.shields.io/github/stars/Mathieu2301/TradingView-API?style=social)](https://github.com/Mathieu2301/TradingView-API)
 
-🚀 Click [here](https://forms.gle/qPp5RKo8L55C5oJE7) for personalized assistance on your project.
+**Market data and indicators for builders.** Start with one chart, then grow into real-time workers, research tools, and agent-assisted workflows. This is an independent community project, not an official TradingView API.
 
-## 🔵 Telegram group
+> **Need help, found a bug, or want a feature? [Open an issue](https://github.com/Mathieu2301/TradingView-API/issues/new/choose).** Questions and early ideas are welcome. You do not need a perfect reproduction before asking.
 
-👉 To get help, exchange tips, find collaborators, developers, missions, etc...
+## Choose your path
 
-Join the Telegram group of the TradingView-API Community: [t.me/tradingview_api](https://t.me/tradingview_api)
+| If you want to… | Start here |
+| --- | --- |
+| Use the stable npm library today | [Install](#stable-library) and browse [examples](examples) |
+| Let an AI agent build with you | [Agent guide](docs/agent-api.md) — works with Claude Code, Codex, OpenClaw and similar tools |
+| Avoid local setup | [Molted](https://molted.cloud/) hosts an agent workspace; ask it to work from this repository |
+| Contribute or request something | [Open an issue](https://github.com/Mathieu2301/TradingView-API/issues/new/choose) |
 
-## Features
+Molted is optional. The library remains open source and usable locally. The new agent API below is **a development preview**, not yet included in the current npm release.
 
-- [x] Premium features
-- [x] Automatically backtest many strategies and try many settings in a very little time
-- [x] Get drawings you made on your chart
-- [x] Works with invite-only indicators
-- [x] Unlimited simultaneous indicators
-- [x] Realtime
-- [x] Get TradingView's technical analysis
-- [x] Replay mode + Fake Replay mode (for free plan)
-- [x] Get values from a specific date range
-- [ ] TradingView socket server emulation
-- [ ] Interract with public chats
-- [ ] Get Screener top values
-- [ ] Get Hotlists
-- [ ] Get Calendar
-- IF YOU WANT A FEATURE, ASK ME !
+## Stable library
 
-## Possibilities
-
-- Trading bot
-- Discord alerts
-- Hard backtest
-- Machine Learning based indicator
-- Free replay mode for all timeframes
-
-___
-
-## Installation
-
-Stable version:
-
-```ruby
-npm i @mathieuc/tradingview
+```bash
+npm install @mathieuc/tradingview
 ```
 
-Last version:
+```js
+const TradingView = require('@mathieuc/tradingview');
+const client = new TradingView.Client();
+const chart = new client.Session.Chart();
 
-```ruby
-npm i github:Mathieu2301/TradingView-API
+chart.onError((...error) => console.error('Chart error:', ...error));
+chart.onUpdate(() => {
+  const latest = chart.periods[0];
+  if (latest) console.log(latest.close);
+});
+chart.setMarket('BINANCE:BTCUSDT', { timeframe: 'D' });
+
+// When your application is finished:
+// chart.delete();
+// await client.end();
 ```
 
-## Examples
+The existing `Client`, chart and quote sessions, Pine indicators, replay features and [examples](examples) remain available during the migration.
 
-You can find all the examples and snippets in `./examples` folder.
+## Agent-friendly API — development preview
 
-## Before opening an issue
+The first TypeScript slice adds two simple patterns on top of the existing transport:
 
-Please look at examples and previously resolved issues before opening a new one. I can't help everyone (especially for questions that are not library related but JavaScript related). Thank you for your understanding.
-___
+```ts
+import { fetchCandles, watchCandles } from '@mathieuc/tradingview/agent';
 
-## Problems
+// One-shot: data arrives through a single await; the connection closes automatically.
+const candles = await fetchCandles({ symbol: 'BINANCE:BTCUSDT', timeframe: 'D', limit: 100 });
+console.log(candles.at(-1)?.close);
 
- If you have errors in console or unwanted behavior,
- please create an issue [here](https://github.com/Mathieu2301/Tradingview-API/issues).
+// Worker: keeps receiving fresh snapshots until stopped.
+const worker = await watchCandles(
+  { symbol: 'BINANCE:BTCUSDT', timeframe: '1' },
+  { onData: (snapshot) => console.log(snapshot[snapshot.length - 1]?.close),
+    onError: console.error },
+);
+// ...later:
+await worker.stop();
+```
+
+Snapshots are oldest-first, with conventional `high`/`low` fields. The first usable snapshot has a timeout (15 seconds by default), and `AbortSignal` is supported. Keep credentials in your own environment; do not put them in prompts or issues.
+
+**Preview setup from source** (Node 18+ or Bun):
+
+```bash
+git clone https://github.com/Mathieu2301/TradingView-API.git
+cd TradingView-API
+npm ci
+npm run build:agent
+```
+
+From that checkout, import `./agent.js` or `./agent.ts`. The stable npm package does **not** have this subpath yet; it will be released after review and validation. See the [full agent API guide](docs/agent-api.md) for error handling, lifecycle and provider adapters.
+
+## What is next?
+
+This repository is being modernized incrementally in TypeScript/Bun while keeping current users working. The first slice is data access; strategy research, backtesting, CLI/MCP and hosted workflows are **planned, not shipped**. Tell us which workflow would save you time in an [issue](https://github.com/Mathieu2301/TradingView-API/issues/new/choose).
+
+## Project links
+
+- [GitHub repository](https://github.com/Mathieu2301/TradingView-API)
+- [npm package](https://www.npmjs.com/package/@mathieuc/tradingview)
+- [Examples](examples)
+- [Report a bug or ask for a feature](https://github.com/Mathieu2301/TradingView-API/issues/new/choose)
+
+TradingView is a trademark of its respective owner. This project is not affiliated with or endorsed by TradingView. Check your data provider's terms and applicable market-data permissions for your use case.

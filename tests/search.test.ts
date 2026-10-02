@@ -1,3 +1,5 @@
+// Project: https://github.com/Mathieu2301/TradingView-API
+// Package: https://www.npmjs.com/package/@mathieuc/tradingview
 import { describe, it, expect } from 'vitest';
 import { searchMarket, searchIndicator, searchMarketV3 } from '../main';
 

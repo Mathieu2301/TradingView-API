@@ -1,3 +1,5 @@
+// Project: https://github.com/Mathieu2301/TradingView-API
+// Package: https://www.npmjs.com/package/@mathieuc/tradingview
 const miscRequests = require('./src/miscRequests');
 const Client = require('./src/client');
 const BuiltInIndicator = require('./src/classes/BuiltInIndicator');
