@@ -9,9 +9,12 @@ const argument = (name, fallback) => {
   return number;
 };
 
+const textArgument = (name, fallback) => process.argv.find((value) => value.startsWith(`--${name}=`))?.split('=')[1] ?? fallback;
 const minutes = argument('minutes', 120);
 const cycleSeconds = argument('cycle-seconds', 600);
-const symbol = 'BINANCE:BTCUSDT';
+const symbol = textArgument('symbol', 'BINANCE:BTCUSDT');
+const timeframe = textArgument('timeframe', '1');
+const chartType = textArgument('chart-type', undefined);
 const deadline = Date.now() + minutes * 60_000;
 const metrics = { cycles: 0, starts: 0, failures: 0, candleUpdates: 0, quoteUpdates: 0, heartbeats: 0, errors: [] };
 let interrupted = false;
@@ -32,7 +35,7 @@ function waitForCycle(ms, watchers) {
 }
 
 const status = setInterval(() => report('status', { ...metrics, errors: metrics.errors.slice(-3) }), 60_000);
-report('start', { minutes, cycleSeconds, symbol });
+report('start', { minutes, cycleSeconds, symbol, timeframe, chartType });
 try {
   while (!interrupted && Date.now() < deadline) {
     metrics.cycles += 1;
@@ -42,7 +45,7 @@ try {
     let candles;
     let quotes;
     try {
-      candles = await watchCandles({ symbol, timeframe: '1', count: 5, client }, {
+      candles = await watchCandles({ symbol, timeframe, chartType, count: 5, client }, {
         onData: () => { metrics.candleUpdates += 1; },
         onError: (error) => metrics.errors.push(error.code),
       });
