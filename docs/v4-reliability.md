@@ -76,3 +76,19 @@ An eligible account and current successful protocol capture are required before
 shipping that API. No subscription was purchased and no account content was modified.
 The original scripts/fixtures for #188 (long-running Pine depth error), #24 (Renko
 GUI parity) and #311 (subscribed CME sessions) remain unavailable for exact reproduction.
+
+### Unbroken-socket checks, 3 October 2026
+
+- **BTCUSDT, six minutes, one connection:** 35 heartbeats, 85 candle callbacks,
+  89 quote callbacks; after heartbeat 30 on that same connection, 13 candle and
+  12 quote callbacks. Zero errors/failures; strict mode exited successfully.
+- **OANDA:EURUSD HeikinAshi, seven minutes, one connection:** 41 heartbeats,
+  one initial candle callback and one initial quote callback, zero errors/failures.
+  The forex market was closed: this proves heartbeat continuity only and does not
+  resolve #236's reported price-stream freeze on an open market.
+- Negative controls: a short initial-snapshot-only run fails strict mode, and an
+  interrupted run exits nonzero after cleanup. Account diagnostics also fail cleanly
+  without credentials; a bounded one-script run was separately verified on Bun.
+
+Neither run is a 12-hour Pine reproduction. The full authenticated live suite on
+beta.4 passed all 22 tests; beta.5 changes diagnostic tooling/documentation only.
