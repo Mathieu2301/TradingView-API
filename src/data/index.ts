@@ -48,3 +48,5 @@ export { summarizeStrategyReport } from '../chart/strategy.js';
 export type { StrategySummary } from '../chart/strategy.js';
 export { getScreener } from '../http/screener.js';
 export type { ScreenerFilter, ScreenerQuery, ScreenerResult, ScreenerRow } from '../http/screener.js';
+export { getWatchlists, getHotlist } from '../http/watchlists.js';
+export type { Watchlist, WatchlistOptions, HotlistKind, HotlistQuery } from '../http/watchlists.js';
