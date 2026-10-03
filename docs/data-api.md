@@ -283,4 +283,3 @@ Every failure is a `TradingViewError` with a `code`:
 | `CALLBACK_ERROR` | A watcher callback threw; the stream remains active. |
 
 `error.details` keeps the raw server payload when there is one.
-
