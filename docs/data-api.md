@@ -283,3 +283,9 @@ Every failure is a `TradingViewError` with a `code`:
 | `CALLBACK_ERROR` | A watcher callback threw; the stream remains active. |
 
 `error.details` keeps the raw server payload when there is one.
+
+## Screener
+
+Use [`getScreener`](screener.md) for a single scanner page with custom columns,
+filters, ranking and explicit pagination. Available from this high-level entry
+point as well as the root package; no chart or quote session is required.

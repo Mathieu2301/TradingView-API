@@ -138,3 +138,9 @@ No issues/legacy PRs were closed, and no contributor comments were sent by this 
 - Dependency audit: baseline had two moderate entries for the same Vitest/mocker advisory; patched development dependency in this change.
 - No new authenticated, private-script, Premium or long-duration claims are made.
 - No npm publication or promotion of the `latest` tag is part of this change.
+
+## Screener follow-up
+
+Beta.3 adds `getScreener` for #53 and scanner fields relevant to #280. See
+[screener documentation](screener.md). #85 real-time exchange entitlement is not
+resolved by a successful HTTP scan. Watchlists and paid/private cases remain open.
