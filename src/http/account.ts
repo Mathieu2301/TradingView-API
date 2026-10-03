@@ -157,14 +157,14 @@ export function parseUserPage(page: string, credentials: Credentials): User {
 export async function getUser(credentials: Credentials, options: GetUserOptions = {}): Promise<User> {
   if (!credentials?.session) throw new TradingViewError('INVALID_ARGUMENT', 'A session cookie is required');
   const maxRedirects = options.maxRedirects ?? 5;
-  let location = trustedAccountLocation(options.location ?? 'https://www.tradingview.com/');
+  let location = trustedAccountLocation(options.location ?? 'https://www.tradingview.com/chart/');
 
   for (let redirects = 0; ; redirects += 1) {
-    const { text, headers } = await request(location, { credentials, redirect: 'manual' }, options);
+    const { status, text, headers } = await request(location, { credentials, redirect: 'manual' }, options);
     if (text.includes('auth_token')) return parseUserPage(text, credentials);
 
     const next = headers.get('location');
-    const resolved = next ? new URL(next, location).toString() : undefined;
+    const resolved = status >= 300 && status < 400 && next ? new URL(next, location).toString() : undefined;
     if (!resolved || resolved === location) {
       throw new TradingViewError('AUTH_ERROR', 'Wrong or expired sessionid/signature');
     }

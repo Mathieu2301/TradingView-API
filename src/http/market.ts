@@ -22,6 +22,10 @@ export interface MarketSearchResult {
 export interface SearchMarketsOptions extends HttpOptions {
   /** Restricts results to a market type. */
   type?: MarketType;
+  /** Restricts results to an ISO country code, such as `US`. */
+  country?: string;
+  /** Restricts results to a sector, such as `Finance`. */
+  sector?: string;
   /** Pagination offset. */
   offset?: number;
   /** Restricts results to an exchange. `searchMarkets('BINANCE:BTC')` sets it too. */
@@ -39,6 +43,7 @@ export async function searchMarkets(query: string, options: SearchMarketsOptions
   const { data, status } = await request('https://symbol-search.tradingview.com/symbol_search/v3/', {
     query: {
       text, exchange, search_type: options.type ?? '', start: options.offset ?? 0,
+      country: options.country, sector: options.sector,
     },
     headers: ORIGIN,
   }, options);
