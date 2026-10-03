@@ -34,3 +34,61 @@ V4 now starts the account lookup at `/chart/` and follows `Location` only on HTT
 - Basic daily Replay and strategy reports are documented in [v4-coverage.md](v4-coverage.md); this is not proof of Deep Backtesting or universal intraday entitlement.
 - Private/invite-only script cases, subscribed futures parity, owned layouts and long-running Pine failures need matching assets and targeted reproductions. See [backlog triage](v4-backlog-triage.md).
 - Live CI is non-blocking. Review its actual test results, not just the overall workflow conclusion, before release.
+
+## Account-scoped diagnostics (beta.5)
+
+From a source checkout, set `SESSION` and `SIGNATURE` securely and run
+`npm run probe:account`. The read-only probe authenticates, lists saved scripts,
+then evaluates at most ten scripts sequentially on 100 daily BTCUSDT bars. Use
+`--max-scripts=N` and `--timeout-ms=N` after `--` to change these bounds.
+It prints only counts, index-based outcomes, script namespace categories and the
+account token's plan claim. It does not print script IDs, names, source, values,
+account identifiers or credentials. A plan claim is informational, not proof of
+exchange or Deep Backtesting entitlement. Failures exit nonzero; an empty saved
+script list is not considered successful private-script coverage.
+
+The package now includes both diagnostics, so installed consumers can run:
+
+```sh
+node node_modules/@mathieuc/tradingview/scripts/probe-account.mjs
+node node_modules/@mathieuc/tradingview/scripts/endurance.mjs --minutes=7 --cycle-seconds=600 --require-post-threshold-updates
+```
+
+The second command requires candle **and** quote callbacks after more than 30
+heartbeats on the same connection. `--heartbeat-threshold=N` changes the threshold.
+Counters reset per connection for threshold eligibility; ten short connections do
+not constitute one long connection. Initial snapshots alone cannot satisfy this
+mode. Any recorded error or interruption also makes the probe fail. Without the
+flag, a completed run remains a transport/lifecycle check, not a liveness guarantee.
+Run strict mode on an open market; a closed venue cannot supply the required proof.
+
+### Verified private scripts and outstanding paid-account prerequisite
+
+On 3 October 2026, all six saved `USER;` scripts accessible to the available account
+completed: two studies and four strategies, each returning 100 candles and 200
+study rows. Three strategies returned 208, 4 and 69 trades respectively; the fourth
+returned a report with zero trades. These are account-specific fixtures, not a
+reproduction of the private strategy in #89 or the table payload in #251.
+
+A bounded request to `history-data` using the protocol in PR #204 reached the server
+and returned `request_error` / `not_allowed`. No Deep Backtesting success is claimed.
+An eligible account and current successful protocol capture are required before
+shipping that API. No subscription was purchased and no account content was modified.
+The original scripts/fixtures for #188 (long-running Pine depth error), #24 (Renko
+GUI parity) and #311 (subscribed CME sessions) remain unavailable for exact reproduction.
+
+### Unbroken-socket checks, 3 October 2026
+
+- **BTCUSDT, six minutes, one connection:** 35 heartbeats, 85 candle callbacks,
+  89 quote callbacks; after heartbeat 30 on that same connection, 13 candle and
+  12 quote callbacks. Zero errors/failures; strict mode exited successfully.
+- **OANDA:EURUSD HeikinAshi, seven minutes, one connection:** 41 heartbeats,
+  one initial candle callback and one initial quote callback, zero errors/failures.
+  The forex market was closed: this proves heartbeat continuity only and does not
+  resolve #236's reported price-stream freeze on an open market.
+- Negative controls: a short initial-snapshot-only run fails strict mode, and an
+  interrupted run exits nonzero after cleanup. Account diagnostics also fail cleanly
+  without credentials; a bounded one-script run was separately verified on Bun.
+
+Neither run is a 12-hour Pine reproduction. The full authenticated live suite on
+beta.4 passed all 22 tests; beta.5 changes diagnostic tooling/documentation only.

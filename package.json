@@ -1,6 +1,6 @@
 {
   "name": "@mathieuc/tradingview",
-  "version": "4.0.0-beta.4",
+  "version": "4.0.0-beta.5",
   "description": "TradingView market data for JavaScript and TypeScript: candles, quotes, indicators and strategies, with a simple data API and full low-level access.",
   "type": "module",
   "main": "./dist/index.js",
@@ -21,7 +21,9 @@
   "files": [
     "dist",
     "README.md",
-    "docs"
+    "docs",
+    "scripts/endurance.mjs",
+    "scripts/probe-account.mjs"
   ],
   "sideEffects": false,
   "scripts": {
@@ -36,7 +38,8 @@
     "check": "npm run typecheck && npm run lint && npm test && npm run build && npm run smoke",
     "prepack": "npm run build",
     "probe:endurance": "npm run build && node scripts/endurance.mjs",
-    "probe:parity": "npm run build && node scripts/parity.mjs"
+    "probe:parity": "npm run build && node scripts/parity.mjs",
+    "probe:account": "npm run build && node scripts/probe-account.mjs"
   },
   "repository": {
     "type": "git",
