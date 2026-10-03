@@ -10,7 +10,7 @@ export default tseslint.config(
     languageOptions: {
       globals: {
         console: 'readonly', process: 'readonly', setTimeout: 'readonly', clearTimeout: 'readonly',
-        setInterval: 'readonly', clearInterval: 'readonly', AbortController: 'readonly', URL: 'readonly',
+        setInterval: 'readonly', clearInterval: 'readonly', AbortController: 'readonly', AbortSignal: 'readonly', URL: 'readonly',
       },
     },
     rules: {

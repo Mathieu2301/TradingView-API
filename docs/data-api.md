@@ -188,6 +188,26 @@ No successful export was verified. These are TradingView UI entitlements, not
 library export methods or a guarantee about other accounts. Deep Backtesting is
 separate and was blocked by a Premium upgrade prompt in that session.
 
+### Complete strategy report example
+
+See [strategy-report.js](../examples/strategy-report.js) for a bounded, executable
+public-strategy → trade-records → PnL-summary workflow. Run it from a repository
+checkout after building:
+
+```bash
+node --env-file=.env examples/strategy-report.js
+```
+
+It uses the account cookies from `.env`, runs a public Supertrend strategy and
+closes its connection automatically. It places no orders. Trade records are
+most recent first and can include open positions with current exit valuations;
+use the reported aggregate counts rather than inferring closure from an exit.
+Missing summary fields remain `undefined`, not zero. `count` selects returned
+candles, not a guaranteed exact strategy backtest window. Basic was sufficient
+for the tested symbol/timeframe; UI exports and Deep Backtesting have separate
+subscription requirements.
+
+
 ## Search and technical analysis
 
 ```ts
