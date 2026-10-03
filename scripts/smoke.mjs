@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Packs the library, installs the tarball in a temporary project and checks
 // that both entry points load (ESM + type declarations) under Node and Bun.
-// Network is not required: no TradingView call is made.
+// No TradingView call is made; installing the tarball may access the npm registry.
 import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';

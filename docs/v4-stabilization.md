@@ -34,6 +34,10 @@ until the candidate is released. [Migration guide](migration-v4.md).
 | Dependency audit | Zero reported vulnerabilities at install |
 | Packed consumer | Node ESM, Node require(esm), Bun and strict TypeScript |
 
+Negative control: the six new lifecycle/body/token regression scenarios were run
+against unmodified beta.5 source; all six failed as expected. Restoring the candidate
+source makes all six pass. This verifies that the assertions detect the actual defects.
+
 Run `npm ci && npm run check`, `npm run test:bun` and `npm run test:coverage`.
 Coverage excludes test helpers and is **not** a measure of TradingView symbols,
 permissions, server behavior, GUI parity or account-feature completeness. Loopback
@@ -47,9 +51,10 @@ A growing test count is not itself a release gate; assertions and tested behavio
 
 The local candidate suite passed **19 anonymous tests**; **six authenticated tests
 were skipped**, not passed, because credentials were not loaded into that run.
-The full suite now contains 25 tests. Authenticated CI evidence must show all six
-account tests actually executed; a green workflow with a non-blocking failed live
-job or skipped account tests is insufficient.
+The [manual authenticated CI run](https://github.com/Mathieu2301/TradingView-API/actions/runs/37149955645)
+on candidate commit `8e0e564` subsequently passed **all 25 tests**, including all six
+account tests (none skipped). Its Node 20/22/24 and Bun jobs also passed. A green
+workflow with a non-blocking failed live job or skipped account tests is insufficient.
 
 Earlier beta evidence remains in [reliability evidence](v4-reliability.md): six
 private USER scripts, 22 authenticated-suite tests, BTC updates after 30 heartbeats,
@@ -60,8 +65,8 @@ not substitutes for running the current candidate or reproducing original report
 
 | Gate / limitation | Disposition |
 | --- | --- |
-| Candidate deterministic CI and package consumption | Required before release |
-| Current authenticated live suite | Required before release; inspect tests, not only overall CI status |
+| Candidate deterministic CI and package consumption | Passed on Node 20/22/24 and Bun in the linked CI run |
+| Current authenticated live suite | Passed: 25/25 in the linked manual CI run |
 | Open-market EUR/USD HeikinAshi after 30 heartbeats | Scheduled for Monday 5 October, 09:00 Europe/Paris; remains pending |
 | Populated account watchlists | Deterministic fixtures only; do not modify account content just to manufacture coverage |
 | Deep Backtesting | Not shipped; available account returned `not_allowed` |

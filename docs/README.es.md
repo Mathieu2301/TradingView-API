@@ -35,7 +35,7 @@ const watcher = await watchCandles({ symbol: 'BINANCE:BTCUSDT', timeframe: '1' }
 await watcher.stop();
 ```
 
-Cada función gestiona la conexión, el tiempo máximo (`timeoutMs`), la cancelación (`signal`) y la limpieza. Otras funciones: `getQuotes`, `watchQuotes`, `getSymbolInfo`, `getIndicatorData`, `watchIndicator`, `searchMarkets`, `searchIndicators`, `getTechnicalAnalysis`. Detalles: [guía de la API de datos](data-api.md).
+Cada función gestiona la conexión, el tiempo máximo (`timeoutMs`), la cancelación (`signal`) y la limpieza. Otras funciones: `getQuotes`, `watchQuotes`, `getSymbolInfo`, `getIndicatorData`, `watchIndicator`, `searchMarkets`, `searchIndicators`, `getTechnicalAnalysis`, `getScreener`, `getHotlist`, `getWatchlists`. Detalles: [guía de la API de datos](data-api.md).
 
 ## API de bajo nivel
 
