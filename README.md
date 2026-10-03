@@ -25,7 +25,7 @@ console.log(candles.at(-1)); // { time, open, high, low, close, volume }
 
 Prefer to start without code? The setup paths below work too.
 
-> **Version 4 is a breaking rewrite** in TypeScript, with a new API and no compatibility layer. Coming from v3? Read the [migration guide](docs/migration-v4.md). Every v3 feature is still available: see the [coverage matrix](docs/v4-coverage.md) and [reliability evidence](docs/v4-reliability.md). npm versions 3.x keep the previous `Client` API; check the [npm page](https://www.npmjs.com/package/@mathieuc/tradingview) for the version you install.
+> **Version 4 is a breaking rewrite** in TypeScript, with a new API and no compatibility layer. Coming from v3? Read the [migration guide](docs/migration-v4.md). Every v3 feature is still available: see the [coverage matrix](docs/v4-coverage.md) and [reliability evidence](docs/v4-reliability.md). The [RC preparation report](docs/v4-stabilization.md) tracks current checks and remaining release gates. npm versions 3.x keep the previous `Client` API; check the [npm page](https://www.npmjs.com/package/@mathieuc/tradingview) for the version you install.
 
 ## Get started
 
@@ -95,6 +95,8 @@ const { values } = await getIndicatorData({
 | Quotes: last price, change, bid/ask, volume... | `getQuote`, `getQuotes`, `watchQuotes` |
 | Indicator values, drawings and strategy reports | `getIndicatorData`, `watchIndicator` |
 | Symbol metadata | `getSymbolInfo` |
+| Stock/crypto screening and ranked lists | `getScreener`, `getHotlist` |
+| Account watchlists (read-only) | `getWatchlists` |
 | Search and ratings | `searchMarkets`, `searchIndicators`, `getTechnicalAnalysis` |
 
 Websocket data functions accept `timeoutMs`, an `AbortSignal`, account `credentials`, and an optional shared `client`. HTTP lookups accept an `AbortSignal` through their options. Errors are `TradingViewError`s with a `code` such as `SYMBOL_ERROR`, `TIMEOUT` or `STUDY_ERROR`. Read the [data API guide](docs/data-api.md) for every option.

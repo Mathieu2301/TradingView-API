@@ -28,6 +28,14 @@ jobs:
     - run: npm run typecheck
     - run: npm run lint
     - run: npm test
+      if: matrix.node-version != '22.x'
+    - run: npm run test:coverage
+      if: matrix.node-version == '22.x'
+    - uses: actions/upload-artifact@v4
+      if: matrix.node-version == '22.x'
+      with:
+        name: unit-coverage
+        path: coverage/
     - run: npm run build
     - run: npm run smoke
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   getCandles, getQuote, getQuotes, getSymbolInfo, getTechnicalAnalysis, searchIndicators, searchMarkets,
-  watchCandles, watchQuotes, getIndicatorData,
+  watchCandles, watchQuotes, getIndicatorData, getScreener, getHotlist,
 } from '../../src/data/index.js';
 import { LIVE, minGap } from './env.js';
 
@@ -74,5 +74,29 @@ describe.skipIf(!LIVE)('live: high-level data API', () => {
     for (const period of ['1', '5', '15', '60', '240', '1D', '1W', '1M'] as const) {
       expect(ta?.[period]).toMatchObject({ Other: expect.any(Number), All: expect.any(Number), MA: expect.any(Number) });
     }
+  });
+});
+
+
+describe.skipIf(!LIVE)('live: scanner discovery', () => {
+  it('returns a requested symbol and numeric price columns', async () => {
+    const page = await getScreener({ market: 'crypto', symbols: ['BINANCE:BTCUSDT'], columns: ['close', 'name'] }, {
+      signal: AbortSignal.timeout(15_000),
+    });
+    expect(page.totalCount).toBeGreaterThan(0);
+    expect(page.rows).toEqual([expect.objectContaining({ symbol: 'BINANCE:BTCUSDT', values: {
+      close: expect.any(Number), name: expect.any(String),
+    } })]);
+  });
+
+  it('returns populated ranked stocks without claiming UI parity', async () => {
+    const page = await getHotlist({ kind: 'mostActive', columns: ['volume'], range: [0, 5] }, {
+      signal: AbortSignal.timeout(15_000),
+    });
+    expect(page.rows.length).toBeGreaterThan(0);
+    expect(page.rows.length).toBeLessThanOrEqual(5);
+    const volumes = page.rows.map((row) => row.values.volume);
+    for (const volume of volumes) expect(volume).toBeTypeOf('number');
+    expect(volumes).toEqual([...volumes].sort((a, b) => Number(b) - Number(a)));
   });
 });

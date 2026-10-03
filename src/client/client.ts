@@ -81,6 +81,8 @@ export class TradingViewClient extends Emitter<ClientEvents> {
 
   #authToken?: string;
 
+  readonly #authController = new AbortController();
+
   #closed = false;
 
   #closing = false;
@@ -140,13 +142,14 @@ export class TradingViewClient extends Emitter<ClientEvents> {
     if (options.authToken) {
       this.#authToken = options.authToken;
     } else if (options.credentials?.session) {
-      getUser(options.credentials, { location: options.location, fetch: options.fetch })
+      getUser(options.credentials, { location: options.location, fetch: options.fetch, signal: this.#authController.signal })
         .then((user) => {
-          if (this.#closed) return;
+          if (this.#closed || this.#closing) return;
           this.#authToken = user.authToken;
           this.#authenticate();
         })
         .catch((error) => {
+          if (this.#closed || this.#closing) return;
           this.#fail(new TradingViewError('AUTH_ERROR', `Credentials error: ${toTradingViewError(error).message}`, {
             cause: error,
           }));
@@ -221,6 +224,7 @@ export class TradingViewClient extends Emitter<ClientEvents> {
       this.#closeRequested = true;
       if (this.#closing) return;
       this.#closing = true;
+      this.#authController.abort();
       // Do not hang if the server never acknowledges the close.
       setTimeout(() => this.#onClose(1000, 'Close timeout'), 3_000).unref?.();
       this.#transport.close();
@@ -300,6 +304,7 @@ export class TradingViewClient extends Emitter<ClientEvents> {
     if (wasReady || this.hasListeners('error')) this.emit('error', error);
     if (!wasReady || error.code === 'AUTH_ERROR' || error.code === 'CONNECTION_ERROR') {
       this.#closing = true;
+      this.#authController.abort();
       this.#transport.close();
       // Some transports never emit close after a failed handshake.
       setTimeout(() => this.#onClose(undefined, error.message), 3_000).unref?.();
@@ -309,6 +314,7 @@ export class TradingViewClient extends Emitter<ClientEvents> {
   #onClose(code?: number, reason?: string): void {
     if (this.#closed) return;
     this.#closed = true;
+    this.#authController.abort();
     this.#authenticated = false;
     clearTimeout(this.#readyTimer);
     this.#log?.('close', code, reason);

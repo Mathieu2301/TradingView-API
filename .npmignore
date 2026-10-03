@@ -1,6 +1,5 @@
 node_modules/
 .github/
 tests/
-examples/
 scripts/
 .env

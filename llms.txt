@@ -10,6 +10,9 @@ Simple data API (import from '@mathieuc/tradingview/data' or the root entry):
 - watchCandles(query, { onData, onError? }) -> watcher { latest, stop(), closed }.
 - getQuote(symbol), getQuotes({ symbols }), watchQuotes({ symbols }, { onData }).
 - getSymbolInfo(symbol), getIndicatorData({ symbol, indicator, inputs? }), watchIndicator(...).
+- getScreener({ columns, market?, filter?, sort?, range?, symbols? }) -> { totalCount, rows }; one HTTP page, not a streaming screener.
+- getHotlist({ kind, ... }) -> scanner-ranked rows, not guaranteed TradingView UI parity.
+- getWatchlists({ credentials }) -> read-only account lists with ordered symbols and section markers.
 - searchMarkets(text), searchIndicators(text), getTechnicalAnalysis(symbol).
 - Websocket data calls accept timeoutMs, signal (AbortSignal), credentials ({ session, signature }) and client (shared TradingViewClient). HTTP lookups accept signal in options.
 - Candle calls can use a custom MarketDataProvider; TradingViewProvider is the default source adapter.

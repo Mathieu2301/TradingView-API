@@ -1,6 +1,6 @@
 {
   "name": "@mathieuc/tradingview",
-  "version": "4.0.0-beta.5",
+  "version": "4.0.0-rc.0",
   "description": "TradingView market data for JavaScript and TypeScript: candles, quotes, indicators and strategies, with a simple data API and full low-level access.",
   "type": "module",
   "main": "./dist/index.js",
@@ -23,7 +23,11 @@
     "README.md",
     "docs",
     "scripts/endurance.mjs",
-    "scripts/probe-account.mjs"
+    "scripts/probe-account.mjs",
+    "assets",
+    "llms.txt",
+    "examples",
+    "scripts/parity.mjs"
   ],
   "sideEffects": false,
   "scripts": {
@@ -39,7 +43,8 @@
     "prepack": "npm run build",
     "probe:endurance": "npm run build && node scripts/endurance.mjs",
     "probe:parity": "npm run build && node scripts/parity.mjs",
-    "probe:account": "npm run build && node scripts/probe-account.mjs"
+    "probe:account": "npm run build && node scripts/probe-account.mjs",
+    "test:coverage": "vitest run --coverage"
   },
   "repository": {
     "type": "git",
@@ -70,6 +75,7 @@
     "@eslint/js": "^9.39.0",
     "@types/node": "^22.20.5",
     "@types/ws": "^8.18.1",
+    "@vitest/coverage-v8": "^4.1.11",
     "eslint": "^9.39.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.0",

@@ -94,6 +94,7 @@ export async function request(url: string, init: RequestInit, options: HttpOptio
 
   const fetchImpl = options.fetch ?? globalThis.fetch;
   let response: Response;
+  let text: string;
   try {
     response = await fetchImpl(target.toString(), {
       method: init.method ?? (body === undefined ? 'GET' : 'POST'),
@@ -102,11 +103,11 @@ export async function request(url: string, init: RequestInit, options: HttpOptio
       redirect: init.redirect ?? 'follow',
       signal: options.signal,
     });
+    text = await response.text();
   } catch (error) {
     throw toTradingViewError(error, 'HTTP_ERROR');
   }
 
-  const text = await response.text();
   if (response.status >= 500) {
     throw new TradingViewError('HTTP_ERROR', `${target.host} answered HTTP ${response.status}`, {
       details: { status: response.status, body: text.slice(0, 500) },
