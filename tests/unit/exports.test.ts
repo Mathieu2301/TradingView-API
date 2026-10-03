@@ -8,7 +8,7 @@ describe('public API', () => {
       'ALL_QUOTE_FIELDS', 'BuiltInIndicator', 'CHART_TYPE_STUDIES', 'ChartSession', 'DEFAULT_TIMEOUT_MS', 'Emitter',
       'PineIndicator', 'PinePermissionManager', 'QuoteSession', 'QuoteSubscription', 'Study', 'TradingViewClient',
       'TradingViewError', 'TradingViewProvider', 'applyGraphicsCommands', 'clearIndicatorCache', 'getCandles', 'getChartToken', 'getDrawings',
-      'getIndicator', 'getIndicatorData', 'getPrivateIndicators', 'getQuote', 'getQuotes', 'getSymbolInfo',
+      'getIndicator', 'getIndicatorData', 'getPrivateIndicators', 'getQuote', 'getQuotes', 'getScreener', 'getSymbolInfo',
       'getTechnicalAnalysis', 'getUser', 'loginUser', 'mergeStrategyReport', 'parseGraphics', 'parseIndicatorDefinition',
       'parseTrades', 'protocol', 'quoteSymbolKey', 'resolveQuoteFields', 'searchIndicators', 'searchMarkets', 'summarizeStrategyReport',
       'timeframeSeconds', 'toTradingViewError', 'watchCandles', 'watchIndicator', 'watchQuotes', 'wsTransport',
@@ -21,7 +21,7 @@ describe('public API', () => {
 
   it('data entry only exposes the simplified data API', () => {
     expect(Object.keys(data).sort()).toEqual([
-      'DEFAULT_TIMEOUT_MS', 'TradingViewError', 'TradingViewProvider', 'getCandles', 'getIndicatorData', 'getQuote', 'getQuotes', 'getSymbolInfo',
+      'DEFAULT_TIMEOUT_MS', 'TradingViewError', 'TradingViewProvider', 'getCandles', 'getIndicatorData', 'getQuote', 'getQuotes', 'getScreener', 'getSymbolInfo',
       'getTechnicalAnalysis', 'searchIndicators', 'searchMarkets', 'summarizeStrategyReport', 'watchCandles', 'watchIndicator', 'watchQuotes',
     ]);
     expect(data.getCandles).toBe(root.getCandles);
