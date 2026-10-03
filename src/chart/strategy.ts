@@ -57,7 +57,7 @@ export interface FromTo {
 export interface StrategyReport {
   currency?: string;
   settings?: { dateRange?: { backtest?: FromTo; trade?: FromTo }; [key: string]: unknown };
-  /** Trades, most recent first. */
+  /** Trade records, most recent first; may include open positions with an exit valuation. */
   trades: TradeReport[];
   history: {
     buyHold?: number[];
@@ -125,16 +125,50 @@ export function mergeStrategyReport(target: StrategyReport, report: any): Strate
     target.trades = parseTrades(report.trades);
     changes.push('report.trades');
   }
-  if (report.equity) {
-    target.history = {
-      buyHold: report.buyHold,
-      buyHoldPercent: report.buyHoldPercent,
-      drawDown: report.drawDown,
-      drawDownPercent: report.drawDownPercent,
-      equity: report.equity,
-      equityPercent: report.equityPercent,
-    };
-    changes.push('report.history');
+  const historyKeys = [
+    'buyHold', 'buyHoldPercent', 'drawDown', 'drawDownPercent', 'equity', 'equityPercent',
+  ] as const;
+  let historyChanged = false;
+  for (const key of historyKeys) {
+    if (Array.isArray(report[key])) {
+      target.history[key] = report[key];
+      historyChanged = true;
+    }
   }
+  if (historyChanged) changes.push('report.history');
   return changes;
+}
+
+/** Aggregate counts are authoritative; an exit valuation does not prove closure. */
+export interface StrategySummary {
+  tradeRecordCount: number;
+  closedTradeCount?: number;
+  openTradeCount?: number;
+  closedNetProfit?: number;
+  openPnL?: number;
+  /** Available only when both closed and open PnL are present. */
+  totalPnL?: number;
+  currency?: string;
+}
+
+/** Summarizes reported aggregates without inferring missing values or trade status. */
+export function summarizeStrategyReport(report: StrategyReport): StrategySummary {
+  const finite = (value: unknown): number | undefined =>
+    typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+  const count = (value: unknown): number | undefined => {
+    const n = finite(value);
+    return n !== undefined && Number.isInteger(n) && n >= 0 ? n : undefined;
+  };
+  const closedNetProfit = finite(report.performance.all?.netProfit);
+  const openPnL = finite(report.performance.openPL);
+  return {
+    currency: report.currency,
+    tradeRecordCount: report.trades.length,
+    closedTradeCount: count(report.performance.all?.totalTrades),
+    openTradeCount: count(report.performance.all?.totalOpenTrades),
+    closedNetProfit,
+    openPnL,
+    totalPnL: closedNetProfit !== undefined && openPnL !== undefined
+      ? finite(closedNetProfit + openPnL) : undefined,
+  };
 }

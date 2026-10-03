@@ -10,7 +10,7 @@ describe('public API', () => {
       'TradingViewError', 'TradingViewProvider', 'applyGraphicsCommands', 'clearIndicatorCache', 'getCandles', 'getChartToken', 'getDrawings',
       'getIndicator', 'getIndicatorData', 'getPrivateIndicators', 'getQuote', 'getQuotes', 'getSymbolInfo',
       'getTechnicalAnalysis', 'getUser', 'loginUser', 'mergeStrategyReport', 'parseGraphics', 'parseIndicatorDefinition',
-      'parseTrades', 'protocol', 'quoteSymbolKey', 'resolveQuoteFields', 'searchIndicators', 'searchMarkets',
+      'parseTrades', 'protocol', 'quoteSymbolKey', 'resolveQuoteFields', 'searchIndicators', 'searchMarkets', 'summarizeStrategyReport',
       'timeframeSeconds', 'toTradingViewError', 'watchCandles', 'watchIndicator', 'watchQuotes', 'wsTransport',
     ]);
     expect(Object.keys(root.protocol).sort()).toEqual([
@@ -22,7 +22,7 @@ describe('public API', () => {
   it('data entry only exposes the simplified data API', () => {
     expect(Object.keys(data).sort()).toEqual([
       'DEFAULT_TIMEOUT_MS', 'TradingViewError', 'TradingViewProvider', 'getCandles', 'getIndicatorData', 'getQuote', 'getQuotes', 'getSymbolInfo',
-      'getTechnicalAnalysis', 'searchIndicators', 'searchMarkets', 'watchCandles', 'watchIndicator', 'watchQuotes',
+      'getTechnicalAnalysis', 'searchIndicators', 'searchMarkets', 'summarizeStrategyReport', 'watchCandles', 'watchIndicator', 'watchQuotes',
     ]);
     expect(data.getCandles).toBe(root.getCandles);
   });

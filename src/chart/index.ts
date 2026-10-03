@@ -12,9 +12,9 @@ export type {
   GraphicPoint, GraphicPolygon, GraphicTable, GraphicsData, HAlignValue, LabelStyleValue, LineStyleValue,
   RawGraphics, SizeValue, TableCell, TablePositionValue, TextWrapValue, VAlignValue, YLocValue,
 } from './graphics.js';
-export { mergeStrategyReport, parseTrades } from './strategy.js';
+export { mergeStrategyReport, parseTrades, summarizeStrategyReport } from './strategy.js';
 export type {
-  FromTo, PerformanceReport, RelAbsValue, StrategyReport, StrategyReportChange, TradeReport,
+  FromTo, PerformanceReport, RelAbsValue, StrategyReport, StrategyReportChange, StrategySummary, TradeReport,
 } from './strategy.js';
 export { timeframeSeconds } from './timeframes.js';
 export { CHART_TYPE_STUDIES } from './types.js';
