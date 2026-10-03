@@ -68,7 +68,7 @@
     "eslint": "^9.39.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.0",
-    "vitest": "^3.2.4"
+    "vitest": "^4.1.11"
   },
   "homepage": "https://github.com/Mathieu2301/TradingView-API#readme",
   "bugs": {

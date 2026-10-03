@@ -47,6 +47,16 @@ describe('searchMarkets', () => {
     ]);
   });
 
+  it('combines country and sector filters with exchange, type and pagination', async () => {
+    const { fetch, calls } = mockFetch(() => json({ symbols: [] }));
+    await searchMarkets('', {
+      country: 'US', sector: 'Finance', exchange: 'NASDAQ', type: 'common_stock', offset: 20, fetch,
+    });
+    expect(Object.fromEntries(calls[0].url.searchParams)).toEqual({
+      text: '', exchange: 'NASDAQ', search_type: 'common_stock', start: '20', country: 'US', sector: 'Finance',
+    });
+  });
+
   it('throws HTTP_ERROR for unexpected payloads and 5xx statuses', async () => {
     await expect(searchMarkets('x', { fetch: mockFetch(() => json({ nope: true })).fetch })).rejects.toMatchObject({ code: 'HTTP_ERROR' });
     await expect(searchMarkets('x', { fetch: mockFetch(() => new Response('down', { status: 503 })).fetch }))
@@ -173,6 +183,24 @@ describe('accounts', () => {
       authToken: 'tok',
       joinDate: new Date('2020-01-02T03:04:05Z'),
     });
+  });
+
+  it('getUser tolerates an empty notification count object', async () => {
+    const { fetch } = mockFetch(() => new Response(page.replace(
+      '"notification_count":{"following":5,"user":6}', '"notification_count":{}',
+    )));
+    const user = await getUser({ session: 's' }, { fetch });
+    expect(user.notifications).toEqual({ following: 0, user: 0 });
+    expect(user.authToken).toBe('tok');
+  });
+
+  it('getUser uses the chart page and ignores a Location header on HTTP 200', async () => {
+    const noToken = mockFetch(() => new Response('no token', {
+      status: 200, headers: { location: 'https://fr.tradingview.com/chart/' },
+    }));
+    await expect(getUser({ session: 's' }, { fetch: noToken.fetch }))
+      .rejects.toMatchObject({ code: 'AUTH_ERROR', message: 'Wrong or expired sessionid/signature' });
+    expect(noToken.calls.map((call) => call.url.pathname)).toEqual(['/chart/']);
   });
 
   it('getUser stops redirect loops and rejects wrong sessions', async () => {

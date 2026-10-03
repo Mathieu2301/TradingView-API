@@ -211,3 +211,14 @@ protocol.createSessionId('cs');     // 'cs_Ab12Cd34Ef56'
 ```
 
 Frames are `~m~<length>~m~<payload>`, where the length counts UTF-16 code units; heartbeats are `~h~<id>` and must be echoed (the client does it).
+
+### Country and sector search filters
+
+```js
+const banks = await searchMarkets('', {
+  type: 'common_stock', country: 'US', sector: 'Finance', exchange: 'NASDAQ',
+});
+```
+
+`country` and `sector` are optional TradingView symbol-search filters. They combine
+with `type`, `exchange`, and `offset`; omitting them preserves the default search.
