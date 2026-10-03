@@ -217,7 +217,15 @@ export class Study extends Emitter<StudyEvents> {
         }
       }
 
-      if (parsed?.data?.report) changes.push(...mergeStrategyReport(this.#strategyReport, parsed.data.report));
+      if (parsed?.data?.report) {
+        try {
+          changes.push(...mergeStrategyReport(this.#strategyReport, parsed.data.report));
+        } catch (error) {
+          this.emit('error', new TradingViewError('PARSE_ERROR', 'Unable to parse strategy report', {
+            cause: error,
+          }));
+        }
+      }
     }
 
     if (Array.isArray(ns?.indexes)) this.#graphicIndexes = ns.indexes;
