@@ -161,7 +161,10 @@ export async function getUser(credentials: Credentials, options: GetUserOptions 
 
   for (let redirects = 0; ; redirects += 1) {
     const { status, text, headers } = await request(location, { credentials, redirect: 'manual' }, options);
-    if (text.includes('auth_token')) return parseUserPage(text, credentials);
+    if (status >= 200 && status < 300 && text.includes('auth_token')) {
+      const user = parseUserPage(text, credentials);
+      if (user.authToken) return user;
+    }
 
     const next = headers.get('location');
     const resolved = status >= 300 && status < 400 && next ? new URL(next, location).toString() : undefined;

@@ -2,14 +2,14 @@
 
 Baseline: `da67081` / published `4.0.0-beta.1`. Snapshot: **96 open issues and 8 open PRs**.
 
-Follow-up: #334 was merged on 3 October 2026. The focused fixes are included in the beta.2 release candidate. Reliability tools from #330 were subsequently ported without its stale version/README changes; the completed two-hour result is recorded in [reliability evidence](v4-reliability.md). Historical rows below describe the initial snapshot, not current PR state.
+Follow-up: #334 was merged on 3 October 2026. The focused fixes are included in the beta.2 release candidate. Reliability tools from #330 were subsequently ported without its stale version/README changes; the completed two-hour result is recorded in [reliability evidence](v4-reliability.md). The issue table below is refreshed through beta.5/stabilization; dated verification sections retain their original evidence.
 
 This is an issue-by-issue disposition, not a claim that 96 bugs were reproduced or fixed.
 Evidence comes from issue descriptions, current source/tests and the existing [coverage matrix](v4-coverage.md).
 “Covered by code” is weaker than a targeted regression or live reproduction. “Needs” means keep open.
 No issues/legacy PRs were closed, and no contributor comments were sent by this pass.
 
-## Immediate findings
+## Initial beta.1 findings (historical)
 
 1. **Authentication gap:** PR #330 is still open. Its `/chart/` default and non-3xx redirect guard are absent from beta.1. This change ports only that focused fix with its regression test, not its old release/version text.
 2. **Concrete missing feature:** #225 country/sector search filters implemented in this change, with deterministic query coverage and a public live endpoint probe.
@@ -18,9 +18,12 @@ No issues/legacy PRs were closed, and no contributor comments were sent by this 
 
 ## Issues
 
+Current inventory: **95 open issues and 7 legacy open PRs** on 3 October 2026.
+Rows describe capability disposition, not automatic authorization to close reports.
+
 | Issue | Disposition | Evidence / next action |
 | --- | --- | --- |
-| [#321](https://github.com/Mathieu2301/TradingView-API/issues/321) getUser reports "Too many redirects" for HTTP 200 responses without auth_token | Partial → patched | The beta avoids missing-Location loops, but still starts at the homepage and follows a Location on HTTP 200. Ported the focused fix from PR #330; HTTP regression test passes. Not yet published. |
+| [#321](https://github.com/Mathieu2301/TradingView-API/issues/321) getUser reports "Too many redirects" for HTTP 200 responses without auth_token | Partial → patched | Published since beta.2: starts at /chart/ and follows Location only on 3xx. HTTP regression and authenticated live suite pass; CAPTCHA/WAF remains outside this fix. |
 | [#319](https://github.com/Mathieu2301/TradingView-API/issues/319) More Control and access to data | Missing | Paper-trading account management and order execution are not exposed by V4. |
 | [#313](https://github.com/Mathieu2301/TradingView-API/issues/313) History Create Session / Request History Data Features help | Missing / gated | No HistorySession or request_history_data implementation. PR #204 is a protocol reference, not V4-compatible code; requires entitled-account live validation. |
 | [#312](https://github.com/Mathieu2301/TradingView-API/issues/312) tradingview wss is updated? | Needs reproduction | Current transport and timeouts are implemented, but the original connection timeout has no host/network trace. Capture exact endpoint, Node version and error on V4. |
@@ -49,7 +52,7 @@ No issues/legacy PRs were closed, and no contributor comments were sent by this 
 | [#232](https://github.com/Mathieu2301/TradingView-API/issues/232) Crypto Cap (e.g. CRYPTOCAP:TOTAL) symbols return "invalid symbol" | Needs reproduction | Issue is specifically CRYPTOCAP Replay, not ordinary candles. Test replay on TOTAL/OTHERS with an entitled account. |
 | [#231](https://github.com/Mathieu2301/TradingView-API/issues/231) Missing data in examples/FromToData.js - provided date and custom date | Partial / server limits | getCandles from/to pagination is implemented; historical intraday availability remains server/account limited. Reproduce original window, not just a recent range. |
 | [#230](https://github.com/Mathieu2301/TradingView-API/issues/230) os.version is not a function / Can't resolve 'os" | Unsupported environment | V4 targets Node/Bun and imports node:os/ws. Browser-extension support is not established by removing the old os.version call. |
-| [#225](https://github.com/Mathieu2301/TradingView-API/issues/225) Add additional filter on search market v3 | Missing → implemented | Added country/sector to searchMarkets, preserving exchange/type/offset. Unit coverage and public endpoint probe; not yet published. |
+| [#225](https://github.com/Mathieu2301/TradingView-API/issues/225) Add additional filter on search market v3 | Missing → implemented | Published since beta.2: country/sector filters preserve exchange/type/offset. Deterministic forwarding checks and public endpoint probe. |
 | [#224](https://github.com/Mathieu2301/TradingView-API/issues/224) Default setting indicators | Partial | getIndicator provides defaults and PineIndicator.clone preserves a baseline. No reset-to-defaults convenience method; document reload/clone workflow. |
 | [#223](https://github.com/Mathieu2301/TradingView-API/issues/223) Premium account doesn't return 20000 bars for server='prodata' | Needs entitled account | Pagination and credentials exist, but Premium/prodata 20k-bar entitlement is not proven with Basic. |
 | [#222](https://github.com/Mathieu2301/TradingView-API/issues/222) Wrong or expired sessionid/signature - all time | Needs account reproduction | V4 credentials are { session, signature }; focused getUser patch helps page selection, but does not establish the original account entitlement or cookie validity. |
@@ -63,7 +66,7 @@ No issues/legacy PRs were closed, and no contributor comments were sent by this 
 | [#201](https://github.com/Mathieu2301/TradingView-API/issues/201) Private indicators | Needs private asset | Private listing/auth paths are implemented; specific invite-only access and private study values require an authorized matching script fixture. |
 | [#199](https://github.com/Mathieu2301/TradingView-API/issues/199) Manage pine scripts | Missing | Pine permissions/listing are not script source create/update/delete APIs. |
 | [#193](https://github.com/Mathieu2301/TradingView-API/issues/193) TypeError: str.replace is not a function - Handling Buffer Input in parseWSPacket | Covered by code | src/client/transport.ts converts Buffer, Buffer[] and ArrayBuffer to text before framing. Historical caller-specific environment not reproduced. |
-| [#192](https://github.com/Mathieu2301/TradingView-API/issues/192) 15 minutes delay for MOEX market | Upstream entitlement / missing | Exchange real-time rights and server delays must be checked with that venue/account. General stock screener API is not implemented. |
+| [#192](https://github.com/Mathieu2301/TradingView-API/issues/192) 15 minutes delay for MOEX market | Upstream entitlement / missing | Exchange real-time rights and server delays must be checked with that venue/account. getScreener is available since beta.3, but does not grant exchange real-time rights. |
 | [#191](https://github.com/Mathieu2301/TradingView-API/issues/191) How to install? | Covered | README installation/quick start, docs/data-api.md and examples cover the requested entry point; package consumer smoke passes. |
 | [#188](https://github.com/Mathieu2301/TradingView-API/issues/188) Pine 'referencing length of a series' error after about 12 hours | Needs long-run reproduction | 12-hour Pine max_bars_back failure is not a normal indicator input. Need script and long-running capture; short endurance runs cannot resolve it. |
 | [#184](https://github.com/Mathieu2301/TradingView-API/issues/184) Proxy support  | Partial | Custom WebSocket transport and HTTP fetch hooks permit adapters, but no documented/tested unified proxy configuration. PR #208 cannot be merged unchanged. |
@@ -104,27 +107,27 @@ No issues/legacy PRs were closed, and no contributor comments were sent by this 
 | [#101](https://github.com/Mathieu2301/TradingView-API/issues/101) FakeReplay always returning the same day | Needs targeted regression | Negative-count history is live-tested generally; exact repeated-day/gap cases and exchange holidays still need reproduction. |
 | [#89](https://github.com/Mathieu2301/TradingView-API/issues/89) No "strategyReport.trades"  data for private strategy  backtest | Needs private asset | Public and compressed reports are proven; missing trades for the specific private strategy is not yet reproduced. |
 | [#88](https://github.com/Mathieu2301/TradingView-API/issues/88) Data point is missing in FakeReplayMode example output | Needs targeted regression | Negative-count history is live-tested generally; exact repeated-day/gap cases and exchange holidays still need reproduction. |
-| [#87](https://github.com/Mathieu2301/TradingView-API/issues/87) Feature : get watchlists | Missing | No watchlist or hotlist API; useful next discovery target alongside screener. |
-| [#85](https://github.com/Mathieu2301/TradingView-API/issues/85) Question : Can you enable stock screener real-time ? | Upstream entitlement / missing | Exchange real-time rights and server delays must be checked with that venue/account. General stock screener API is not implemented. |
+| [#87](https://github.com/Mathieu2301/TradingView-API/issues/87) Feature : get watchlists | Covered with live limits | Published in beta.4: getWatchlists and scanner-ranked getHotlist. Populated lists are fixture-tested; available account lists are empty. UI parity is not claimed. |
+| [#85](https://github.com/Mathieu2301/TradingView-API/issues/85) Question : Can you enable stock screener real-time ? | Upstream entitlement / missing | Exchange real-time rights and server delays must be checked with that venue/account. getScreener is available since beta.3, but does not grant exchange real-time rights. |
 | [#84](https://github.com/Mathieu2301/TradingView-API/issues/84) Alerts feature | Missing | No TradingView alert CRUD or triggered-alert subscription. Local quote/study listeners are not server-side alerts. |
 | [#83](https://github.com/Mathieu2301/TradingView-API/issues/83) how to get update data of strategy.entry trigger signal. | Partial | Strategy reports and study updates exist; no dedicated exactly-once strategy.entry signal stream. Application must distinguish intrabar updates. |
 | [#80](https://github.com/Mathieu2301/TradingView-API/issues/80) [V3] Same output multiple times | Needs reproduction | Repeated update events may be intrabar updates or study lifecycle effects. No evidence yet of a V4 fix for this exact script. |
 | [#79](https://github.com/Mathieu2301/TradingView-API/issues/79) Where can I find the chart_id for getDrawings? | Partial documentation | getDrawings supports chartId/layout inputs, but extracting the correct internal chart ID needs a saved-layout example and private validation. |
 | [#73](https://github.com/Mathieu2301/TradingView-API/issues/73) Strategy Optimization Steps | Partial | Inputs and reports exist; no bounded optimization runner, date-window Deep Backtest or throttle-aware multithreading API. |
 | [#66](https://github.com/Mathieu2301/TradingView-API/issues/66) Maximum number of studies per chart has been reached | Upstream limits | Server study/session/calculation limits are not removed by V4. Bound concurrency, release sessions and reproduce account-specific thresholds; no bulk retry flood. |
-| [#53](https://github.com/Mathieu2301/TradingView-API/issues/53) Stock Screener API | Missing | No general stock screener API; getTechnicalAnalysis is only a fixed-column ratings request. |
+| [#53](https://github.com/Mathieu2301/TradingView-API/issues/53) Stock Screener API | Covered HTTP API | Published in beta.3: getScreener supports columns, filters, ranking and pagination; deterministic and anonymous live checks. Not a push subscription. |
 | [#51](https://github.com/Mathieu2301/TradingView-API/issues/51) Adding some sort of documentation | Covered | README installation/quick start, docs/data-api.md and examples cover the requested entry point; package consumer smoke passes. |
 | [#30](https://github.com/Mathieu2301/TradingView-API/issues/30) Can I Hire You To Set This Up For Me? | Administrative | Collaboration/service proposal, not a reproducible library defect. No unsolicited outreach in this triage. |
 | [#24](https://github.com/Mathieu2301/TradingView-API/issues/24) Renko chart's indicator value does not match GUI-based TradingView's, given same configurations | Needs parity reproduction | Renko chart type is live-tested, but this exact multi-timeframe study/GUI value mismatch is not. Need matched bars, inputs and account. |
 
-## Open pull requests
+## Legacy pull requests
 
 | PR | Verified disposition | Next action |
 | --- | --- | --- |
-| [#330](https://github.com/Mathieu2301/TradingView-API/pull/330) | **Not merged.** Auth fix, parity/endurance scripts and recovery live test remain useful. Version/release prose is stale. | Focused auth port included here. Retain/rebase remaining reliability work; recover saved endurance results before claiming completion. |
+| [#330](https://github.com/Mathieu2301/TradingView-API/pull/330) | Closed/superseded after focused ports in #334/#335. Authentication, parity/endurance tooling and recovery checks are included in beta.2. | No remaining code port from this PR is needed for the documented scope; the recovered two-hour result is in reliability evidence. |
 | [#322](https://github.com/Mathieu2301/TradingView-API/pull/322) | Legacy V3 authentication patch; not directly applicable to TS V4. | Its chart-page/status semantics are carried through #330 into this port. Decide V3 backport separately while latest is 3.5.2. |
 | [#320](https://github.com/Mathieu2301/TradingView-API/pull/320) | V3 this-binding patch. V4 HTTP functions are standalone, not receiver-based. | Superseded for V4; possible V3 maintenance value. |
-| [#318](https://github.com/Mathieu2301/TradingView-API/pull/318) | Binding fix is superseded, but dependency upgrade is **not** automatically superseded: The baseline still uses Vitest 3. | Audit confirmed GHSA-82fw-gwwq-j7x9 in Vitest/mocker. Updated to patched Vitest 4.1.11+ in this change; not the older vulnerable 4.1.9 from the PR. |
+| [#318](https://github.com/Mathieu2301/TradingView-API/pull/318) | V4 uses standalone HTTP functions and patched Vitest 4.1.11. The original Vitest 3 baseline no longer applies. | Audit confirmed GHSA-82fw-gwwq-j7x9 in Vitest/mocker. Updated to patched Vitest 4.1.11+ in this change; not the older vulnerable 4.1.9 from the PR. |
 | [#289](https://github.com/Mathieu2301/TradingView-API/pull/289) | General chart event registration exists via Emitter.on/onAny and event tests. | Superseded for V4; no need to port V3 callback storage. |
 | [#219](https://github.com/Mathieu2301/TradingView-API/pull/219) | Native TS build emits declarations and package smoke compiles a strict consumer. | Superseded for V4; avoid stale generated V3 declarations. |
 | [#208](https://github.com/Mathieu2301/TradingView-API/pull/208) | Axios/ws proxy patch targets removed V3 architecture. V4 offers transport/fetch injection, not a turnkey proxy. | Preserve intent; implement/test an adapter recipe across both HTTP and WS before resolving #184. |
@@ -143,7 +146,7 @@ No issues/legacy PRs were closed, and no contributor comments were sent by this 
 
 Beta.3 adds `getScreener` for #53 and scanner fields relevant to #280. See
 [screener documentation](screener.md). #85 real-time exchange entitlement is not
-resolved by a successful HTTP scan. Watchlists and paid/private cases remain open.
+resolved by a successful HTTP scan. Watchlists shipped subsequently in beta.4; paid/private case limitations remain.
 
 ## Watchlist follow-up
 

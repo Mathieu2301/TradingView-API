@@ -17,6 +17,7 @@ Examples that need an account read the `SESSION` and `SIGNATURE` cookies from th
 | [watch-candles.js](watch-candles.js) | `watchCandles` | No |
 | [quotes.js](quotes.js) | `getQuote`, `getQuotes`, `watchQuotes` | No |
 | [indicator-data.js](indicator-data.js) | `getIndicatorData` | Pine scripts only |
+| [screener.js](screener.js) | `getScreener` (filters, columns, ranking) | No |
 | [search.js](search.js) | `searchMarkets`, `searchIndicators`, `getTechnicalAnalysis` | No |
 | [custom-chart-types.js](custom-chart-types.js) | Heikin Ashi, Renko, Line Break, Kagi, P&F, Range | No (daily) |
 | [errors.js](errors.js) | `TradingViewError` codes | Partly |

@@ -21,7 +21,7 @@ const dir = mkdtempSync(join(tmpdir(), 'tv-smoke-'));
 try {
   const packed = JSON.parse(run('npm', ['pack', '--json', '--pack-destination', dir], root))[0];
   const files = packed.files.map((f) => f.path);
-  for (const required of ['dist/index.js', 'dist/index.d.ts', 'dist/data/index.js', 'dist/data/index.d.ts', 'README.md']) {
+  for (const required of ['dist/index.js', 'dist/index.d.ts', 'dist/data/index.js', 'dist/data/index.d.ts', 'README.md', 'llms.txt', 'scripts/endurance.mjs', 'scripts/probe-account.mjs', 'scripts/parity.mjs', 'examples/screener.js']) {
     if (!files.includes(required)) throw new Error(`Missing ${required} in package`);
   }
   if (files.some((f) => f.startsWith('src/') || f.startsWith('tests/'))) throw new Error('Sources or tests leaked into package');
@@ -35,6 +35,9 @@ try {
     import { getCandles, watchQuotes, TradingViewError, TradingViewProvider } from '@mathieuc/tradingview/data';
     const pkg = JSON.parse(await (await import('node:fs/promises')).readFile(new URL(import.meta.resolve('@mathieuc/tradingview/package.json')), 'utf8'));
     if (typeof tv.TradingViewClient !== 'function' || typeof getCandles !== 'function' || typeof watchQuotes !== 'function' || typeof TradingViewProvider !== 'function') throw new Error('exports missing');
+    for (const name of ['getScreener', 'getWatchlists', 'getHotlist', 'summarizeStrategyReport']) {
+      if (typeof tv[name] !== 'function') throw new Error('missing export: ' + name);
+    }
     if (tv.getCandles !== getCandles) throw new Error('entry points disagree');
     const frame = tv.protocol.encodePacket('set_auth_token', ['x']);
     if (tv.protocol.decodeFrames(frame)[0].packet.m !== 'set_auth_token') throw new Error('protocol roundtrip failed');
@@ -65,14 +68,17 @@ try {
   const tsc = join(root, 'node_modules', 'typescript', 'bin', 'tsc');
   writeFileSync(join(dir, 'consumer.ts'), `
     import { getCandles, TradingViewProvider, type Candle, type MarketDataProvider } from '@mathieuc/tradingview/data';
-    import { TradingViewClient, type StudyValue } from '@mathieuc/tradingview';
+    import { getScreener, getHotlist, getWatchlists, type ScreenerResult, type Watchlist, TradingViewClient, type StudyValue } from '@mathieuc/tradingview';
     const candles: Promise<Candle[]> = getCandles({ symbol: 'BINANCE:BTCUSDT', timeframe: '60', count: 10 });
     const client = new TradingViewClient();
     const chart = client.createChart();
     chart.on('update', (changes: string[]) => console.log(changes, chart.candles.at(-1)?.close));
     const row: StudyValue = { $time: 1 };
     const provider: MarketDataProvider = new TradingViewProvider();
-    void candles; void row; void provider;
+    const scan: Promise<ScreenerResult> = getScreener({ columns: ['close'], range: [0, 10] });
+    const ranked: Promise<ScreenerResult> = getHotlist({ kind: 'gainers' });
+    const lists: Promise<Watchlist[]> = getWatchlists({ credentials: { session: 'fixture' } });
+    void scan; void ranked; void lists; void candles; void row; void provider;
   `);
   writeFileSync(join(dir, 'tsconfig.json'), JSON.stringify({
     compilerOptions: { module: 'NodeNext', moduleResolution: 'NodeNext', target: 'ES2022', strict: true, noEmit: true, types: [], lib: ['ES2022', 'DOM'] },

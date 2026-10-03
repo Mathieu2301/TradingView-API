@@ -6,7 +6,7 @@ This matrix lists every capability of v3 (`main.js`, `src/`, examples, tests) an
 
 **Evidence columns**
 
-- **Unit**: deterministic test in `tests/unit/` (`npm test` with Vitest on Node, `npm run test:bun` with Bun's runner; 118 tests, both green). Websocket tests use a scripted fake server (`tests/helpers/fake-server.ts`) or packets captured from TradingView (`tests/fixtures/live-session.json`); HTTP tests use a mocked `fetch`.
+- **Unit**: deterministic test in `tests/unit/` (`npm test` with Vitest on Node, `npm run test:bun` with Bun's runner; 135 tests in the stabilization candidate, both green). Websocket tests include the native Node/Bun transport against a loopback server (`tests/unit/transport.test.ts`), a scripted fake server (`tests/helpers/fake-server.ts`) or packets captured from TradingView (`tests/fixtures/live-session.json`); HTTP tests use a mocked `fetch`.
 - **Live**: result of `npm run test:live` (`tests/live/`) and examples against TradingView on **2 October 2026**: 16 anonymous tests locally and 21 tests (including five authenticated) in the [manual GitHub Actions run](https://github.com/Mathieu2301/TradingView-API/actions/runs/37075296707):
   - ✅ verified live anonymously;
   - 🔒 path or variant not exercised live (often requires a specific account asset); deterministic tests only;
@@ -15,6 +15,25 @@ This matrix lists every capability of v3 (`main.js`, `src/`, examples, tests) an
 Beta.2 follow-up on **3 October 2026**: all 22 current live tests passed locally with the existing account, including the additional controlled-disconnection/replacement-client test. The historical run above remains evidence for the original 21-test suite.
 
 Test names are abbreviated as `file › test`.
+
+## Stabilization checks — 3 October 2026
+
+`npm run test:coverage` measures **source files only** with V8 (test helpers are excluded).
+The CI Node 22 job enforces minimums of 90% lines, 85% statements/functions and 75%
+branches, and uploads the HTML/JSON report. These are regression floors, not claims
+of universal behavior. Network/account coverage is tracked independently below.
+See the [stabilization report](v4-stabilization.md) for release gates and current results.
+
+| Capability / failure path | Deterministic evidence | Live evidence / limit |
+| --- | --- | --- |
+| Screener pagination, fields, types and errors | `screener.test.ts` | `live/data.test.ts`: requested BTC symbol and price |
+| Ranked lists (four kinds) | `watchlists.test.ts` | `live/data.test.ts`: populated volume ranking; not UI parity |
+| Read-only account watchlists | `watchlists.test.ts`: populated lists, sections, metadata, auth failures | `live/authenticated.test.ts`: read-only response; available lists are empty |
+| HTTP response stream failure / cancellation | `http.test.ts`: typed HTTP_ERROR / ABORTED after headers | Simulated, not an upstream failure claim |
+| Authentication cancelled by close, disconnect or timeout | `client.test.ts`: request aborted, no late AUTH_ERROR or auth packet | Simulated lifecycle failures |
+| Empty/malformed auth token or rejected HTTP page | `http.test.ts`: AUTH_ERROR | Existing authenticated suite checks successful lookup |
+| Native websocket framing, Origin and handshake failure | `transport.test.ts`: real loopback websocket under both runners | Does not reproduce DNS, proxy or internet loss |
+| Published exports and declarations | `scripts/smoke.mjs`: tarball, Node/Bun, require(esm), strict TS including discovery APIs | No TradingView access in smoke |
 
 ## Package and tooling
 
@@ -111,7 +130,7 @@ Test names are abbreviated as `file › test`.
 | `PineIndicator` getters (`pineId`, `pineVersion`, description, inputs, plots, script, type) and `setType` | `id`, `version`, same others; `setType`, `clone` | `indicators › clones independently...` | ✅ (`sessions › loads Pine indicator definitions`) |
 | `PineIndicator.setOption` (by `in_N`, number, inline name, internal ID; type and option checks) | `setInput`, `setInputs`, `findInput` | `indicators › finds inputs by ID...` | ✅ (definition-level) |
 | `BuiltInIndicator(type)`, defaults for Volume and volume profiles, `setOption(key, value, FORCE)` | Same (+ initial options; time defaults computed per instance instead of at import) | `indicators › BuiltInIndicator › *` | ✅ (`Volume`, `VbPFixed@tv-basicstudies-241!`) |
-| `getIndicator(id, version, session, signature)` (pine-facade translate, input/plot naming) | `getIndicator(id, { version, credentials })`, `parseIndicatorDefinition` | `indicators › parseIndicatorDefinition...`, `http › loads an indicator definition...`, `throws NOT_FOUND...` | ✅ public scripts; 🔒 private/invite-only |
+| `getIndicator(id, version, session, signature)` (pine-facade translate, input/plot naming) | `getIndicator(id, { version, credentials })`, `parseIndicatorDefinition` | `indicators › parseIndicatorDefinition...`, `http › loads an indicator definition...`, `throws NOT_FOUND...` | ✅ public scripts and six saved USER scripts; 🔒 original invite-only issue fixtures |
 | (new) One-shot / streaming indicator values | `getIndicatorData`, `watchIndicator` | `data › indicator data › *` | ✅ built-in and one-shot Pine RSI with account; Pine stream unit-tested |
 
 ## Quotes
@@ -137,7 +156,7 @@ Test names are abbreviated as `file › test`.
 | `getTA(symbol)` (8 periods × All/MA/Other, scaled) | `getTechnicalAnalysis(symbol)` (`null` instead of `false` without data) | `http › getTechnicalAnalysis › *` | ✅ |
 | `searchIndicator(text)` (built-in lists cached + community suggestions, access mapping) | `searchIndicators(text)`, `clearIndicatorCache()` | `http › searches built-in and community indicators` | ✅ |
 | `result.get()` on indicator results | `getIndicator(result.id, { version: result.version })` | `http › loads an indicator definition...` | ✅ |
-| `getPrivateIndicators(session, signature)` | `getPrivateIndicators(credentials)` | `http › lists private indicators with credentials` | ✅ authenticated listing endpoint; actual private item not available |
+| `getPrivateIndicators(session, signature)` | `getPrivateIndicators(credentials)` | `http › lists private indicators with credentials` | ✅ authenticated listing; six saved USER scripts evaluated separately (see reliability evidence) |
 | `loginUser(username, password, remember, UA)` | `loginUser({ username, password, remember, userAgent })` (form now URL-encoded) | `http › loginUser posts an encoded form and reads cookies` | 🔒 |
 | `getUser(session, signature, location)` with redirect-loop protection | `getUser(credentials, { location, maxRedirects })` (relative redirects resolved) | `http › getUser parses the account page...`, `getUser stops redirect loops...` | ✅ authenticated success and wrong-cookie rejection |
 | `getChartToken(layout, credentials)` | `getChartToken(layoutId, { userId, credentials })` | `http › gets a chart token...` | 🔒 (needs a layout ID) |

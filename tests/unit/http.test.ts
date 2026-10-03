@@ -318,3 +318,33 @@ describe('PinePermissionManager', () => {
     await expect(manager.getUsers()).rejects.toMatchObject({ code: 'HTTP_ERROR', message: 'You are not the owner' });
   });
 });
+
+
+describe('HTTP response body failures', () => {
+  it('normalizes stream failures after headers have arrived', async () => {
+    const failure = new Error('response stream reset');
+    const fetch = (async () => ({ text: async () => { throw failure; } })) as unknown as typeof globalThis.fetch;
+    await expect(searchMarkets('BTC', { fetch })).rejects.toMatchObject({ code: 'HTTP_ERROR', cause: failure });
+  });
+
+  it('preserves abort classification during response body consumption', async () => {
+    const failure = new DOMException('body cancelled', 'AbortError');
+    const fetch = (async () => ({ text: async () => { throw failure; } })) as unknown as typeof globalThis.fetch;
+    await expect(searchMarkets('BTC', { fetch })).rejects.toMatchObject({ code: 'ABORTED', cause: failure });
+  });
+});
+
+
+describe('account token validation', () => {
+  it('does not authenticate a marker, empty token or rejected HTTP response', async () => {
+    for (const [page, status] of [
+      ['auth_token is unavailable', 200],
+      ['{"auth_token":""}', 200],
+      ['{"auth_token":"unexpected"}', 403],
+    ] as const) {
+      await expect(getUser({ session: 'fixture' }, {
+        fetch: mockFetch(() => new Response(page, { status })).fetch,
+      })).rejects.toMatchObject({ code: 'AUTH_ERROR' });
+    }
+  });
+});

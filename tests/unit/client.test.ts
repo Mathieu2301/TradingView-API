@@ -168,3 +168,28 @@ describe('TradingViewClient', () => {
     await client.close();
   });
 });
+
+
+describe('account lookup lifecycle', () => {
+  for (const ending of ['close', 'timeout', 'disconnect'] as const) {
+    it(`aborts pending authentication on ${ending} without a secondary AUTH_ERROR`, async () => {
+      let signal: AbortSignal | undefined;
+      const fetch = (async (_url, init) => {
+        signal = init?.signal ?? undefined;
+        return new Promise<Response>((_resolve, reject) => {
+          signal?.addEventListener('abort', () => reject(signal?.reason), { once: true });
+        });
+      }) as typeof globalThis.fetch;
+      const { server, client } = setup({ credentials: { session: 'fixture' }, fetch, connectTimeoutMs: 20 });
+      const errors: string[] = [];
+      client.on('error', (error) => errors.push(error.code));
+      if (ending === 'close') await client.close();
+      if (ending === 'disconnect') server.last.drop();
+      await expect(client.ready).rejects.toMatchObject({ code: ending === 'timeout' ? 'TIMEOUT' : 'DISCONNECTED' });
+      await until(() => client.isClosed);
+      expect(signal?.aborted).toBe(true);
+      expect(errors).toEqual(ending === 'timeout' ? ['TIMEOUT'] : []);
+      expect(server.last.packets('set_auth_token')).toHaveLength(0);
+    });
+  }
+});

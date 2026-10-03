@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  getCandles, getIndicator, getIndicatorData, getPrivateIndicators, getUser, TradingViewClient,
+  getWatchlists, getCandles, getIndicator, getIndicatorData, getPrivateIndicators, getUser, TradingViewClient,
 } from '../../src/index.js';
 import { credentials, LIVE } from './env.js';
 
@@ -33,6 +33,16 @@ describe.skipIf(!LIVE || !credentials)('live: authenticated', () => {
       symbol: 'BINANCE:BTCEUR', timeframe: '60', indicator: strategy, credentials: auth, timeoutMs: 30_000,
     });
     expect(result.strategyReport.performance.all?.totalTrades).toBeTypeOf('number');
+  });
+
+  it('reads watchlists without changing account content', async () => {
+    const lists = await getWatchlists({ credentials: auth, signal: AbortSignal.timeout(15_000) });
+    expect(Array.isArray(lists)).toBe(true);
+    for (const list of lists) {
+      expect(list.id).toBeTypeOf('number');
+      expect(list.name).toBeTypeOf('string');
+      expect(Array.isArray(list.symbols)).toBe(true);
+    }
   });
 
   it('lists private indicators', async () => {
