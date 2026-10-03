@@ -174,8 +174,19 @@ Raw percentage/fraction fields are not rescaled. History series, including buy &
 hold, are retained independently even when no equity series is provided. Updates
 replace supplied arrays and retain omitted series; an empty array clears a series.
 
+Malformed trade lists (a non-array or non-object records) raise `PARSE_ERROR`
+before any part of that report is applied. Studies emit this error for both plain
+and compressed reports. Omitted trade lists retain previous records; `[]` clears them.
+This is structural validation, not full validation of every trade field.
+
 These offline checks validate report decoding and normalization, not fresh-client
 access, Replay playback, export entitlement or Deep Backtesting availability.
+
+In a Basic-account UI check on October 3, 2026, both strategy trade CSV export and
+strategy report XLSX export opened an upgrade prompt recommending Essential.
+No successful export was verified. These are TradingView UI entitlements, not
+library export methods or a guarantee about other accounts. Deep Backtesting is
+separate and was blocked by a Premium upgrade prompt in that session.
 
 ## Search and technical analysis
 

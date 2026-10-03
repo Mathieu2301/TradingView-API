@@ -167,4 +167,26 @@ describe('Study', () => {
     expect(error.code).toBe('PARSE_ERROR');
     await client.close();
   });
+  it('emits PARSE_ERROR for malformed plain and compressed trades without mutating the report', async () => {
+    const payload = { report: { currency: 'EUR', trades: [null] } };
+    for (const ns of [
+      { data: payload },
+      { dataCompressed: deflateSync(JSON.stringify(payload)).toString('base64') },
+    ]) {
+      const { client, chart } = await setup({ studyNs: () => ns });
+      try {
+        const study = chart.createStudy(makePine());
+        const errors: any[] = [];
+        study.on('error', (error) => errors.push(error));
+        await until(() => study.isReady);
+        expect(errors).toHaveLength(1);
+        expect(errors[0].code).toBe('PARSE_ERROR');
+        expect(study.strategyReport.currency).toBeUndefined();
+        expect(study.strategyReport.trades).toEqual([]);
+      } finally {
+        await client.close();
+      }
+    }
+  });
+
 });

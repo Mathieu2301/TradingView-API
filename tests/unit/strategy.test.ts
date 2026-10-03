@@ -55,4 +55,28 @@ describe('strategy report normalization', () => {
     mergeStrategyReport(report, { performance: { all: { netProfit: Infinity }, openPL: NaN } });
     expect(summarizeStrategyReport(report)).toMatchObject({ closedNetProfit: undefined, openPnL: undefined, totalPnL: undefined });
   });
+  it('rejects malformed trade lists without partially overwriting the report', () => {
+    const report = empty();
+    mergeStrategyReport(report, { currency: 'USD', performance: { openPL: 2 }, equity: [100] });
+    const before = structuredClone(report);
+    for (const trades of [null, {}, 'invalid', [null], [1], [[]]]) {
+      expect(() => mergeStrategyReport(report, {
+        currency: 'EUR', performance: { openPL: 9 }, trades, equity: [200],
+      })).toThrow('Strategy trades must be an array of records');
+      expect(report).toEqual(before);
+    }
+    expect(mergeStrategyReport(report, { trades: [] })).toEqual(['report.trades']);
+    expect(report.trades).toEqual([]);
+  });
+
+  it('keeps missing PnL unknown and rejects an overflowing total', () => {
+    const report = empty();
+    mergeStrategyReport(report, { performance: { all: { totalOpenTrades: 0, netProfit: 2 } } });
+    expect(summarizeStrategyReport(report).totalPnL).toBeUndefined();
+    mergeStrategyReport(report, {
+      performance: { all: { netProfit: Number.MAX_VALUE }, openPL: Number.MAX_VALUE },
+    });
+    expect(summarizeStrategyReport(report).totalPnL).toBeUndefined();
+  });
+
 });

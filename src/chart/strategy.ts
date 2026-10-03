@@ -1,3 +1,5 @@
+import { TradingViewError } from '../errors.js';
+
 /** A value with absolute and percent forms. */
 export interface RelAbsValue {
   v: number;
@@ -88,6 +90,10 @@ export type StrategyReportChange =
 
 /** Converts raw trades (oldest first) into readable trades (most recent first). */
 export function parseTrades(trades: any[]): TradeReport[] {
+  if (!Array.isArray(trades) || trades.some((trade) =>
+    !trade || typeof trade !== 'object' || Array.isArray(trade))) {
+    throw new TradingViewError('PARSE_ERROR', 'Strategy trades must be an array of records');
+  }
   return [...trades].reverse().map((t) => ({
     entry: {
       name: t.e?.c,
@@ -109,6 +115,9 @@ export function mergeStrategyReport(target: StrategyReport, report: any): Strate
   const changes: StrategyReportChange[] = [];
   if (!report || typeof report !== 'object') return changes;
 
+  // Parse before mutating the target so a malformed trade list cannot leave a partial merge.
+  const trades = report.trades === undefined ? undefined : parseTrades(report.trades);
+
   if (report.currency) {
     target.currency = report.currency;
     changes.push('report.currency');
@@ -121,8 +130,8 @@ export function mergeStrategyReport(target: StrategyReport, report: any): Strate
     target.performance = report.performance;
     changes.push('report.perf');
   }
-  if (report.trades) {
-    target.trades = parseTrades(report.trades);
+  if (trades !== undefined) {
+    target.trades = trades;
     changes.push('report.trades');
   }
   const historyKeys = [
