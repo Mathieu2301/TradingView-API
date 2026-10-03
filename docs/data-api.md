@@ -152,6 +152,31 @@ Without an account, TradingView refuses Pine studies ("maximum number of studies
 
 `watchIndicator(query, { onData, onError })` streams the same result on every study update; `watcher.latest` holds the last one.
 
+### Strategy totals and open positions
+
+```ts
+import { summarizeStrategyReport } from '@mathieuc/tradingview/data';
+
+const summary = summarizeStrategyReport(result.strategyReport);
+// tradeRecordCount, closedTradeCount, openTradeCount,
+// closedNetProfit, openPnL, totalPnL, currency
+```
+
+Trade records can include open positions with a current exit valuation. An `exit`
+object does **not** establish that a trade is closed. The summary uses reported
+`performance.all.totalTrades` and `totalOpenTrades`, never the record count, for
+closed/open counts. It does not assign a closed/open status to individual records.
+Counts may differ from the available records in a partial report.
+
+`totalPnL` is closed net profit plus open PnL, in the report currency. Missing or
+non-finite values remain `undefined`; a missing open PnL is not assumed to be zero.
+Raw percentage/fraction fields are not rescaled. History series, including buy &
+hold, are retained independently even when no equity series is provided. Updates
+replace supplied arrays and retain omitted series; an empty array clears a series.
+
+These offline checks validate report decoding and normalization, not fresh-client
+access, Replay playback, export entitlement or Deep Backtesting availability.
+
 ## Search and technical analysis
 
 ```ts

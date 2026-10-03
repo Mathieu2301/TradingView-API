@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { deflateSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import { TradingViewClient } from '../../src/client/client.js';
 import { applyGraphicsCommands, parseGraphics } from '../../src/chart/graphics.js';
@@ -143,6 +144,20 @@ describe('Study', () => {
       }
       await client.close();
     }
+  });
+
+  it('decodes an unpadded zlib report with buy-and-hold history but no equity', async () => {
+    const payload = { report: {
+      currency: 'USD', buyHold: [100, 102], buyHoldPercent: [0, 0.02],
+      performance: { all: { totalTrades: 2, totalOpenTrades: 1, netProfit: 12 }, openPL: -3 },
+    } };
+    const dataCompressed = deflateSync(JSON.stringify(payload)).toString('base64').replace(/=+$/, '');
+    const { client, chart } = await setup({ studyNs: () => ({ dataCompressed }) });
+    const study = chart.createStudy(makePine());
+    await until(() => study.isReady);
+    expect(study.strategyReport.history).toEqual({ buyHold: [100, 102], buyHoldPercent: [0, 0.02] });
+    expect(study.strategyReport.performance).toEqual(payload.report.performance);
+    await client.close();
   });
 
   it('reports undecodable strategy reports as PARSE_ERROR', async () => {

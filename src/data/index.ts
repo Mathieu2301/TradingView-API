@@ -43,3 +43,6 @@ export type { QuoteData, QuoteField } from '../quote/fields.js';
 export type { StudyValue } from '../chart/study.js';
 export type { GraphicsData } from '../chart/graphics.js';
 export type { StrategyReport } from '../chart/strategy.js';
+
+export { summarizeStrategyReport } from '../chart/strategy.js';
+export type { StrategySummary } from '../chart/strategy.js';
