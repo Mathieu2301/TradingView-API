@@ -6,7 +6,7 @@ This matrix lists every capability of v3 (`main.js`, `src/`, examples, tests) an
 
 **Evidence columns**
 
-- **Unit**: deterministic test in `tests/unit/` (`npm test` with Vitest on Node, `npm run test:bun` with Bun's runner; 108 tests, both green). Websocket tests use a scripted fake server (`tests/helpers/fake-server.ts`) or packets captured from TradingView (`tests/fixtures/live-session.json`); HTTP tests use a mocked `fetch`.
+- **Unit**: deterministic test in `tests/unit/` (`npm test` with Vitest on Node, `npm run test:bun` with Bun's runner; 115 tests, both green). Websocket tests use a scripted fake server (`tests/helpers/fake-server.ts`) or packets captured from TradingView (`tests/fixtures/live-session.json`); HTTP tests use a mocked `fetch`.
 - **Live**: result of `npm run test:live` (`tests/live/`) and examples against TradingView on **2 October 2026**: 16 anonymous tests locally and 21 tests (including five authenticated) in the [manual GitHub Actions run](https://github.com/Mathieu2301/TradingView-API/actions/runs/37075296707):
   - ✅ verified live anonymously;
   - 🔒 path or variant not exercised live (often requires a specific account asset); deterministic tests only;
@@ -31,7 +31,7 @@ Test names are abbreviated as `file › test`.
 | --- | --- | --- | --- |
 | `protocol.parseWSPacket` (frame split, heartbeat as number, invalid JSON warning) | `protocol.decodeFrames` (length-based, UTF-16 lengths, typed frames, lenient fallback, invalid frames reported) | `protocol › decodes several frames...`, `keeps payloads containing frame markers intact`, `reports invalid JSON...`, `falls back to splitting malformed input`, `decodes every message of a captured live session` | ✅ (fixture captured live; UTF-16 lengths checked on Japanese/Korean descriptions) |
 | `protocol.formatWSPacket` | `protocol.encodeFrame`, `encodePacket`, `encodeHeartbeat` | `protocol › encodes packets with UTF-16 lengths` | ✅ |
-| `protocol.parseCompressed` (ZIP via jszip, base64 normalisation, zlib/raw/gzip fallbacks) | `protocol.decodeCompressed` (built-in ZIP reader: stored, deflated, data descriptors, empty entry names; zlib, raw deflate, gzip, plain JSON) and `normaliseBase64`, `readFirstZipEntry` | `protocol › compressed payloads › *` (ZIP fixtures generated independently with Python `zipfile`) | 🔒 live compressed strategy payload not captured; plain report verified |
+| `protocol.parseCompressed` (ZIP via jszip, base64 normalisation, zlib/raw/gzip fallbacks) | `protocol.decodeCompressed` (built-in ZIP reader: stored, deflated, data descriptors, empty entry names; zlib, raw deflate, gzip, plain JSON) and `normaliseBase64`, `readFirstZipEntry` | `protocol › compressed payloads › *` (ZIP fixtures generated independently with Python `zipfile`) | ✅ private compressed browser capture replayed through compiled parser (3 October 2026); plain report verified |
 | `utils.genSessionID` | `protocol.createSessionId` (crypto-random) | `protocol › ids` | ➖ |
 | `utils.genAuthCookies` | Internal cookie builder used by every HTTP call | `http › * with credentials` (cookie headers asserted) | ➖ |
 | Websocket URL `wss://<server>.tradingview.com/socket.io/websocket?from=chart&type=chart`, Origin and browser headers | Same, in `TradingViewClient`; transport is pluggable (`transport` option, default `ws`) | `client › connects with browser-like headers...` | ✅ Node and Bun (Bun needed the Origin header fix) |
@@ -89,7 +89,7 @@ Test names are abbreviated as `file › test`.
 | v3 capability | v4 | Unit evidence | Live |
 | --- | --- | --- | --- |
 | `setMarket(symbol, { replay })` (replay session, add series, reset) | Same option | `chart › runs replay mode...` | ✅ |
-| `replayStep(n)`, `replayStart(interval)`, `replayStop()` resolved by `replay_ok` | Same; reject with `INVALID_STATE` outside replay and on delete | `chart › runs replay mode...`, `rejects pending replay requests...` | ✅ step (`sessions › replays history step by step`); ➖ start/stop live |
+| `replayStep(n)`, `replayStart(interval)`, `replayStop()` resolved by `replay_ok` | Same; reject with `INVALID_STATE` outside replay and on delete | `chart › runs replay mode...`, `rejects pending replay requests...` | ✅ step (`sessions › replays history step by step`); ✅ start/stop acknowledgments and advancing bars on Basic (3 October 2026) |
 | `onReplayLoaded`, `onReplayPoint`, `onReplayResolution`, `onReplayEnd` | `replayLoaded`, `replayPoint`, `replayResolution`, `replayEnd` events | `chart › runs replay mode...` | ✅ |
 | Replay `critical_error` | `CRITICAL_ERROR` on the chart; pending replay requests rejected | (code path shared with chart errors) | ➖ |
 
@@ -102,7 +102,7 @@ Test names are abbreviated as `file › test`.
 | `study.periods` with plot names, `plot_N` fallback for unnamed/duplicate plots | `study.values` (oldest first) | `study › creates a Pine study, names plots...`, `chart › parses a captured live chart session` | ✅ (built-in volume rows) |
 | `study.graphic` (labels, lines, boxes, tables + cells, polygons, horizLines, horizHists, raw) and `graphicsCmds` erase/create | `study.graphics` (`cells` array, `raw` object) | `study › reads graphics commands...`, `applies erase commands` | ✅ horizontal histograms (volume profile); 🔒 Pine drawings |
 | Bars-back translation of graphic X indexes | Same | `study › reads graphics commands...` | ✅ |
-| `study.strategyReport` (plain `data.report` and compressed `dataCompressed`; trades, performance, history, currency, settings) | Same | `study › decodes plain and compressed strategy reports`, `reports undecodable strategy reports as PARSE_ERROR` | ✅ Supertrend strategy report with account; compressed variant unit-tested |
+| `study.strategyReport` (plain `data.report` and compressed `dataCompressed`; trades, performance, history, currency, settings) | Same | `study › decodes plain and compressed strategy reports`, `reports undecodable strategy reports as PARSE_ERROR` | ✅ Supertrend strategy report with account; compressed variant also validated using a private browser capture |
 | `study.setIndicator()` (`modify_study`) | Same | `study › modifies and removes a study` | 🔒 |
 | `study.remove()` | Same (idempotent) | same | ✅ |
 | `onReady`, `onUpdate`, `onError`, `study_error` | `ready`, `loading`, `update`, `error` (`STUDY_ERROR`, message formatted with server context) | `study › formats study errors with their context` | ✅ (anonymous Pine refusal reported as `STUDY_ERROR`) |
@@ -189,4 +189,25 @@ These v3 behaviours were changed on purpose; none removes a capability.
 
 ## Not verified live for this release
 
-The 21-test manual live workflow verified authenticated connection, account lookup, a public Pine RSI, a Supertrend strategy report, the private-indicators listing endpoint, and recent historical `to` with an account. It did **not** verify password login, actual private/invite-only scripts, compressed strategy reports against a live response, older history beyond server limits, second-based/custom timeframes, the `prodata` server, owned layouts/drawings, or Pine permission changes. Those paths have deterministic tests but need the corresponding account assets to verify live. Run `SESSION=... SIGNATURE=... npm run test:live` to repeat the authenticated subset.
+The 21-test manual live workflow verified authenticated connection, account lookup, a public Pine RSI, a Supertrend strategy report, the private-indicators listing endpoint, and recent historical `to` with an account. It did **not** verify password login, actual private/invite-only scripts, older history beyond server limits, second-based/custom timeframes, the `prodata` server, owned layouts/drawings, or Pine permission changes. Those paths have deterministic tests but need the corresponding account assets to verify live. Run `SESSION=... SIGNATURE=... npm run test:live` to repeat the authenticated subset.
+
+## Basic account follow-up — 3 October 2026
+
+A fresh authenticated library client loaded `BINANCE:BTCEUR` daily Replay at a
+reference 30 days before the probe. Loading returned five bars; three step
+requests were acknowledged; automatic playback produced advancing bar timestamps;
+start and stop were both acknowledged. The client was closed after the bounded
+probe. This verifies the library protocol for that symbol/timeframe/reference,
+not intraday Replay, every exchange, unlimited history, or simulated order entry.
+The existing browser chart and its settings were not changed.
+
+`examples/strategy-report.js` was executed with the same Basic account against
+the public Supertrend strategy on `BINANCE:BTCEUR`, timeframe `60`, count `300`.
+It returned trade records, closed/open aggregate counts and PnL, and buy-and-hold
+history. No private payloads or credentials are included in this repository.
+The strategy may compute over more history than the requested candle count;
+`count` is not an exact backtest-window guarantee.
+
+UI CSV and XLSX exports remain plan-blocked (Essential offered), and Deep
+Backtesting remains plan-blocked (Premium offered). The library report example
+is not an implementation of those UI exports and does not enable Deep Backtesting.

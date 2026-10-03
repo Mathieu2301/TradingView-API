@@ -24,6 +24,7 @@ Examples that need an account read the `SESSION` and `SIGNATURE` cookies from th
 | [quote-session.js](quote-session.js) | `QuoteSession` | No |
 | [builtin-indicator.js](builtin-indicator.js) | `BuiltInIndicator`, study graphics | No |
 | [fake-replay.js](fake-replay.js) | Negative counts and `fetchMore` | No |
+| [strategy-report.js](strategy-report.js) | Public strategy → trade records → closed/open PnL summary | Yes (Basic tested) |
 | [replay.js](replay.js) | Replay mode with studies | Pine studies only |
 | [custom-timeframe.js](custom-timeframe.js) | Second-based timeframes | Yes |
 | [from-to.js](from-to.js) | Reference times and ranges | Yes |

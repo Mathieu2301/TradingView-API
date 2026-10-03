@@ -1,6 +1,6 @@
 {
   "name": "@mathieuc/tradingview",
-  "version": "4.0.0-beta.0",
+  "version": "4.0.0-beta.1",
   "description": "TradingView market data for JavaScript and TypeScript: candles, quotes, indicators and strategies, with a simple data API and full low-level access.",
   "type": "module",
   "main": "./dist/index.js",
