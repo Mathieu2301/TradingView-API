@@ -3,7 +3,7 @@
 # https://www.npmjs.com/package/@mathieuc/tradingview
 
 Independent community library for TradingView market data. Not an official TradingView API.
-Version 4 beta: TypeScript, ESM, Node >= 20 or Bun. Breaking rewrite of v3 (no compatibility layer). Currently available from repository source only; npm still serves v3.
+Version 4 beta: TypeScript, ESM, Node >= 20 or Bun. Breaking rewrite of v3 (no compatibility layer). Install the prerelease with npm install @mathieuc/tradingview@beta; the default latest tag remains v3.
 
 Simple data API (import from '@mathieuc/tradingview/data' or the root entry):
 - getCandles({ symbol, timeframe?, count?, from?, to?, chartType?, ... }) -> Candle[] oldest first, time in Unix seconds.
@@ -18,6 +18,6 @@ Simple data API (import from '@mathieuc/tradingview/data' or the root entry):
 Low-level API: TradingViewClient, client.createChart() (ChartSession: setMarket, setTimeframe, fetchMore, replay, createStudy), client.createQuoteSession(), PineIndicator, BuiltInIndicator, HTTP functions (loginUser, getUser, getIndicator, getPrivateIndicators, getDrawings, PinePermissionManager).
 
 Pine studies need a TradingView account (session cookies). Built-in studies and candles/quotes work anonymously, with history limits.
-Docs: docs/data-api.md, docs/low-level-api.md, docs/migration-v4.md, docs/v4-coverage.md. Examples: examples/.
+Docs: docs/data-api.md, docs/low-level-api.md, docs/migration-v4.md, docs/v4-coverage.md, docs/v4-reliability.md, docs/protocol-contributing.md. Examples: examples/.
 No CLI, MCP server, backtesting engine or hosted trading API is shipped. Do not claim otherwise.
 Questions and bugs: https://github.com/Mathieu2301/TradingView-API/issues/new/choose

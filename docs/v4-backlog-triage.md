@@ -2,6 +2,8 @@
 
 Baseline: `da67081` / published `4.0.0-beta.1`. Snapshot: **96 open issues and 8 open PRs**.
 
+Follow-up: #334 was merged on 3 October 2026. The focused fixes are included in the beta.2 release candidate. Reliability tools from #330 were subsequently ported without its stale version/README changes; the completed two-hour result is recorded in [reliability evidence](v4-reliability.md). Historical rows below describe the initial snapshot, not current PR state.
+
 This is an issue-by-issue disposition, not a claim that 96 bugs were reproduced or fixed.
 Evidence comes from issue descriptions, current source/tests and the existing [coverage matrix](v4-coverage.md).
 “Covered by code” is weaker than a targeted regression or live reproduction. “Needs” means keep open.
