@@ -144,3 +144,9 @@ No issues/legacy PRs were closed, and no contributor comments were sent by this 
 Beta.3 adds `getScreener` for #53 and scanner fields relevant to #280. See
 [screener documentation](screener.md). #85 real-time exchange entitlement is not
 resolved by a successful HTTP scan. Watchlists and paid/private cases remain open.
+
+## Watchlist follow-up
+
+Beta.4 adds read-only `getWatchlists` and scanner-ranked `getHotlist` (#87).
+Authenticated discovery returned two empty lists; populated entries are fixture-tested.
+Exact TradingView UI hotlist parity is not claimed. See [watchlists](watchlists.md).

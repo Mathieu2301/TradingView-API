@@ -289,3 +289,8 @@ Every failure is a `TradingViewError` with a `code`:
 Use [`getScreener`](screener.md) for a single scanner page with custom columns,
 filters, ranking and explicit pagination. Available from this high-level entry
 point as well as the root package; no chart or quote session is required.
+
+## Watchlists and rankings
+
+[`getWatchlists` and `getHotlist`](watchlists.md) provide read-only account lists
+and scanner-based gainers, losers and volume rankings. Available from both entry points.
