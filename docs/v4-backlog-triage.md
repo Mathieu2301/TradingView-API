@@ -150,3 +150,12 @@ resolved by a successful HTTP scan. Watchlists and paid/private cases remain ope
 Beta.4 adds read-only `getWatchlists` and scanner-ranked `getHotlist` (#87).
 Authenticated discovery returned two empty lists; populated entries are fixture-tested.
 Exact TradingView UI hotlist parity is not claimed. See [watchlists](watchlists.md).
+
+## Account and endurance follow-up
+
+Beta.5 ships opt-in account/endurance diagnostics and documents six successful
+private USER-script runs. Deep Backtesting reached the server but returned
+`request_error` / `not_allowed` with the available account. This is a concrete
+prerequisite blocker, not implemented Premium support. Original private-script,
+CME/GUI and 12-hour issue fixtures remain necessary; no historical issue is closed
+from the broader smoke results. See [reliability evidence](v4-reliability.md).
