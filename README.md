@@ -14,7 +14,7 @@
 
 ### One request, real data
 
-> **V4 beta is currently available from this repository, not from npm.** Build the source as shown below before running this example. The latest npm release is still v3 and does not export `getCandles`.
+> **V4 release candidate is available on npm under `next`.** Install with `npm install @mathieuc/tradingview@next`. The default `latest` tag is still v3 and does not export `getCandles`.
 
 ```js
 import { getCandles } from '@mathieuc/tradingview/data';
@@ -29,31 +29,40 @@ Prefer to start without code? The setup paths below work too.
 
 ## Get started
 
-### 1. Molted.cloud — recommended, no local setup
+### Interactive quick-start
 
-[Create an agent on Molted.cloud](https://molted.cloud/) and share this repository with it. Describe what you want to build; the agent can read the docs, set up a workspace, and help you get from an idea to a working project. For example, ask it to build a market-data watcher with this library. [See an example on Molted Studio](https://molted.studio/dreams/market-watch-alerts).
-
-### 2. Claude Code, Codex, or another coding assistant
-
-Open your project in your preferred coding assistant and give it the [repository link](https://github.com/Mathieu2301/TradingView-API). You can start with:
-
-> Read the TradingView-API README and the data API guide. Build the V4 beta from source, make a small example that fetches candles and watches a quote, and show me how to run it.
-
-The assistant can handle the setup, but you keep the project in your own environment.
-
-### 3. Install manually
-
-The V4 beta requires Node.js 20 or later, or Bun. **Until the V4 npm release, install it from source:**
+<!-- The launcher is introduced after 4.0.0-rc.0; keep this explicit until published. -->
+The next package release adds this interactive launcher (not included in RC.0):
 
 ```bash
-git clone https://github.com/Mathieu2301/TradingView-API.git
-cd TradingView-API
-npm ci && npm run build
-node examples/candles.js
-# Or use Bun: bun install && bun run build && bun examples/candles.js
+npx @mathieuc/tradingview@next
 ```
 
-Inside this built checkout, the examples and package self-imports use the V4 API. Running `npm install @mathieuc/tradingview` or `bun add @mathieuc/tradingview` in another project currently installs **v3**, which has the old `Client` API. Do not copy the V4 imports into a project that has v3 installed.
+Run it from your project directory with Node.js 20+. Choose a path:
+
+1. **Autonomous agent (recommended)** — opens the [TradingView-API market watcher on Molted Studio](https://molted.studio/dreams/market-watch-alerts). No local project setup.
+2. **Claude Code CLI** — starts your installed `claude` CLI here with a ready-to-use project prompt.
+3. **Codex CLI** — starts your installed `codex` CLI here with the same prompt.
+4. **Another local coding agent** — prints the prompt to paste into your agent.
+5. **Install the library only** — runs `npm install @mathieuc/tradingview@next` here, without generating files or starting an agent.
+
+Claude Code and Codex must already be installed and authenticated. Their normal permission prompts remain enabled. If launch fails, the prompt is printed for manual use. If no browser is available, the hosted link remains visible.
+
+Use `--choice 4` to print the prompt directly, or `--help` for usage. Non-interactive callers must pass `--choice`. To try the launcher from this checkout before publication:
+
+```bash
+npm ci && npm run build
+node bin/tradingview.mjs
+```
+
+### Install manually
+
+```bash
+npm install @mathieuc/tradingview@next
+# Or: bun add @mathieuc/tradingview@next
+```
+
+`next` installs the V4 release candidate; the default `latest` tag still installs V3. Do not mix the V4 imports with a V3 installation.
 
 The V4 package is ESM with TypeScript declarations. CommonJS projects can `require()` it on Node 20.19+ or 22.12+, or use `await import()`.
 
