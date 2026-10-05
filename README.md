@@ -33,8 +33,7 @@ Prefer to start without code? The setup paths below work too.
 
 ### Interactive quick-start
 
-<!-- The launcher is introduced after 4.0.0-rc.0; keep this explicit until published. -->
-The next package release adds this interactive launcher (not included in RC.0):
+The interactive launcher is included starting with **4.0.0-rc.1**:
 
 ```bash
 npx @mathieuc/tradingview@next
@@ -50,7 +49,7 @@ Run it from your project directory with Node.js 20+. Choose a path:
 
 Claude Code and Codex must already be installed and authenticated. Their normal permission prompts remain enabled. If launch fails, the prompt is printed for manual use. If no browser is available, the hosted link remains visible.
 
-Use `--choice 4` to print the prompt directly, or `--help` for usage. Non-interactive callers must pass `--choice`. To try the launcher from this checkout before publication:
+Use `--choice 4` to print the prompt directly, or `--help` for usage. Non-interactive callers must pass `--choice`. To try the launcher from this checkout:
 
 ```bash
 npm ci && npm run build

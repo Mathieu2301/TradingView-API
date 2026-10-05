@@ -33,8 +33,7 @@ Vous préférez commencer sans coder ? Les parcours ci-dessous le permettent aus
 
 ### Quick-start interactif
 
-<!-- The launcher is introduced after 4.0.0-rc.0; keep this explicit until published. -->
-La prochaine version du paquet ajoutera ce lanceur interactif (absent de RC.0) :
+Le lanceur interactif est inclus à partir de **4.0.0-rc.1** :
 
 ```bash
 npx @mathieuc/tradingview@next
@@ -50,7 +49,7 @@ Lancez-le depuis le dossier de votre projet avec Node.js 20+. Choisissez un parc
 
 Claude Code et Codex doivent déjà être installés et authentifiés. Leurs demandes d’autorisation habituelles restent actives. Si le lancement échoue, le prompt est affiché pour une utilisation manuelle. Si aucun navigateur n’est disponible, le lien hébergé reste visible.
 
-Utilisez `--choice 4` pour afficher directement le prompt, ou `--help` pour l’aide. En mode non interactif, `--choice` est obligatoire. Pour essayer le lanceur depuis ce dépôt avant publication :
+Utilisez `--choice 4` pour afficher directement le prompt, ou `--help` pour l’aide. En mode non interactif, `--choice` est obligatoire. Pour essayer le lanceur depuis ce dépôt :
 
 ```bash
 npm ci && npm run build

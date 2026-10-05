@@ -33,8 +33,7 @@ console.log(candles.at(-1)); // { time, open, high, low, close, volume }
 
 ### Inicio rápido interactivo
 
-<!-- The launcher is introduced after 4.0.0-rc.0; keep this explicit until published. -->
-La próxima versión del paquete añadirá este asistente interactivo (no incluido en RC.0):
+El asistente interactivo está incluido a partir de **4.0.0-rc.1**:
 
 ```bash
 npx @mathieuc/tradingview@next
@@ -50,7 +49,7 @@ Ejecútalo desde el directorio de tu proyecto con Node.js 20+. Elige una opción
 
 Claude Code y Codex deben estar instalados y autenticados. Sus solicitudes de permiso habituales siguen activadas. Si el inicio falla, se muestra el prompt para usarlo manualmente. Si no hay navegador disponible, el enlace alojado sigue visible.
 
-Usa `--choice 4` para mostrar el prompt directamente, o `--help` para consultar la ayuda. Las llamadas no interactivas deben pasar `--choice`. Para probar el asistente desde este repositorio antes de su publicación:
+Usa `--choice 4` para mostrar el prompt directamente, o `--help` para consultar la ayuda. Las llamadas no interactivas deben pasar `--choice`. Para probar el asistente desde este repositorio:
 
 ```bash
 npm ci && npm run build

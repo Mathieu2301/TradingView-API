@@ -1,9 +1,9 @@
 # V4 stabilization and release-candidate gates
 
 Snapshot: 3 October 2026, starting from beta.5 (`b793115`).
-The source/package version is staged as **4.0.0-rc.0**. This is a prepared candidate,
-not a claim of npm publication or promotion of `latest`. Install the published beta
-until the candidate is released. [Migration guide](migration-v4.md).
+Historical preparation snapshot for **4.0.0-rc.0**, now published under `next`.
+The quick-start follow-up is documented in [RC.1 release notes](release-4.0.0-rc.1.md).
+`latest` remains V3; stable V4 promotion is a separate decision. [Migration guide](migration-v4.md).
 
 ## What changed
 
