@@ -36,45 +36,54 @@ interface Runtime {
   env?: NodeJS.ProcessEnv;
 }
 
-export function runChoice(choice: string, runtime: Runtime = {}): number {
-  const { run = spawnSync, log = console.log, platform = process.platform, env = process.env } = runtime;
-  const printPrompt = () => log(`Paste this prompt into your coding agent:\n\n${AGENT_PROMPT}\n`);
-  if (choice === '4') {
-    printPrompt();
-    return 0;
-  }
-  if (choice === '1') {
-    log(`Continue with an autonomous agent:\n${LANDING_URL}`);
-    const [command, args]: [string, string[]] = platform === 'darwin' ? ['open', [LANDING_URL]]
-      : platform === 'win32' ? ['rundll32.exe', ['url.dll,FileProtocolHandler', LANDING_URL]]
-        : ['xdg-open', [LANDING_URL]];
-    const result = run(command, args, { stdio: 'ignore', timeout: 10_000, env });
-    if (result.error || result.status !== 0) log('Could not open a browser automatically. Open the link above.');
-    return 0;
-  }
-  if (!['2', '3', '5'].includes(choice)) {
-    log('Invalid choice. Choose a number from 1 to 5.');
-    return 1;
-  }
-  const command = choice === '2' ? 'claude' : choice === '3' ? 'codex' : 'npm';
-  const args = choice === '5' ? ['install', PACKAGE_SPEC] : [AGENT_PROMPT];
-  log(choice === '5' ? `Installing ${PACKAGE_SPEC} in ${process.cwd()}...` : `Starting ${command} in ${process.cwd()}...`);
+function printPrompt(log: (text: string) => void): void {
+  log(`Paste this prompt into your coding agent:\n\n${AGENT_PROMPT}\n`);
+}
+
+function openLanding({ run, log, platform, env }: Required<Runtime>): number {
+  log(`Continue with an autonomous agent:\n${LANDING_URL}`);
+  const [command, args]: [string, string[]] = platform === 'darwin' ? ['open', [LANDING_URL]]
+    : platform === 'win32' ? ['rundll32.exe', ['url.dll,FileProtocolHandler', LANDING_URL]]
+      : ['xdg-open', [LANDING_URL]];
+  const result = run(command, args, { stdio: 'ignore', timeout: 10_000, env });
+  if (result.error || result.status !== 0) log('Could not open a browser automatically. Open the link above.');
+  return 0;
+}
+
+function launchLocal(command: string, runtime: Required<Runtime>): number {
+  const { run, log, platform, env } = runtime;
+  const installing = command === 'npm';
+  const args = installing ? ['install', PACKAGE_SPEC] : [AGENT_PROMPT];
+  log(installing ? `Installing ${PACKAGE_SPEC} in ${process.cwd()}...` : `Starting ${command} in ${process.cwd()}...`);
   // Windows npm/agent launchers may be .cmd files. Keep the prompt out of shell
   // syntax by passing it via the child environment to a fixed PowerShell script.
   const result = platform === 'win32'
     ? run('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
-      `$ErrorActionPreference = 'Stop'; & ${command} ${choice === '5' ? `install '${PACKAGE_SPEC}'` : '$env:TRADINGVIEW_QUICK_START_PROMPT'}; exit $LASTEXITCODE`],
+      `$ErrorActionPreference = 'Stop'; & ${command} ${installing ? `install '${PACKAGE_SPEC}'` : '$env:TRADINGVIEW_QUICK_START_PROMPT'}; exit $LASTEXITCODE`],
     { stdio: 'inherit', env: { ...env, TRADINGVIEW_QUICK_START_PROMPT: AGENT_PROMPT } })
     : run(command, args, { stdio: 'inherit', env });
   if (result.error || result.status !== 0) {
-    if (choice !== '5') {
+    if (installing) log(`Installation did not complete. Retry: npm install ${PACKAGE_SPEC}`);
+    else {
       log(`Could not complete ${command}. Ensure its CLI is installed and authenticated, then retry.`);
-      printPrompt();
-    } else log(`Installation did not complete. Retry: npm install ${PACKAGE_SPEC}`);
+      printPrompt(log);
+    }
     return result.status ?? (result.signal === 'SIGINT' ? 130 : 1);
   }
-  if (choice === '5') log('Library installed. Guide: https://github.com/Mathieu2301/TradingView-API/blob/main/docs/data-api.md');
+  if (installing) log('Library installed. Guide: https://github.com/Mathieu2301/TradingView-API/blob/main/docs/data-api.md');
   return 0;
+}
+
+export function runChoice(choice: string, overrides: Runtime = {}): number {
+  const runtime = { run: spawnSync, log: console.log, platform: process.platform, env: process.env, ...overrides };
+  switch (choice) {
+    case '1': return openLanding(runtime);
+    case '2': return launchLocal('claude', runtime);
+    case '3': return launchLocal('codex', runtime);
+    case '4': printPrompt(runtime.log); return 0;
+    case '5': return launchLocal('npm', runtime);
+    default: runtime.log('Invalid choice. Choose a number from 1 to 5.'); return 1;
+  }
 }
 
 export async function main(args = process.argv.slice(2)): Promise<number> {
