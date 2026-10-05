@@ -33,8 +33,7 @@ Prefere começar sem código? Os caminhos abaixo também funcionam.
 
 ### Início rápido interativo
 
-<!-- The launcher is introduced after 4.0.0-rc.0; keep this explicit until published. -->
-A próxima versão do pacote incluirá este assistente interativo (não incluído na RC.0):
+O assistente interativo está incluído a partir da **4.0.0-rc.1**:
 
 ```bash
 npx @mathieuc/tradingview@next
@@ -50,7 +49,7 @@ Execute no diretório do seu projeto com Node.js 20+. Escolha um caminho:
 
 Claude Code e Codex devem estar instalados e autenticados. As solicitações normais de permissão continuam ativas. Se a inicialização falhar, o prompt será exibido para uso manual. Se não houver navegador disponível, o link hospedado continuará visível.
 
-Use `--choice 4` para exibir o prompt diretamente ou `--help` para consultar a ajuda. Chamadas não interativas devem passar `--choice`. Para testar o assistente a partir deste repositório antes da publicação:
+Use `--choice 4` para exibir o prompt diretamente ou `--help` para consultar a ajuda. Chamadas não interativas devem passar `--choice`. Para testar o assistente a partir deste repositório localmente:
 
 ```bash
 npm ci && npm run build
