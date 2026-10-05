@@ -27,7 +27,8 @@
     "assets",
     "llms.txt",
     "examples",
-    "scripts/parity.mjs"
+    "scripts/parity.mjs",
+    "bin"
   ],
   "sideEffects": false,
   "scripts": {
@@ -84,5 +85,8 @@
   "homepage": "https://github.com/Mathieu2301/TradingView-API#readme",
   "bugs": {
     "url": "https://github.com/Mathieu2301/TradingView-API/issues"
+  },
+  "bin": {
+    "tradingview": "bin/tradingview.mjs"
   }
 }

@@ -3,7 +3,7 @@
 # https://www.npmjs.com/package/@mathieuc/tradingview
 
 Independent community library for TradingView market data. Not an official TradingView API.
-Version 4 beta: TypeScript, ESM, Node >= 20 or Bun. Breaking rewrite of v3 (no compatibility layer). Install the prerelease with npm install @mathieuc/tradingview@beta; the default latest tag remains v3.
+Version 4 release candidate: TypeScript, ESM, Node >= 20 or Bun. Breaking rewrite of v3 (no compatibility layer). Install the prerelease with npm install @mathieuc/tradingview@next; the default latest tag remains v3.
 
 Simple data API (import from '@mathieuc/tradingview/data' or the root entry):
 - getCandles({ symbol, timeframe?, count?, from?, to?, chartType?, ... }) -> Candle[] oldest first, time in Unix seconds.
@@ -22,5 +22,5 @@ Low-level API: TradingViewClient, client.createChart() (ChartSession: setMarket,
 
 Pine studies need a TradingView account (session cookies). Built-in studies and candles/quotes work anonymously, with history limits.
 Docs: docs/data-api.md, docs/low-level-api.md, docs/migration-v4.md, docs/v4-coverage.md, docs/v4-reliability.md, docs/protocol-contributing.md. Examples: examples/.
-No CLI, MCP server, backtesting engine or hosted trading API is shipped. Do not claim otherwise.
+The next release adds an interactive setup CLI: npx @mathieuc/tradingview@next (not present in RC.0). It opens Molted Studio, launches a local coding agent with a prompt, prints that prompt, or installs the library. It is not a market-data query CLI. No MCP server, backtesting engine or hosted trading API is shipped.
 Questions and bugs: https://github.com/Mathieu2301/TradingView-API/issues/new/choose
