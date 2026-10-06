@@ -45,9 +45,31 @@ describe.skipIf(!LIVE || !credentials)('live: authenticated', () => {
     }
   });
 
-  it('lists private indicators', async () => {
+  it('runs the public Pine study covered by V3', async () => {
+    const result = await getIndicatorData({
+      symbol: 'BINANCE:BTCEUR', timeframe: '60', count: 30,
+      indicator: 'PUB;uA35GeckoTA2EfgI63SD2WCSmca4njxp',
+      credentials: auth, timeoutMs: 30_000,
+    });
+    const latest = result.values.at(-1);
+    expect(latest?.VWAP).toBeTypeOf('number');
+    expect(latest?.rsiMFI).toBeTypeOf('number');
+    expect(latest?.Buy_and_sell_circle).toBeTypeOf('number');
+  });
+
+  it('lists and runs the account’s first private indicators', async () => {
     const list = await getPrivateIndicators(auth);
-    expect(Array.isArray(list)).toBe(true);
+    expect(list.length).toBeGreaterThan(0);
+    for (const item of list.slice(0, 3)) {
+      expect(item.id).toBeTruthy();
+      expect(item.name).toBeTruthy();
+      const result = await getIndicatorData({
+        symbol: 'BINANCE:BTCEUR', timeframe: 'D', count: 30,
+        indicator: item.id, credentials: auth, timeoutMs: 30_000,
+      });
+      expect(result.candles.length).toBeGreaterThan(0);
+      expect(result.values.length, item.id).toBeGreaterThan(0);
+    }
   });
 
   it('uses an account timeframe with a recent historical reference', async () => {
