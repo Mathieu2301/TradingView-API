@@ -101,6 +101,8 @@ export function runOperation<T>(
     let settled = false;
     let cleanup: Cleanup;
     const unsubscribers: Array<() => void> = [];
+    let finishStart!: () => void;
+    const startFinished = new Promise<void>((resolve) => { finishStart = resolve; });
 
     const finish = (error: TradingViewError | undefined, value?: T) => {
       if (settled) return;
@@ -108,12 +110,15 @@ export function runOperation<T>(
       clearTimeout(timer);
       signal?.removeEventListener('abort', onAbort);
       for (const off of unsubscribers) off();
-      try {
-        cleanup?.();
-      } catch {
-        // Cleanup must never hide the result.
-      }
-      connection.release().catch(() => {}).then(() => {
+      // `start` may resolve synchronously, before it has returned its cleanup.
+      startFinished.then(() => {
+        try {
+          cleanup?.();
+        } catch {
+          // Cleanup must never hide the result.
+        }
+        return connection.release().catch(() => {});
+      }).then(() => {
         if (error) reject(error);
         else resolve(value as T);
       });
@@ -138,6 +143,8 @@ export function runOperation<T>(
       });
     } catch (error) {
       finish(toTradingViewError(error, 'INVALID_ARGUMENT'));
+    } finally {
+      finishStart();
     }
   });
 }
@@ -195,6 +202,8 @@ export function startWatcher<W extends Watcher>(
   let active = true;
   let started = false;
   let cleanup: Cleanup;
+  let finishStart!: () => void;
+  const startFinished = new Promise<void>((resolve) => { finishStart = resolve; });
   let stopPromise: Promise<void> | undefined;
   let resolveClosed!: () => void;
   const closed = new Promise<void>((resolve) => { resolveClosed = resolve; });
@@ -220,12 +229,15 @@ export function startWatcher<W extends Watcher>(
     clearTimeout(timer);
     signal?.removeEventListener('abort', onAbort);
     for (const off of unsubscribers) off();
-    try {
-      cleanup?.();
-    } catch {
-      // Ignore cleanup failures.
-    }
-    stopPromise = connection.release().catch(() => {}).then(() => resolveClosed());
+    // A synchronous ready/fail can stop before `start` returns its cleanup.
+    stopPromise = startFinished.then(() => {
+      try {
+        cleanup?.();
+      } catch {
+        // Ignore cleanup failures.
+      }
+      return connection.release().catch(() => {});
+    }).then(() => resolveClosed());
     return stopPromise;
   };
 
@@ -273,6 +285,8 @@ export function startWatcher<W extends Watcher>(
     });
   } catch (error) {
     fail(error);
+  } finally {
+    finishStart();
   }
 
   return startPromise;
