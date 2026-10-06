@@ -88,7 +88,6 @@ export function wsTransportWith(extra: (url: string) => Record<string, unknown>)
         if (socket.readyState !== WebSocket.CLOSED) socket.terminate();
       },
     };
->>>>>>> 40d00b9 (Add createProxy for HTTP and WebSocket proxy support)
   };
 }
 
