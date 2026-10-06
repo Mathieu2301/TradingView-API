@@ -100,9 +100,10 @@ writeFileSync(process.env.TV_CAPTURE, JSON.stringify({ args: process.argv.slice(
   const tsc = join(root, 'node_modules', 'typescript', 'bin', 'tsc');
   writeFileSync(join(dir, 'consumer.ts'), `
     import { getCandles, TradingViewProvider, type Candle, type MarketDataProvider } from '@mathieuc/tradingview/data';
-    import { getScreener, getHotlist, getWatchlists, type ScreenerResult, type Watchlist, TradingViewClient, type StudyValue } from '@mathieuc/tradingview';
-    const candles: Promise<Candle[]> = getCandles({ symbol: 'BINANCE:BTCUSDT', timeframe: '60', count: 10 });
-    const client = new TradingViewClient();
+    import { getScreener, getHotlist, getWatchlists, type ScreenerResult, type Watchlist, TradingViewClient, type StudyValue, createProxy } from '@mathieuc/tradingview';
+    const proxy = createProxy('http://127.0.0.1:3128', { tls: { rejectUnauthorized: true } });
+    const candles: Promise<Candle[]> = getCandles({ symbol: 'BINANCE:BTCUSDT', timeframe: '60', count: 10, clientOptions: proxy });
+    const client = new TradingViewClient({ ...proxy });
     const chart = client.createChart();
     chart.on('update', (changes: string[]) => console.log(changes, chart.candles.at(-1)?.close));
     const row: StudyValue = { $time: 1 };

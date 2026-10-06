@@ -33,6 +33,14 @@ export interface ClientOptions {
   fetch?: typeof fetch;
   /** Time allowed to open and authenticate the connection. Default: 20 000 ms. */
   connectTimeoutMs?: number;
+  /**
+   * Maximum silence from the server once connected. The server sends a
+   * heartbeat about every 10 seconds, so a longer silence means the network
+   * was lost without a close (sleep, NAT or proxy timeout): the client then
+   * fails with `CONNECTION_ERROR` and closes. `0` or `Infinity` disables it.
+   * Default: 60 000 ms.
+   */
+  inactivityTimeoutMs?: number;
 }
 
 export interface ClientEvents {
@@ -101,6 +109,12 @@ export class TradingViewClient extends Emitter<ClientEvents> {
 
   #closeWaiters: Array<() => void> = [];
 
+  readonly #inactivityTimeout: number;
+
+  #inactivityTimer?: ReturnType<typeof setTimeout>;
+
+  #lastActivity = 0;
+
   constructor(options: ClientOptions = {}) {
     super();
     if (options.debug === true) this.#log = (...args) => console.log('[tradingview]', ...args);
@@ -112,6 +126,7 @@ export class TradingViewClient extends Emitter<ClientEvents> {
     });
     this.ready.catch(() => { /* Surfaced through the error event too. */ });
 
+    this.#inactivityTimeout = options.inactivityTimeoutMs ?? 60_000;
     const timeout = options.connectTimeoutMs ?? 20_000;
     this.#readyTimer = setTimeout(() => {
       this.#fail(new TradingViewError('TIMEOUT', `Connection not ready after ${timeout} ms`));
@@ -226,7 +241,7 @@ export class TradingViewClient extends Emitter<ClientEvents> {
       this.#closing = true;
       this.#authController.abort();
       // Do not hang if the server never acknowledges the close.
-      setTimeout(() => this.#onClose(1000, 'Close timeout'), 3_000).unref?.();
+      setTimeout(() => this.#forceClose(1000, 'Close timeout'), 3_000).unref?.();
       this.#transport.close();
     });
   }
@@ -234,7 +249,23 @@ export class TradingViewClient extends Emitter<ClientEvents> {
   #onOpen(): void {
     this.#log?.('open');
     this.emit('open');
+    this.#lastActivity = Date.now();
+    this.#watchInactivity(this.#inactivityTimeout);
     this.#authenticate();
+  }
+
+  #watchInactivity(delay: number): void {
+    if (!(this.#inactivityTimeout > 0 && Number.isFinite(this.#inactivityTimeout)) || this.#closed) return;
+    // Longer timer delays overflow and fire at once.
+    this.#inactivityTimer = setTimeout(() => {
+      const idle = Date.now() - this.#lastActivity;
+      if (idle < this.#inactivityTimeout) {
+        this.#watchInactivity(this.#inactivityTimeout - idle);
+        return;
+      }
+      this.#fail(new TradingViewError('CONNECTION_ERROR', `No data from the server for ${idle} ms`), true);
+    }, Math.min(delay, 2 ** 31 - 1));
+    this.#inactivityTimer.unref?.();
   }
 
   #authenticate(): void {
@@ -257,6 +288,7 @@ export class TradingViewClient extends Emitter<ClientEvents> {
 
   #onMessage(data: string): void {
     if (this.#closed) return;
+    this.#lastActivity = Date.now();
     for (const frame of decodeFrames(data)) {
       if (frame.type === 'heartbeat') {
         if (this.#transport.isOpen) this.#transport.send(encodeHeartbeat(frame.id));
@@ -294,7 +326,8 @@ export class TradingViewClient extends Emitter<ClientEvents> {
     }
   }
 
-  #fail(error: TradingViewError): void {
+  /** `unresponsive`: the peer would never complete a closing handshake. */
+  #fail(error: TradingViewError, unresponsive = false): void {
     if (this.#closed) return;
     clearTimeout(this.#readyTimer);
     const wasReady = this.#authenticated;
@@ -305,10 +338,19 @@ export class TradingViewClient extends Emitter<ClientEvents> {
     if (!wasReady || error.code === 'AUTH_ERROR' || error.code === 'CONNECTION_ERROR') {
       this.#closing = true;
       this.#authController.abort();
-      this.#transport.close();
+      if (unresponsive && this.#transport.terminate) this.#transport.terminate();
+      else this.#transport.close();
       // Some transports never emit close after a failed handshake.
-      setTimeout(() => this.#onClose(undefined, error.message), 3_000).unref?.();
+      setTimeout(() => this.#forceClose(undefined, error.message), 3_000).unref?.();
     }
+  }
+
+  /** Ends a connection whose transport did not report its close in time. */
+  #forceClose(code?: number, reason?: string): void {
+    if (this.#closed) return;
+    // Releases the socket now instead of after the transport's own close timeout.
+    this.#transport.terminate?.();
+    this.#onClose(code, reason);
   }
 
   #onClose(code?: number, reason?: string): void {
@@ -317,6 +359,7 @@ export class TradingViewClient extends Emitter<ClientEvents> {
     this.#authController.abort();
     this.#authenticated = false;
     clearTimeout(this.#readyTimer);
+    clearTimeout(this.#inactivityTimer);
     this.#log?.('close', code, reason);
 
     const cause = this.#failure;

@@ -401,3 +401,41 @@ describe('indicator data', () => {
     expect(server.last.closed).toBe(true);
   });
 });
+
+describe('watchers after an unexpected connection loss', () => {
+  it('stops every watcher on a shared client once, then works on a new connection', async () => {
+    const server = new FakeServer();
+    const client = new TradingViewClient({ transport: server.transport });
+    const errors: string[] = [];
+    const onError = (error: { code: string }) => errors.push(error.code);
+    const candles = await watchCandles({ symbol: 'A', timeframe: '1', count: 5, client }, { onData: () => {}, onError });
+    const quotes = await watchQuotes({ symbols: ['A'], fields: 'price', client }, { onData: () => {}, onError });
+    expect(candles.latest).toHaveLength(5);
+
+    server.last.drop(1006, '');
+    await Promise.all([candles.closed, quotes.closed]);
+    expect(errors).toEqual(['DISCONNECTED', 'DISCONNECTED']);
+    expect([candles.isActive, quotes.isActive, client.isClosed]).toEqual([false, false, true]);
+    // Late packets on the dead socket and repeated stops are harmless.
+    server.last.handlers.onMessage('~m~20~m~{"m":"du","p":["x"]}');
+    await Promise.all([candles.stop(), quotes.stop(), client.close()]);
+    expect(errors).toHaveLength(2);
+    await expect(watchCandles({ symbol: 'A', client }, { onData: () => {} })).rejects.toMatchObject({ code: 'INVALID_STATE' });
+
+    const replacement = new TradingViewClient({ transport: server.transport });
+    expect(await getCandles({ symbol: 'A', timeframe: '1', count: 5, client: replacement })).toHaveLength(5);
+    expect(replacement.isClosed).toBe(false);
+    await replacement.close();
+  });
+
+  it('stops an owned watcher with CONNECTION_ERROR when the server goes silent', async () => {
+    const { server, clientOptions } = fake();
+    const errors: string[] = [];
+    const watcher = await watchCandles({ symbol: 'A', clientOptions: { ...clientOptions, inactivityTimeoutMs: 50 } }, {
+      onData: () => {}, onError: (error) => errors.push(error.code),
+    });
+    await watcher.closed;
+    expect(errors).toEqual(['CONNECTION_ERROR']);
+    expect(server.last.terminated).toBe(true);
+  });
+});

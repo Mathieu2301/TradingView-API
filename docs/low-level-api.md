@@ -174,7 +174,24 @@ All accept `{ fetch?, signal?, headers? }`; functions that can use an account al
 
 ## Transport
 
-The default transport uses the [`ws`](https://github.com/websockets/ws) package, which works in Node and Bun. To use a proxy or another websocket implementation, pass `transport`:
+The default transport uses the [`ws`](https://github.com/websockets/ws) package, which works in Node and Bun.
+
+### Proxy
+
+`createProxy` returns a `fetch` and a `transport` that both go through the same proxy, for the websocket, the account lookup and HTTP functions:
+
+```ts
+import { createProxy, getCandles, searchMarkets, TradingViewClient } from '@mathieuc/tradingview';
+
+const proxy = createProxy(process.env.HTTPS_PROXY!); // e.g. http://user:password@proxy.local:3128
+const client = new TradingViewClient({ ...proxy, credentials });
+await getCandles({ symbol: 'BINANCE:BTCUSDT', clientOptions: proxy });
+await searchMarkets('BTC', { fetch: proxy.fetch });
+```
+
+A `http:` or `https:` proxy URL uses a built-in CONNECT tunnel (basic auth from the URL; `{ tls: { ca } }` trusts an inspecting proxy). On Node, a SOCKS or other proxy `Agent` (for example from `socks-proxy-agent`) can be passed instead of the URL. On Bun, the URL is handed to Bun's native proxy support, which requires Bun 1.3.6 or later.
+
+To use another websocket implementation, pass `transport`:
 
 ```ts
 import type { TransportFactory } from '@mathieuc/tradingview';

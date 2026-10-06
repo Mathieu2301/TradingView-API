@@ -15,8 +15,11 @@ study.on('update', async () => {
     .filter((h) => h.lastBarTime === 0) // Profile that ends on the latest bar
     .sort((a, b) => b.priceHigh - a.priceHigh);
   if (!rows.length) return;
+  // rate holds the [up, down] volume of each row: scale bars to 50 characters.
+  const max = Math.max(...rows.map((h) => h.rate[0] + h.rate[1]));
   for (const h of rows) {
-    console.log(`~ ${Math.round((h.priceHigh + h.priceLow) / 2)} € : ${'_'.repeat(h.rate[0] / 3)}${'_'.repeat(h.rate[1] / 3)}`);
+    const bar = (volume) => '_'.repeat(Math.round((volume / max) * 50));
+    console.log(`~ ${Math.round((h.priceHigh + h.priceLow) / 2)} € : ${bar(h.rate[0])}${bar(h.rate[1])}`);
   }
   await client.close();
 });

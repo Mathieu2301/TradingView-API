@@ -16,11 +16,16 @@ export class FakeConnection implements Transport {
 
   closed = false;
 
+  /** True after `terminate()`. */
+  terminated = false;
+
   readonly sent: SentPacket[] = [];
 
   readonly raw: string[] = [];
 
   readonly heartbeats: number[] = [];
+
+  #ended = false;
 
   constructor(
     readonly server: FakeServer,
@@ -49,7 +54,21 @@ export class FakeConnection implements Transport {
     if (this.closed) return;
     this.closed = true;
     this.isOpen = false;
-    setTimeout(() => this.handlers.onClose(1000, ''), 0);
+    setTimeout(() => this.#end(1000, ''), 0);
+  }
+
+  /** Like `ws`: drops the socket and reports an abnormal close. */
+  terminate(): void {
+    this.terminated = true;
+    this.closed = true;
+    this.isOpen = false;
+    setTimeout(() => this.#end(1006, ''), 0);
+  }
+
+  #end(code: number, reason: string): void {
+    if (this.#ended) return;
+    this.#ended = true;
+    this.handlers.onClose(code, reason);
   }
 
   /** Server → client: one websocket message containing these frames. */
@@ -68,7 +87,7 @@ export class FakeConnection implements Transport {
     if (this.closed) return;
     this.closed = true;
     this.isOpen = false;
-    this.handlers.onClose(code, reason);
+    this.#end(code, reason);
   }
 
   /** Packets sent with a method. */
