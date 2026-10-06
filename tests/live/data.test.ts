@@ -22,12 +22,19 @@ describe.skipIf(!LIVE)('live: high-level data API', () => {
     expect(range.length).toBeGreaterThanOrEqual(40);
   });
 
-  it('gets custom chart types', async () => {
-    for (const chartType of ['HeikinAshi', 'Renko', 'LineBreak', 'Kagi', 'PointAndFigure', 'Range'] as const) {
+  it.each(['HeikinAshi', 'Renko', 'LineBreak', 'Kagi', 'PointAndFigure', 'Range'] as const)(
+    'returns valid %s candles', async (chartType) => {
       const candles = await getCandles({ symbol: 'BINANCE:BTCEUR', timeframe: 'D', count: 10, chartType });
-      expect(candles.length, chartType).toBeGreaterThan(0);
-    }
-  });
+      expect(candles.length).toBeGreaterThanOrEqual(5);
+      for (const candle of candles) {
+        expect(Number.isFinite(candle.time)).toBe(true);
+        for (const field of ['open', 'high', 'low', 'close'] as const) {
+          expect(Number.isFinite(candle[field]), `${chartType} ${field}`).toBe(true);
+        }
+        expect(candle.high).toBeGreaterThanOrEqual(candle.low);
+      }
+    },
+  );
 
   it('watches candles and stops cleanly', async () => {
     let updates = 0;
@@ -68,9 +75,15 @@ describe.skipIf(!LIVE)('live: high-level data API', () => {
 
   it('searches markets and indicators, and gets technical analysis', async () => {
     expect((await searchMarkets('BINANCE:')).length).toBeGreaterThan(10);
-    expect((await searchMarkets('nasdaq apple'))[0]?.id).toBe('NASDAQ:AAPL');
     expect((await searchIndicators('RSI')).length).toBeGreaterThan(10);
-    const ta = await getTechnicalAnalysis('BINANCE:BTCUSD');
+  });
+
+  it.each([
+    ['binance:BTCUSD', 'BINANCE:BTCUSD'],
+    ['nasdaq apple', 'NASDAQ:AAPL'],
+  ] as const)('searches %s and gets technical analysis', async (query, symbol) => {
+    expect((await searchMarkets(query))[0]?.id).toBe(symbol);
+    const ta = await getTechnicalAnalysis(symbol);
     for (const period of ['1', '5', '15', '60', '240', '1D', '1W', '1M'] as const) {
       expect(ta?.[period]).toMatchObject({ Other: expect.any(Number), All: expect.any(Number), MA: expect.any(Number) });
     }
