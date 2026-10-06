@@ -7,7 +7,7 @@ describe('public API', () => {
     expect(Object.keys(root).sort()).toEqual([
       'ALL_QUOTE_FIELDS', 'BuiltInIndicator', 'CHART_TYPE_STUDIES', 'ChartSession', 'DEFAULT_TIMEOUT_MS', 'Emitter',
       'PineIndicator', 'PinePermissionManager', 'QuoteSession', 'QuoteSubscription', 'Study', 'TradingViewClient',
-      'TradingViewError', 'TradingViewProvider', 'applyGraphicsCommands', 'clearIndicatorCache', 'getCandles', 'getChartToken', 'getDrawings', 'getHotlist',
+      'TradingViewError', 'TradingViewProvider', 'applyGraphicsCommands', 'clearIndicatorCache', 'createProxy', 'createWsTransport', 'getCandles', 'getChartToken', 'getDrawings', 'getHotlist',
       'getIndicator', 'getIndicatorData', 'getPrivateIndicators', 'getQuote', 'getQuotes', 'getScreener', 'getSymbolInfo',
       'getTechnicalAnalysis', 'getUser', 'getWatchlists', 'loginUser', 'mergeStrategyReport', 'parseGraphics', 'parseIndicatorDefinition',
       'parseTrades', 'protocol', 'quoteSymbolKey', 'resolveQuoteFields', 'searchIndicators', 'searchMarkets', 'summarizeStrategyReport',

@@ -2,7 +2,9 @@ export { TradingViewClient } from './client.js';
 export type {
   ClientEvents, ClientOptions, DebugOption, ServerName, SessionHandler,
 } from './client.js';
-export { wsTransport } from './transport.js';
+export { createWsTransport, wsTransport } from './transport.js';
 export type {
-  Transport, TransportFactory, TransportHandlers, TransportRequest,
+  HttpAgentLike, Transport, TransportFactory, TransportHandlers, TransportRequest, WsTransportOptions,
 } from './transport.js';
+export { createProxy } from './proxy.js';
+export type { ProxyAdapter, ProxyOptions, ProxyTlsOptions } from './proxy.js';
