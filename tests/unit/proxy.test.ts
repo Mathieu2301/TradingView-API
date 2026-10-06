@@ -150,7 +150,15 @@ describe.skipIf(bunTooOld)('createProxy over a loopback proxy', () => {
     expect((wsError as Error).message).toMatch(/HTTP 407|Proxy connection failed/);
     expect((wsError as Error).message).not.toContain('wrong-secret-value');
     await client.close();
-    expect(fixture.connects).toContainEqual({ target: 'data.tradingview.test:8080', authorized: false });
+    // The proxy fixture reports CONNECT attempts through a separate process;
+    // the client can reject before its stdout event reaches this process.
+    const refusedWs = { target: 'data.tradingview.test:8080', authorized: false };
+    const deadline = Date.now() + 1_000;
+    while (!fixture.connects.some((entry) => entry.target === refusedWs.target && entry.authorized === false)
+      && Date.now() < deadline) {
+      await new Promise((resolve) => { setTimeout(resolve, 10); });
+    }
+    expect(fixture.connects).toContainEqual(refusedWs);
   });
 
   it('honours an abort signal', async () => {
