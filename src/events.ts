@@ -37,7 +37,7 @@ export class Emitter<Events extends EventMap> {
   once<K extends keyof Events & string>(event: K, listener: Listener<Events[K]>): Unsubscribe {
     const wrapper: Listener<Events[K]> = (...args) => {
       this.off(event, wrapper);
-      listener(...args);
+      return listener(...args);
     };
     return this.on(event, wrapper);
   }
@@ -76,12 +76,17 @@ export class Emitter<Events extends EventMap> {
       return;
     }
     for (const listener of [...(set ?? [])]) Emitter.#call(() => listener(...args));
-    for (const listener of [...this.#anyListeners]) Emitter.#call(() => (listener as (...a: unknown[]) => void)(event, ...args));
+    for (const listener of [...this.#anyListeners]) Emitter.#call(() => (listener as (...a: unknown[]) => unknown)(event, ...args));
   }
 
-  static #call(fn: () => void): void {
+  static #call(fn: () => unknown): void {
     try {
-      fn();
+      const result = fn();
+      if (result && typeof result === 'object' && 'then' in result) {
+        Promise.resolve(result).catch((error) => {
+          console.error('[tradingview] Listener threw:', error);
+        });
+      }
     } catch (error) {
       console.error('[tradingview] Listener threw:', error);
     }

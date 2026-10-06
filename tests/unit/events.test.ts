@@ -35,6 +35,22 @@ describe('Emitter', () => {
     expect(spy).toHaveBeenCalledWith('[tradingview]', new Error('boom'));
   });
 
+  it('handles async listener rejections, including once and catch-all listeners', async () => {
+    const emitter = new TestEmitter();
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const after = vi.fn();
+    emitter.on('tick', async () => { throw new Error('async on'); });
+    emitter.once('tick', async () => { throw new Error('async once'); });
+    emitter.onAny(async () => { throw new Error('async any'); });
+    emitter.on('tick', after);
+    emitter.fire('tick', 1);
+    await vi.waitFor(() => expect(logged).toHaveBeenCalledTimes(3));
+    expect(after).toHaveBeenCalledWith(1);
+    expect(logged).toHaveBeenCalledWith('[tradingview] Listener threw:', expect.objectContaining({ message: 'async on' }));
+    expect(logged).toHaveBeenCalledWith('[tradingview] Listener threw:', expect.objectContaining({ message: 'async once' }));
+    expect(logged).toHaveBeenCalledWith('[tradingview] Listener threw:', expect.objectContaining({ message: 'async any' }));
+  });
+
   it('isolates throwing listeners from the emitter', () => {
     const emitter = new TestEmitter();
     const after = vi.fn();
