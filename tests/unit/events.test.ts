@@ -44,7 +44,8 @@ describe('Emitter', () => {
     emitter.onAny(async () => { throw new Error('async any'); });
     emitter.on('tick', after);
     emitter.fire('tick', 1);
-    await vi.waitFor(() => expect(logged).toHaveBeenCalledTimes(3));
+    await new Promise((resolve) => { setTimeout(resolve, 0); });
+    expect(logged).toHaveBeenCalledTimes(3);
     expect(after).toHaveBeenCalledWith(1);
     expect(logged).toHaveBeenCalledWith('[tradingview] Listener threw:', expect.objectContaining({ message: 'async on' }));
     expect(logged).toHaveBeenCalledWith('[tradingview] Listener threw:', expect.objectContaining({ message: 'async once' }));
