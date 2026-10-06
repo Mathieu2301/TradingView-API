@@ -14,4 +14,14 @@ if (process.argv[2] === 'echo') {
     });
   });
 }
+if (process.argv[2] === 'drop') {
+  // Abrupt loss: the TCP socket is destroyed without a closing handshake.
+  new WebSocketServer({ server }).on('connection', (socket) => {
+    socket.on('message', () => socket.terminate());
+  });
+}
+if (process.argv[2] === 'silent') {
+  // Black hole: the socket stays open but nothing is read or answered, not even a close.
+  new WebSocketServer({ server }).on('connection', (socket) => socket.pause());
+}
 server.listen(0, '127.0.0.1', () => console.log(server.address().port));

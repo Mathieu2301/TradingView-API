@@ -1,12 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { TradingViewClient } from '../../src/index.js';
+import { TradingViewClient, wsTransport, type Transport } from '../../src/index.js';
 import { getCandles, watchCandles, watchQuotes, type CandleWatcher, type QuoteWatcher } from '../../src/data/index.js';
 import { LIVE } from './env.js';
 
 describe.skipIf(!LIVE)('live: connection recovery', () => {
-  it('closes active watchers and starts fresh on a new connection', async () => {
+  it('stops active watchers on an abrupt socket loss and starts fresh on a new connection', async () => {
     const symbol = 'BINANCE:BTCUSDT';
-    const client = new TradingViewClient();
+    let socket: Transport | undefined;
+    const client = new TradingViewClient({
+      transport: (request, handlers) => {
+        socket = wsTransport(request, handlers);
+        return socket;
+      },
+    });
+    const closeCode = new Promise<number | undefined>((resolve) => { client.on('close', (code) => resolve(code)); });
     const errors: string[] = [];
     let candles: CandleWatcher | undefined;
     let quotes: QuoteWatcher | undefined;
@@ -19,9 +26,11 @@ describe.skipIf(!LIVE)('live: connection recovery', () => {
       });
       expect(candles.latest).toHaveLength(5);
       expect(quotes.latest[symbol]?.lp).toBeTypeOf('number');
-      // End the transport while subscriptions are still live, as a lost socket would.
-      await client.close();
+      // Destroy the TCP socket without a closing handshake, as a lost network would.
+      socket?.terminate?.();
       await Promise.all([candles.closed, quotes.closed]);
+      expect(await closeCode).toBe(1006);
+      expect(client.isClosed).toBe(true);
       expect(candles.isActive).toBe(false);
       expect(quotes.isActive).toBe(false);
       expect(errors.sort()).toEqual(['DISCONNECTED', 'DISCONNECTED']);

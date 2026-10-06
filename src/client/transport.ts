@@ -15,6 +15,8 @@ export interface Transport {
   send(data: string): void;
   /** Starts a graceful close. `onClose` must be called once closed. */
   close(): void;
+  /** Destroys the connection without a closing handshake (unresponsive peer). */
+  terminate?(): void;
 }
 
 export interface TransportRequest {
@@ -59,6 +61,9 @@ export const wsTransport: TransportFactory = (request, handlers) => {
       if (socket.readyState === WebSocket.CLOSED) return;
       if (socket.readyState === WebSocket.CONNECTING) socket.terminate();
       else socket.close();
+    },
+    terminate() {
+      if (socket.readyState !== WebSocket.CLOSED) socket.terminate();
     },
   };
 };

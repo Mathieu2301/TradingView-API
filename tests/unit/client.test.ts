@@ -193,3 +193,81 @@ describe('account lookup lifecycle', () => {
     });
   }
 });
+
+describe('unexpected connection loss', () => {
+  it('fails and terminates a connection that goes silent, but not one that keeps beating', async () => {
+    const { server, client } = setup({ inactivityTimeoutMs: 80 });
+    const errors: string[] = [];
+    client.on('error', (error) => errors.push(error.code));
+    const onClose = vi.fn();
+    client.registerSession('cs_silent', { onPacket: () => {}, onClose });
+    const closed = new Promise((resolve) => { client.on('close', (code) => resolve(code)); });
+    await client.ready;
+    for (let beat = 1; beat <= 4; beat += 1) {
+      await new Promise((resolve) => { setTimeout(resolve, 40); });
+      server.last.push(`~h~${beat}`);
+    }
+    expect(client.isOpen).toBe(true);
+    expect(errors).toEqual([]);
+    await expect(closed).resolves.toBe(1006);
+    expect(server.last.terminated).toBe(true);
+    expect(errors).toEqual(['CONNECTION_ERROR']);
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onClose.mock.calls[0][0]).toMatchObject({
+      code: 'DISCONNECTED',
+      message: expect.stringContaining('No data from the server'),
+      cause: expect.objectContaining({ code: 'CONNECTION_ERROR' }),
+    });
+    expect(onClose.mock.calls[0][1]).toBe(false);
+  });
+
+  for (const inactivityTimeoutMs of [0, Infinity, 2 ** 40]) {
+    it(`keeps a silent connection open with inactivityTimeoutMs ${inactivityTimeoutMs}`, async () => {
+      const { server, client } = setup({ inactivityTimeoutMs });
+      await client.ready;
+      await new Promise((resolve) => { setTimeout(resolve, 50); });
+      expect(client.isOpen).toBe(true);
+      expect(server.last.terminated).toBe(false);
+      await client.close();
+    });
+  }
+
+  it('reports a socket error followed by a close once, as CONNECTION_ERROR', async () => {
+    const { server, client } = setup();
+    const errors: string[] = [];
+    client.on('error', (error) => errors.push(error.code));
+    const onClose = vi.fn();
+    client.registerSession('cs_reset', { onPacket: () => {}, onClose });
+    await client.ready;
+    server.last.handlers.onError(new Error('read ECONNRESET'));
+    server.last.drop(1006, '');
+    await until(() => client.isClosed);
+    expect(errors).toEqual(['CONNECTION_ERROR']);
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onClose.mock.calls[0][0]).toMatchObject({
+      code: 'DISCONNECTED', cause: expect.objectContaining({ message: expect.stringContaining('ECONNRESET') }),
+    });
+    expect(onClose.mock.calls[0][1]).toBe(false);
+    await client.close();
+  });
+
+  it('starts a fresh connection after an abrupt loss without leaking state', async () => {
+    const server = new FakeServer();
+    const first = new TradingViewClient({ transport: server.transport });
+    await first.ready;
+    first.registerSession('cs_old', { onPacket: () => {} });
+    server.last.drop();
+    await until(() => first.isClosed);
+    expect(() => first.send('late')).toThrow(/closed/);
+    await first.close();
+
+    const second = new TradingViewClient({ transport: server.transport });
+    await second.ready;
+    const received: string[] = [];
+    second.registerSession('cs_new', { onPacket: (packet) => received.push(packet.m) });
+    server.last.push({ m: 'series_loading', p: ['cs_new'] }, { m: 'series_loading', p: ['cs_old'] });
+    expect(received).toEqual(['series_loading']);
+    expect(server.connections).toHaveLength(2);
+    await second.close();
+  });
+});
