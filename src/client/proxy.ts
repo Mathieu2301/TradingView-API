@@ -256,42 +256,58 @@ function send(url: URL, method: string, headers: Headers, body: Buffer | undefin
   });
 }
 
+interface ProxyRequestState {
+  url: URL;
+  method: string;
+  headers: Headers;
+  body: Buffer | undefined;
+}
+
+function followRedirect(state: ProxyRequestState, raw: RawResponse,
+  policy: Request['redirect'], redirects: number): boolean {
+  const location = raw.headers.get('location');
+  if (policy === 'manual' || !REDIRECTS.has(raw.status) || !location) return false;
+  if (policy === 'error') throw new TypeError(`Unexpected redirect from ${state.url.origin}`);
+  if (redirects >= 20) throw new TypeError('Too many redirects');
+
+  const next = new URL(location, state.url);
+  if (raw.status === 303 || ((raw.status === 301 || raw.status === 302) && state.method === 'POST')) {
+    if (state.method !== 'HEAD') state.method = 'GET';
+    state.body = undefined;
+    for (const name of ['content-type', 'content-length', 'content-encoding', 'content-language', 'content-location']) {
+      state.headers.delete(name);
+    }
+  }
+  if (next.origin !== state.url.origin) {
+    for (const name of ['authorization', 'cookie', 'proxy-authorization', 'host']) state.headers.delete(name);
+  }
+  state.url = next;
+  return true;
+}
+
+function fetchResponse(raw: RawResponse, state: ProxyRequestState, redirected: boolean): Response {
+  const response = new Response(NULL_BODY.has(raw.status) || state.method === 'HEAD' ? null : new Uint8Array(raw.body), {
+    status: raw.status, statusText: raw.statusText, headers: raw.headers,
+  });
+  Object.defineProperty(response, 'url', { value: state.url.toString() });
+  Object.defineProperty(response, 'redirected', { value: redirected });
+  return response;
+}
+
 /** `fetch` built on `node:http(s)` so requests can use an `Agent` (proxy tunnels). */
 function agentFetch(agentFor: (url: URL) => HttpAgent): typeof fetch {
   return async (input, init) => {
     const initial = new Request(input, init);
-    let url = new URL(initial.url);
-    let method = initial.method;
-    const headers = new Headers(initial.headers);
-    let body = initial.body ? Buffer.from(await initial.arrayBuffer()) : undefined;
-
+    const state: ProxyRequestState = {
+      url: new URL(initial.url),
+      method: initial.method,
+      headers: new Headers(initial.headers),
+      body: initial.body ? Buffer.from(await initial.arrayBuffer()) : undefined,
+    };
     for (let redirects = 0; ; redirects += 1) {
-      const raw = await send(url, method, headers, body, agentFor(url), initial.signal);
-      const location = raw.headers.get('location');
-      if (initial.redirect !== 'manual' && REDIRECTS.has(raw.status) && location) {
-        if (initial.redirect === 'error') throw new TypeError(`Unexpected redirect from ${url.origin}`);
-        if (redirects >= 20) throw new TypeError('Too many redirects');
-        const next = new URL(location, url);
-        if (raw.status === 303 || ((raw.status === 301 || raw.status === 302) && method === 'POST')) {
-          if (method !== 'HEAD') method = 'GET';
-          body = undefined;
-          for (const name of ['content-type', 'content-length', 'content-encoding', 'content-language', 'content-location']) {
-            headers.delete(name);
-          }
-        }
-        if (next.origin !== url.origin) {
-          for (const name of ['authorization', 'cookie', 'proxy-authorization', 'host']) headers.delete(name);
-        }
-        url = next;
-        continue;
-      }
-
-      const response = new Response(NULL_BODY.has(raw.status) || method === 'HEAD' ? null : new Uint8Array(raw.body), {
-        status: raw.status, statusText: raw.statusText, headers: raw.headers,
-      });
-      Object.defineProperty(response, 'url', { value: url.toString() });
-      Object.defineProperty(response, 'redirected', { value: redirects > 0 });
-      return response;
+      const raw = await send(state.url, state.method, state.headers, state.body, agentFor(state.url), initial.signal);
+      if (followRedirect(state, raw, initial.redirect, redirects)) continue;
+      return fetchResponse(raw, state, redirects > 0);
     }
   };
 }
