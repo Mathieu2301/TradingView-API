@@ -2,7 +2,7 @@
 
 [README](../README.md) · [Low-level API](low-level-api.md) · [Migrating from v3](migration-v4.md) · [Examples](../examples)
 
-**V4 beta is currently available from this repository only; the latest npm release is still v3.** Build this checkout before running the examples below.
+**V4 is the default npm release.** Install `@mathieuc/tradingview` before running the examples below.
 
 The data API is the simplest way to use this library, in any application. Each function opens what it needs, waits for complete data, and releases every websocket session (and the connection it opened) before returning, including on errors, timeouts and cancellation.
 
