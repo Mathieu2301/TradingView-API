@@ -16,7 +16,7 @@
 
 ### Una consulta, datos reales
 
-> **La versión candidata V4 está disponible en npm bajo la etiqueta `next`.** Instálala con `npm install @mathieuc/tradingview@next`. La etiqueta predeterminada `latest` sigue en V3 y no exporta `getCandles`.
+> **V4 es la versión predeterminada en npm.** Instálala con `npm install @mathieuc/tradingview` para usar `getCandles` y la nueva API de datos.
 
 ```js
 import { getCandles } from '@mathieuc/tradingview/data';
@@ -33,10 +33,10 @@ console.log(candles.at(-1)); // { time, open, high, low, close, volume }
 
 ### Inicio rápido interactivo
 
-El asistente interactivo está incluido a partir de **4.0.0-rc.1**:
+El asistente interactivo está incluido en la V4:
 
 ```bash
-npx @mathieuc/tradingview@next
+npx @mathieuc/tradingview
 ```
 
 Ejecútalo desde el directorio de tu proyecto con Node.js 20+. Elige una opción:
@@ -45,7 +45,7 @@ Ejecútalo desde el directorio de tu proyecto con Node.js 20+. Elige una opción
 2. **Claude Code CLI** — inicia tu CLI `claude` instalado en este directorio con un prompt de proyecto listo para usar.
 3. **Codex CLI** — inicia tu CLI `codex` instalado en este directorio con el mismo prompt.
 4. **Otro agente de programación local** — muestra el prompt para pegarlo en tu agente.
-5. **Instalar solo la biblioteca** — ejecuta `npm install @mathieuc/tradingview@next` aquí, sin generar archivos ni iniciar un agente.
+5. **Instalar solo la biblioteca** — ejecuta `npm install @mathieuc/tradingview` aquí, sin generar archivos ni iniciar un agente.
 
 Claude Code y Codex deben estar instalados y autenticados. Sus solicitudes de permiso habituales siguen activadas. Si el inicio falla, se muestra el prompt para usarlo manualmente. Si no hay navegador disponible, el enlace alojado sigue visible.
 
@@ -59,11 +59,11 @@ node bin/tradingview.mjs
 ### Instalación manual
 
 ```bash
-npm install @mathieuc/tradingview@next
-# O: bun add @mathieuc/tradingview@next
+npm install @mathieuc/tradingview
+# O: bun add @mathieuc/tradingview
 ```
 
-`next` instala la versión candidata V4; la etiqueta predeterminada `latest` todavía instala V3. No mezcles imports de V4 con una instalación de V3.
+V4 se instala por defecto. V3 sigue disponible con `@mathieuc/tradingview@3`; consulta la guía de migración antes de actualizar un proyecto V3.
 
 El paquete V4 es ESM con declaraciones TypeScript. Los proyectos CommonJS pueden usar `require()` en Node 20.19+ o 22.12+, o `await import()`.
 

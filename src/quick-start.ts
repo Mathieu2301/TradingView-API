@@ -2,11 +2,11 @@ import { spawnSync, type SpawnSyncOptions, type SpawnSyncReturns } from 'node:ch
 import { createInterface } from 'node:readline/promises';
 
 export const LANDING_URL = 'https://molted.studio/dreams/market-watch-alerts';
-export const PACKAGE_SPEC = '@mathieuc/tradingview@next';
+export const PACKAGE_SPEC = '@mathieuc/tradingview';
 export const AGENT_PROMPT = `Help me build a project using TradingView-API V4 (${PACKAGE_SPEC}).
 First ask what I want to build and inspect the current project and its instructions before making changes.
 Read https://github.com/Mathieu2301/TradingView-API/blob/main/llms.txt and the data API guide at https://github.com/Mathieu2301/TradingView-API/blob/main/docs/data-api.md; use the docs shipped with the installed package as the version-specific reference.
-Use Node.js 20+ and install ${PACKAGE_SPEC} with the project's package manager. The default latest tag is still V3: do not mix the V3 Client API with V4.
+Use Node.js 20+ and install ${PACKAGE_SPEC} with the project's package manager. V4 is the default release; use the migration guide before upgrading a V3 project.
 Preserve existing files and project configuration. For a new project, start with a small runnable ESM (.mjs) example using getCandles from '@mathieuc/tradingview/data' and anonymous BINANCE:BTCUSDT data, then adapt it to my goal.
 Use timeouts, handle errors, and stop watchers or close clients on shutdown. Run the example and report observed results honestly, with exact commands to run it again.
 Only request TradingView credentials if my feature needs them; keep them in local environment variables, out of source control and logs. Explain any account or market-data limitations relevant to my goal.
@@ -14,7 +14,7 @@ This is an independent community library, not an official TradingView API. Do no
 
 export const HELP = `TradingView-API quick-start (Node.js 20+)
 
-Usage: npx @mathieuc/tradingview@next [--choice 1|2|3|4|5]
+Usage: npx @mathieuc/tradingview [--choice 1|2|3|4|5]
 
 1. Autonomous agent (recommended)
 2. Claude Code CLI

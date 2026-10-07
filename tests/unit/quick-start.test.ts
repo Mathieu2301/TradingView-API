@@ -42,7 +42,7 @@ describe('quick-start', () => {
     expect(runChoice('4', { log: (s) => messages.push(s), run: () => { throw new Error('must not spawn'); } })).toBe(0);
     expect(messages.join('\n')).toContain(AGENT_PROMPT);
   });
-  it('only installs the V4 next package', () => {
+  it('installs the default V4 package', () => {
     expect(runChoice('5', { platform: 'linux', log: () => {}, run: (cmd, args) => {
       expect(cmd).toBe('npm');
       expect(args).toEqual(['install', PACKAGE_SPEC]);

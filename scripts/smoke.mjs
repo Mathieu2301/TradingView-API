@@ -34,7 +34,7 @@ try {
   const help = run('node', [launcher, '--help'], dir);
   if (!help.includes('Autonomous agent (recommended)')) throw new Error('CLI help missing');
   const prompt = run('node', [launcher, '--choice', '4'], dir);
-  if (!prompt.includes('@mathieuc/tradingview@next')) throw new Error('CLI prompt missing');
+  if (!prompt.includes('@mathieuc/tradingview')) throw new Error('CLI prompt missing');
   const noTty = spawnSync('node', [launcher], { cwd: dir, encoding: 'utf8' });
   if (noTty.status !== 1 || !noTty.stderr.includes('--choice')) throw new Error('CLI non-TTY guard failed');
   const bin = join(dir, 'node_modules', '.bin', 'tradingview');
@@ -57,7 +57,7 @@ writeFileSync(process.env.TV_CAPTURE, JSON.stringify({ args: process.argv.slice(
     });
     if (child.status !== 0) throw new Error(`CLI choice ${choice} failed: ${child.stderr}`);
     const received = JSON.parse(readFileSync(captured, 'utf8'));
-    const expected = choice === '5' ? ['install', '@mathieuc/tradingview@next'] : [AGENT_PROMPT];
+    const expected = choice === '5' ? ['install', '@mathieuc/tradingview'] : [AGENT_PROMPT];
     if (received.cwd !== dir || JSON.stringify(received.args) !== JSON.stringify(expected)) throw new Error(`CLI choice ${choice} altered argv or cwd`);
   }
   console.log('quick-start packed CLI ok');

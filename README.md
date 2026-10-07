@@ -16,7 +16,7 @@
 
 ### One request, real data
 
-> **V4 release candidate is available on npm under `next`.** Install with `npm install @mathieuc/tradingview@next`. The default `latest` tag is still v3 and does not export `getCandles`.
+> **V4 is the default npm release.** Install with `npm install @mathieuc/tradingview` to use `getCandles` and the new data API.
 
 ```js
 import { getCandles } from '@mathieuc/tradingview/data';
@@ -33,10 +33,10 @@ Prefer to start without code? The setup paths below work too.
 
 ### Interactive quick-start
 
-The interactive launcher is included starting with **4.0.0-rc.1**:
+The interactive launcher is included in V4:
 
 ```bash
-npx @mathieuc/tradingview@next
+npx @mathieuc/tradingview
 ```
 
 Run it from your project directory with Node.js 20+. Choose a path:
@@ -45,7 +45,7 @@ Run it from your project directory with Node.js 20+. Choose a path:
 2. **Claude Code CLI** — starts your installed `claude` CLI here with a ready-to-use project prompt.
 3. **Codex CLI** — starts your installed `codex` CLI here with the same prompt.
 4. **Another local coding agent** — prints the prompt to paste into your agent.
-5. **Install the library only** — runs `npm install @mathieuc/tradingview@next` here, without generating files or starting an agent.
+5. **Install the library only** — runs `npm install @mathieuc/tradingview` here, without generating files or starting an agent.
 
 Claude Code and Codex must already be installed and authenticated. Their normal permission prompts remain enabled. If launch fails, the prompt is printed for manual use. If no browser is available, the hosted link remains visible.
 
@@ -59,11 +59,11 @@ node bin/tradingview.mjs
 ### Install manually
 
 ```bash
-npm install @mathieuc/tradingview@next
-# Or: bun add @mathieuc/tradingview@next
+npm install @mathieuc/tradingview
+# Or: bun add @mathieuc/tradingview
 ```
 
-`next` installs the V4 release candidate; the default `latest` tag still installs V3. Do not mix the V4 imports with a V3 installation.
+V4 is installed by default. V3 remains available with `@mathieuc/tradingview@3`; read the migration guide before upgrading existing V3 projects.
 
 The V4 package is ESM with TypeScript declarations. CommonJS projects can `require()` it on Node 20.19+ or 22.12+, or use `await import()`.
 
