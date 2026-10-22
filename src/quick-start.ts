@@ -1,7 +1,7 @@
 import { spawnSync, type SpawnSyncOptions, type SpawnSyncReturns } from 'node:child_process';
 import { createInterface } from 'node:readline/promises';
 
-export const LANDING_URL = 'https://molted.studio/dreams/market-watch-alerts';
+export const LANDING_URL = 'https://molted.studio/dreams/ai-agent-for-tradingview-data?utm_source=github&utm_medium=cli&utm_campaign=tradingview-api';
 export const PACKAGE_SPEC = '@mathieuc/tradingview';
 export const AGENT_PROMPT = `Help me build a project using TradingView-API V4 (${PACKAGE_SPEC}).
 First ask what I want to build and inspect the current project and its instructions before making changes.

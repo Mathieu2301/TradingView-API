@@ -10,9 +10,11 @@
 
 <a href="https://trendshift.io/repositories/26416?utm_source=repository-badge&amp;utm_medium=badge&amp;utm_campaign=badge-repository-26416" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/repositories/26416" alt="Mathieu2301/TradingView-API | #1 Repo Of The Day on Trendshift" width="250" height="55"/></a>
 
-![Demostración grabada: una consulta devuelve 40 velas diarias de BTC/USDT, representadas como un gráfico de líneas](../assets/readme-demo.gif)
+<a href="https://molted.studio/dreams/ai-agent-for-tradingview-data?utm_source=github&utm_medium=readme&utm_campaign=tradingview-api"><img src="../assets/readme-film.webp" alt="Película: un trader pide a un agente de IA que convierta su indicador privado de TradingView en un bot; el agente instala TradingView-API, lo prueba con datos históricos y opera en una cuenta demo" width="100%"></a>
 
-*Una consulta real de velas, grabada el 2 de octubre de 2026 con la versión preliminar de desarrollo (`fetchCandles`, llamada `getCandles` en la versión 4) y representada para esta demostración. Los precios no son en directo.*
+**Convierte tus indicadores de TradingView en un bot de trading, solo conversando.** Un agente de IA en molted instala TradingView-API, prueba tu estrategia con datos históricos y la ejecuta 24/7 en una cuenta demo. Dinero real solo cuando tú lo decidas.
+
+**[▶ Ver la película con sonido](https://molted.studio/dreams/ai-agent-for-tradingview-data?utm_source=github&utm_medium=readme&utm_campaign=tradingview-api#film)** · **[Crear mi agente de IA →](https://molted.studio/dreams/ai-agent-for-tradingview-data?utm_source=github&utm_medium=readme&utm_campaign=tradingview-api)**
 
 ### Una consulta, datos reales
 
@@ -24,6 +26,10 @@ import { getCandles } from '@mathieuc/tradingview/data';
 const candles = await getCandles({ symbol: 'BINANCE:BTCUSDT', timeframe: 'D', count: 40 });
 console.log(candles.at(-1)); // { time, open, high, low, close, volume }
 ```
+
+![Demostración grabada: una consulta devuelve 40 velas diarias de BTC/USDT, representadas como un gráfico de líneas](../assets/readme-demo.gif)
+
+*Una consulta real de velas, grabada el 2 de octubre de 2026 con la versión preliminar de desarrollo (`fetchCandles`, llamada `getCandles` en la versión 4) y representada para esta demostración. Los precios no son en directo.*
 
 ¿Prefieres empezar sin código? También puedes usar las opciones de abajo.
 
@@ -41,7 +47,7 @@ npx @mathieuc/tradingview
 
 Ejecútalo desde el directorio de tu proyecto con Node.js 20+. Elige una opción:
 
-1. **Agente autónomo (recomendado)** — abre el [monitor de mercado TradingView-API en Molted Studio](https://molted.studio/dreams/market-watch-alerts). Sin configurar un proyecto local.
+1. **Agente autónomo (recomendado)** — abre el [monitor de mercado TradingView-API en Molted Studio](https://molted.studio/dreams/ai-agent-for-tradingview-data?utm_source=github&utm_medium=readme&utm_campaign=tradingview-api). Sin configurar un proyecto local.
 2. **Claude Code CLI** — inicia tu CLI `claude` instalado en este directorio con un prompt de proyecto listo para usar.
 3. **Codex CLI** — inicia tu CLI `codex` instalado en este directorio con el mismo prompt.
 4. **Otro agente de programación local** — muestra el prompt para pegarlo en tu agente.
