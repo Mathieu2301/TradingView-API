@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as root from '../../src/index.js';
 import * as data from '../../src/data/index.js';
+import * as backtest from '../../src/backtest/index.js';
 
 describe('public API', () => {
   it('root entry exposes the high-level, low-level and HTTP APIs', () => {
@@ -25,5 +26,15 @@ describe('public API', () => {
       'getTechnicalAnalysis', 'getWatchlists', 'searchIndicators', 'searchMarkets', 'summarizeStrategyReport', 'watchCandles', 'watchIndicator', 'watchQuotes',
     ]);
     expect(data.getCandles).toBe(root.getCandles);
+  });
+
+  it('backtest entry exposes the protocol, its building blocks and the report helpers', () => {
+    expect(Object.keys(backtest).sort()).toEqual([
+      'BACKTEST_DEFAULTS', 'TradingViewError', 'atr', 'atrExit', 'atrTrailingExit', 'backtest', 'checkCausality', 'computeMetrics',
+      'createRng', 'defaultExits', 'deriveSeed', 'ema', 'fetchSnapshot', 'fillPrice', 'findPivots', 'fixedExit', 'formatReport',
+      'formatTable', 'freezeSnapshot', 'isoTime', 'loadSnapshot', 'percentileRank', 'quantile', 'randomBaseline', 'resolveWarmupBars',
+      'rsi', 'rsiDivergence', 'runBacktest', 'simulate', 'sma', 'snapshotInfo', 'splitSegments', 'tradeReturn', 'tradesToCsv',
+    ]);
+    expect(backtest.TradingViewError).toBe(root.TradingViewError);
   });
 });

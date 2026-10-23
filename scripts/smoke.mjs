@@ -21,7 +21,7 @@ const dir = mkdtempSync(join(tmpdir(), 'tv-smoke-'));
 try {
   const packed = JSON.parse(run('npm', ['pack', '--json', '--pack-destination', dir], root))[0];
   const files = packed.files.map((f) => f.path);
-  for (const required of ['bin/tradingview.mjs', 'dist/quick-start.js', 'dist/index.js', 'dist/index.d.ts', 'dist/data/index.js', 'dist/data/index.d.ts', 'README.md', 'llms.txt', 'scripts/endurance.mjs', 'scripts/probe-account.mjs', 'scripts/parity.mjs', 'examples/screener.js']) {
+  for (const required of ['bin/tradingview.mjs', 'dist/quick-start.js', 'dist/index.js', 'dist/index.d.ts', 'dist/data/index.js', 'dist/data/index.d.ts', 'dist/backtest/index.js', 'dist/backtest/index.d.ts', 'examples/honest-backtest/index.js', 'examples/backtest-custom-signal.js', 'README.md', 'llms.txt', 'scripts/endurance.mjs', 'scripts/probe-account.mjs', 'scripts/parity.mjs', 'examples/screener.js']) {
     if (!files.includes(required)) throw new Error(`Missing ${required} in package`);
   }
   if (files.some((f) => f.startsWith('src/') || f.startsWith('tests/'))) throw new Error('Sources or tests leaked into package');
@@ -71,6 +71,12 @@ writeFileSync(process.env.TV_CAPTURE, JSON.stringify({ args: process.argv.slice(
       if (typeof tv[name] !== 'function') throw new Error('missing export: ' + name);
     }
     if (tv.getCandles !== getCandles) throw new Error('entry points disagree');
+    const bt = await import('@mathieuc/tradingview/backtest');
+    const bars = Array.from({ length: 400 }, (_, i) => ({ time: i * 3600, open: 100 + Math.sin(i / 7) * 5, high: 107 + Math.sin(i / 7) * 5, low: 93 + Math.sin(i / 7) * 5, close: 100 + Math.sin((i + 1) / 7) * 5 }));
+    const report = bt.runBacktest(bars, { signal: (c) => c.flatMap((x, i) => (i > 20 && x.close > c[i - 1].close && c[i - 1].close <= c[i - 2].close ? [{ bar: i, direction: 'long' }] : [])), runs: 20, warmupBars: 20 });
+    if (report.rows.length !== 8 || !report.trades.length || !bt.formatReport(report).includes('no look-ahead found')) throw new Error('backtest entry failed');
+    const peek = await Promise.resolve().then(() => bt.runBacktest(bars, { signal: (c) => c.flatMap((x, i) => (c[i + 1] && c[i + 1].close > x.close ? [{ bar: i, direction: 'long' }] : [])), runs: 0, warmupBars: 20 })).catch((e) => e);
+    if (!(peek instanceof bt.TradingViewError) || peek.code !== 'LOOK_AHEAD') throw new Error('backtest look-ahead guard failed');
     const frame = tv.protocol.encodePacket('set_auth_token', ['x']);
     if (tv.protocol.decodeFrames(frame)[0].packet.m !== 'set_auth_token') throw new Error('protocol roundtrip failed');
     const error = await getCandles({ symbol: '' }).catch((e) => e);
@@ -86,7 +92,8 @@ writeFileSync(process.env.TV_CAPTURE, JSON.stringify({ args: process.argv.slice(
     writeFileSync(join(dir, 'check.cjs'), `
       const { getCandles } = require('@mathieuc/tradingview/data');
       const { TradingViewClient } = require('@mathieuc/tradingview');
-      if (typeof getCandles !== 'function' || typeof TradingViewClient !== 'function') throw new Error('require failed');
+      const { runBacktest } = require('@mathieuc/tradingview/backtest');
+      if (typeof getCandles !== 'function' || typeof TradingViewClient !== 'function' || typeof runBacktest !== 'function') throw new Error('require failed');
       console.log('require ok');
     `);
     process.stdout.write(run('node', ['check.cjs'], dir));
@@ -112,6 +119,10 @@ writeFileSync(process.env.TV_CAPTURE, JSON.stringify({ args: process.argv.slice(
     const ranked: Promise<ScreenerResult> = getHotlist({ kind: 'gainers' });
     const lists: Promise<Watchlist[]> = getWatchlists({ credentials: { session: 'fixture' } });
     void scan; void ranked; void lists; void candles; void row; void provider;
+    import { backtest, rsiDivergence, defaultExits, type BacktestReport, type SignalFunction } from '@mathieuc/tradingview/backtest';
+    const rule: SignalFunction = (bars) => bars.flatMap((b, i) => (b.close > b.open ? [{ bar: i, direction: 'long' as const }] : []));
+    const run: Promise<{ report: BacktestReport }> = backtest({ symbol: 'BINANCE:BTCUSDT', timeframe: '240', years: 2, signal: rule, exits: defaultExits() });
+    void run; void rsiDivergence;
   `);
   writeFileSync(join(dir, 'tsconfig.json'), JSON.stringify({
     compilerOptions: { module: 'NodeNext', moduleResolution: 'NodeNext', target: 'ES2022', strict: true, noEmit: true, types: [], lib: ['ES2022', 'DOM'] },

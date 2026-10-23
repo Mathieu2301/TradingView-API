@@ -21,7 +21,14 @@ Simple data API (import from '@mathieuc/tradingview/data' or the root entry):
 Low-level API: TradingViewClient, client.createChart() (ChartSession: setMarket, setTimeframe, fetchMore, replay, createStudy), client.createQuoteSession(), PineIndicator, BuiltInIndicator, HTTP functions (loginUser, getUser, getIndicator, getPrivateIndicators, getDrawings, PinePermissionManager).
 
 Pine studies need a TradingView account (session cookies). Built-in studies and candles/quotes work anonymously, with history limits.
-Docs: docs/data-api.md, docs/low-level-api.md, docs/migration-v4.md, docs/v4-coverage.md, docs/v4-reliability.md, docs/protocol-contributing.md. Examples: examples/.
-Backtesting: examples/honest-backtest/ is an example protocol on getCandles data (no look-ahead, costs, IS/OOS split, random-entry baseline), not a library API.
-The interactive setup CLI is available with npx @mathieuc/tradingview. It opens Molted Studio, launches a local coding agent with a prompt, prints that prompt, or installs the library. It is not a market-data query CLI. No MCP server, backtesting engine or hosted trading API is shipped.
+Docs: docs/data-api.md, docs/backtest.md, docs/low-level-api.md, docs/migration-v4.md, docs/v4-coverage.md, docs/v4-reliability.md, docs/protocol-contributing.md. Examples: examples/.
+Backtest API (import from '@mathieuc/tradingview/backtest'; since 4.1.0-beta.1, npm tag beta): write only the entry rule, do not write an engine.
+- backtest({ symbol, timeframe, years?, credentials?, signal, exits?, fee?, slippage?, splitRatio?, runs?, seed? }) -> { report, snapshot }. runBacktest(candles | snapshot, options) -> report, synchronous, no network.
+- signal(candles) -> [{ bar, direction: 'long' | 'short', refs? }]: decided at the close of `bar` using bars 0..bar only; entry is always the next bar's open. Optional signal.warmupBars (default 200) and signal.label.
+- The engine reruns signal on truncated history and throws TradingViewError code LOOK_AHEAD if a signal depends on later bars (or repaints).
+- Built in: rsiDivergence(options), defaultExits() (fixed_1.5R, fixed_2R, atr1.5_2R, trail_atr3), fixedExit, atrExit, atrTrailingExit, indicators sma/ema/rsi/atr/findPivots.
+- Protocol: frozen snapshot with SHA-256 (loadSnapshot to replay), warm-up never traded, 70/30 IS/OOS split with no position across it, fee 0.1% + slippage 0.05% per side, same-candle stop+target = loss, gap = open, 1000 seeded random-entry runs per exit and split with percentile and p5/p50/p95.
+- report is plain JSON: snapshot info, segments with dates, signals, rows (metrics: trades, netReturn, winRate, profitFactor or null, maxDrawdown; baseline; percentile), trades with bar indices and times, causality, warnings. formatReport(report), tradesToCsv(report.trades).
+- No claim of profitability: a negative or inconclusive result is a valid outcome. Docs: docs/backtest.md. Example: examples/honest-backtest/.
+The interactive setup CLI is available with npx @mathieuc/tradingview. It opens Molted Studio, launches a local coding agent with a prompt, prints that prompt, or installs the library. It is not a market-data query CLI. No MCP server or hosted trading API is shipped, and the library places no orders.
 Questions and bugs: https://github.com/Mathieu2301/TradingView-API/issues/new/choose

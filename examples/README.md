@@ -14,7 +14,8 @@ Examples that need an account read the `SESSION` and `SIGNATURE` cookies from th
 | Example | API | Account |
 | --- | --- | --- |
 | [candles.js](candles.js) | `getCandles` (count, from/to) | No |
-| [honest-backtest/](honest-backtest) | `getCandles` → backtest protocol: no look-ahead, costs, IS/OOS split, random-entry baseline | No |
+| [honest-backtest/](honest-backtest) | Backtest API with the reference RSI divergence strategy, every parameter as a CLI option | No |
+| [backtest-custom-signal.js](backtest-custom-signal.js) | Backtest API with your own entry rule (EMA cross) | No |
 | [watch-candles.js](watch-candles.js) | `watchCandles` | No |
 | [quotes.js](quotes.js) | `getQuote`, `getQuotes`, `watchQuotes` | No |
 | [indicator-data.js](indicator-data.js) | `getIndicatorData` | Pine scripts only |
@@ -39,4 +40,4 @@ Examples that need an account read the `SESSION` and `SIGNATURE` cookies from th
 
 ## Backtesting honestly
 
-[honest-backtest/](honest-backtest) is a reference protocol for testing a strategy on `getCandles` data: frozen snapshot, chronological in-sample/out-of-sample split, no look-ahead, fees and slippage, pessimistic fills, interchangeable exits and a seeded random-entry baseline. It makes no claim of profitability: a negative or inconclusive result is a valid outcome.
+The [backtest API](../docs/backtest.md) tests an entry rule on `getCandles` data: frozen snapshot, look-ahead rejection, chronological in-sample/out-of-sample split, fees and slippage, pessimistic fills, interchangeable exits and a seeded random-entry baseline. [backtest-custom-signal.js](backtest-custom-signal.js) shows a custom rule in a few lines; [honest-backtest/](honest-backtest) runs the reference strategy. Neither makes a claim of profitability: a negative or inconclusive result is a valid outcome.

@@ -210,11 +210,19 @@ subscription requirements.
 
 ## Backtesting a strategy on candles
 
-The library ships no backtesting engine. [examples/honest-backtest](../examples/honest-backtest) shows a protocol to copy: candles fetched once with `getCandles` and frozen, a chronological 70/30 in-sample/out-of-sample split, signals confirmed without look-ahead and entered at the next bar's open, fees and slippage on both sides, a pessimistic rule when stop and target fall in the same candle, and a seeded random-entry baseline for each exit. A negative or inconclusive result is a valid outcome.
+`@mathieuc/tradingview/backtest` runs a complete protocol on `getCandles` data: you write the entry rule, it freezes the candles, rejects signals that use later bars (`LOOK_AHEAD`), enters at the next bar's open, charges fees and slippage on both sides, counts a candle touching stop and target as a loss, splits 70/30 in-sample/out-of-sample and compares four exits with a seeded random-entry baseline. It makes no claim of profitability: a negative or inconclusive result is a valid outcome.
 
-```bash
-npm run build && node examples/honest-backtest/index.js --symbol BINANCE:BTCUSDT --timeframe 240
+```ts
+import { backtest, formatReport } from '@mathieuc/tradingview/backtest';
+
+const { report } = await backtest({
+  symbol: 'BINANCE:BTCUSDT', timeframe: '240', years: 2,
+  signal: (candles) => candles.flatMap((c, i) => (i > 0 && c.close > candles[i - 1].high ? [{ bar: i, direction: 'long' }] : [])),
+});
+console.log(formatReport(report));
 ```
+
+Read the [backtest guide](backtest.md) for the signal contract, options, exits and report fields. [examples/honest-backtest](../examples/honest-backtest) runs the reference RSI divergence strategy with every parameter as a CLI option.
 
 ## Search and technical analysis
 
@@ -289,6 +297,7 @@ Every failure is a `TradingViewError` with a `code`:
 | `NOT_FOUND` | Unknown indicator, layout... |
 | `TIMEOUT`, `ABORTED`, `DISCONNECTED`, `CONNECTION_ERROR`, `PROTOCOL_ERROR`, `HTTP_ERROR`, `PARSE_ERROR` | Transport and decoding failures. |
 | `CALLBACK_ERROR` | A watcher callback threw; the stream remains active. |
+| `LOOK_AHEAD` | A backtest signal used bars after the bar it was decided on (see the [backtest guide](backtest.md#the-look-ahead-check)). |
 
 `error.details` keeps the raw server payload when there is one.
 

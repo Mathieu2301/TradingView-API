@@ -1,6 +1,6 @@
 {
   "name": "@mathieuc/tradingview",
-  "version": "4.0.1",
+  "version": "4.1.0-beta.1",
   "description": "TradingView market data for JavaScript and TypeScript: candles, quotes, indicators and strategies, with a simple data API and full low-level access.",
   "type": "module",
   "main": "./dist/index.js",
@@ -15,6 +15,11 @@
       "types": "./dist/data/index.d.ts",
       "import": "./dist/data/index.js",
       "default": "./dist/data/index.js"
+    },
+    "./backtest": {
+      "types": "./dist/backtest/index.d.ts",
+      "import": "./dist/backtest/index.js",
+      "default": "./dist/backtest/index.js"
     },
     "./package.json": "./package.json"
   },
@@ -63,6 +68,7 @@
     "stocks",
     "crypto",
     "forex",
+    "backtest",
     "indicator",
     "pine",
     "websocket",
