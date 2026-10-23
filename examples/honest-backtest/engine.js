@@ -301,58 +301,85 @@ export function tradeReturn(direction, entryFill, exitFill, fee) {
   return gross - fee - fee * ratio;
 }
 
-function runTrade(entry, exit, context) {
-  const { candles, ind, costs, end, trace } = context;
-  const { direction, entryBar: e } = entry;
+const reachedStop = (direction, price, stop) => (direction === 'long' ? price <= stop : price >= stop);
+const reachedTarget = (direction, price, target) => target !== null && (direction === 'long' ? price >= target : price <= target);
+
+/** The bar opened beyond a level: the order fills at the open, the worse price for a stop. */
+function gapExit(bar, direction, stop, target) {
+  if (reachedStop(direction, bar.open, stop)) return { level: bar.open, reason: 'stop_gap' };
+  if (reachedTarget(direction, bar.open, target)) return { level: bar.open, reason: 'target_gap' };
+  return null;
+}
+
+/** Levels touched inside the bar. The intrabar order is unknown: when both are, the stop comes first. */
+function intrabarExit(bar, direction, stop, target, trailing) {
   const long = direction === 'long';
-  const refPrice = candles[e].open;
+  const hitStop = reachedStop(direction, long ? bar.low : bar.high, stop);
+  const hitTarget = reachedTarget(direction, long ? bar.high : bar.low, target);
+  if (hitStop && hitTarget) return { level: stop, reason: 'stop_and_target_same_bar' };
+  if (hitStop) return { level: stop, reason: trailing ? 'trailing_stop' : 'stop' };
+  if (hitTarget) return { level: target, reason: 'target' };
+  return null;
+}
+
+/** Exit on bar i, if any: gap at the open (not on the entry bar), then intrabar, then segment end. */
+function barExit(i, trade) {
+  const { candles, direction, stop, target, entryBar, end, trailing } = trade;
+  const bar = candles[i];
+  return (i > entryBar ? gapExit(bar, direction, stop, target) : null)
+    ?? intrabarExit(bar, direction, stop, target, trailing)
+    ?? (i === end - 1 ? { level: bar.close, reason: 'segment_end' } : null);
+}
+
+function closedTrade(entry, trade, i, { level, reason }, costs) {
+  const exitPrice = fillPrice('exit', entry.direction, level, costs.slippage);
+  return {
+    ...entry,
+    exitBar: i,
+    entryOpen: trade.refPrice,
+    entryPrice: trade.entryPrice,
+    initialStop: trade.initialStop,
+    target: trade.target,
+    exitLevel: level,
+    exitPrice,
+    reason,
+    return: tradeReturn(entry.direction, trade.entryPrice, exitPrice, costs.fee),
+    marks: trade.marks,
+    ...(trade.stops ? { stops: trade.stops } : {}),
+  };
+}
+
+function openTrade(entry, exit, context) {
+  const { candles, ind, costs, end, trace } = context;
+  const { direction, entryBar } = entry;
+  const refPrice = candles[entryBar].open;
   const levels = exit.levels({ direction, refPrice, signalBar: entry.signalBar, ind, candles });
   if (!levels) return null;
-  const entryPrice = fillPrice('entry', direction, refPrice, costs.slippage);
-  let { stop } = levels;
-  const { target } = levels;
-  const stops = trace ? [] : undefined;
-  const marks = [];
+  return {
+    candles, direction, entryBar, end, refPrice,
+    entryPrice: fillPrice('entry', direction, refPrice, costs.slippage),
+    initialStop: levels.stop,
+    stop: levels.stop,
+    target: levels.target,
+    trailing: Boolean(exit.trail),
+    stops: trace ? [] : undefined,
+    marks: [],
+  };
+}
 
-  for (let i = e; i < end; i++) {
-    const bar = candles[i];
-    stops?.push(stop);
-    let level;
-    let reason;
-    if (i > e) {
-      // The bar opened beyond a level: the order fills at the open, the worse price for a stop.
-      if (long ? bar.open <= stop : bar.open >= stop) [level, reason] = [bar.open, 'stop_gap'];
-      else if (target !== null && (long ? bar.open >= target : bar.open <= target)) [level, reason] = [bar.open, 'target_gap'];
-    }
-    if (level === undefined) {
-      const hitStop = long ? bar.low <= stop : bar.high >= stop;
-      const hitTarget = target !== null && (long ? bar.high >= target : bar.low <= target);
-      // Intrabar order is unknown: when both are touched, assume the stop came first.
-      if (hitStop && hitTarget) [level, reason] = [stop, 'stop_and_target_same_bar'];
-      else if (hitStop) [level, reason] = [stop, exit.trail ? 'trailing_stop' : 'stop'];
-      else if (hitTarget) [level, reason] = [target, 'target'];
-    }
-    if (level === undefined && i === end - 1) [level, reason] = [bar.close, 'segment_end'];
-    if (level !== undefined) {
-      const exitPrice = fillPrice('exit', direction, level, costs.slippage);
-      return {
-        ...entry,
-        exitBar: i,
-        entryOpen: refPrice,
-        entryPrice,
-        initialStop: levels.stop,
-        target,
-        exitLevel: level,
-        exitPrice,
-        reason,
-        return: tradeReturn(direction, entryPrice, exitPrice, costs.fee),
-        marks,
-        ...(trace ? { stops } : {}),
-      };
-    }
+function runTrade(entry, exit, context) {
+  const { candles, ind, costs } = context;
+  const trade = openTrade(entry, exit, context);
+  if (!trade) return null;
+  const { direction } = trade;
+  for (let i = trade.entryBar; i < trade.end; i++) {
+    trade.stops?.push(trade.stop);
+    const exitFill = barExit(i, trade);
+    if (exitFill) return closedTrade(entry, trade, i, exitFill, costs);
     // Still open at the close: mark to market as if closed there (with exit costs).
-    marks.push(tradeReturn(direction, entryPrice, fillPrice('exit', direction, bar.close, costs.slippage), costs.fee));
-    if (exit.trail) stop = exit.trail(stop, i, { direction, candles, ind });
+    const markPrice = fillPrice('exit', direction, candles[i].close, costs.slippage);
+    trade.marks.push(tradeReturn(direction, trade.entryPrice, markPrice, costs.fee));
+    if (exit.trail) trade.stop = exit.trail(trade.stop, i, { direction, candles, ind });
   }
   return null; // Only reached when the entry bar is outside the segment
 }
