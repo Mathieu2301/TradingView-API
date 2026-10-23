@@ -1,4 +1,4 @@
-import type { BacktestReport, ReportRow, TradeRecord } from './run.js';
+import type { BacktestReport, ReportRow, ReportWarning, TradeRecord } from './run.js';
 
 /** Unix seconds -> ISO 8601 UTC without milliseconds. */
 export const isoTime = (seconds: number): string => new Date(seconds * 1000).toISOString().replace('.000Z', 'Z');
@@ -10,15 +10,17 @@ const BASE_COLUMNS = [
 
 /**
  * Trades as CSV. Times are bar open times (ISO, UTC); prices include slippage. Each signal
- * `refs` name becomes a `<name>_time` column, placed before `signal_time`.
+ * `refs` name becomes a `<name>_time` column, placed before `signal_time`. A `series` column
+ * comes first when trades carry one (`backtestMany`).
  */
 export function tradesToCsv(trades: readonly TradeRecord[]): string {
   const refNames = [...new Set(trades.flatMap((t) => Object.keys(t.refs)))];
   const time = (value: number | undefined) => (value === undefined ? '' : isoTime(value));
   const num = (value: number | null) => (value === null ? '' : String(Number(value.toPrecision(10))));
-  const header = [...BASE_COLUMNS.slice(0, 3), ...refNames.map((n) => `${n}_time`), ...BASE_COLUMNS.slice(3)];
+  const series = trades.some((t) => t.series !== undefined);
+  const header = [...(series ? ['series'] : []), ...BASE_COLUMNS.slice(0, 3), ...refNames.map((n) => `${n}_time`), ...BASE_COLUMNS.slice(3)];
   const lines = trades.map((t) => [
-    t.exit, t.split, t.direction, ...refNames.map((n) => time(t.refs[n])), time(t.signalTime), time(t.entryTime),
+    ...(series ? [t.series ?? ''] : []), t.exit, t.split, t.direction, ...refNames.map((n) => time(t.refs[n])), time(t.signalTime), time(t.entryTime),
     num(t.entryOpen), num(t.entryPrice), num(t.initialStop), num(t.target), time(t.exitTime), num(t.exitLevel),
     num(t.exitPrice), t.reason, (t.return * 100).toFixed(4),
   ].join(','));
@@ -42,6 +44,19 @@ export function formatTable(rows: readonly ReportRow[]): string {
   const all = [head, ...body];
   const widths = head.map((_, c) => Math.max(...all.map((r) => r[c].length)));
   return all.map((r) => r.map((v, c) => (c < 2 ? v.padEnd(widths[c]) : v.padStart(widths[c]))).join('  ')).join('\n');
+}
+
+/** One warning as an English sentence. */
+export function formatWarning(w: ReportWarning): string {
+  switch (w.code) {
+    case 'short_history': return `Only ${w.years.toFixed(2)} years of tradable history after warm-up (${w.wantedYears} wanted): results are even less conclusive.`;
+    case 'no_signals': return 'The signal returned no signal at all.';
+    case 'few_trades': return `As few as ${w.trades} trades in a row: with so few trades, net return and percentile are mostly noise.`;
+    case 'baseline_unmatched': return `${w.exit} ${w.split}: ${w.matchedRuns}/${w.runs} random runs reached ${w.trades} trades (mean ${w.meanTrades.toFixed(1)}).`;
+    case 'causality_disabled': return 'Causality check disabled: look-ahead in the signal would go unnoticed.';
+    case 'data_gaps': return `${w.gaps} gap(s) in the data, ${w.missingBars} missing bars (market closures also count).`;
+    default: return JSON.stringify(w);
+  }
 }
 
 /** The whole report as plain text: data, split, signals, costs, results, definitions, warnings. */
@@ -68,7 +83,7 @@ export function formatReport(report: BacktestReport): string {
     `Out-of-sample: ${range(segments.outOfSample)}`,
     '',
     '== Signals ==',
-    `Rule: ${settings.signal}. Signal at a bar's close, entry at the NEXT bar's open.`,
+    `Rule: ${settings.signal.label}. Signal at a bar's close, entry at the NEXT bar's open.`,
     `IS signals: ${count('IS')}. OOS signals: ${count('OOS')}.`,
     causality.reruns
       ? `Causality: rule rerun on ${causality.reruns} truncated histories (${causality.checkedSignals}/${causality.totalSignals} signals checked at their own bar): no look-ahead found.`
@@ -81,7 +96,7 @@ export function formatReport(report: BacktestReport): string {
     `Exits: ${settings.exits.map((e) => `${e.id} = ${e.label}`).join('; ')}.`,
     'Net: compounded net return. Win: share of trades with a positive net return. PF: gross profit / gross loss (N/A without a losing trade).',
     'MaxDD: largest peak-to-trough equity fall, marked to market at bar closes. Pctl: 100 x share of random runs with a strictly lower net return.',
-    ...report.warnings.map((w) => `WARNING: ${w}`),
+    ...report.warnings.map((w) => `WARNING: ${formatWarning(w)}`),
     'Read the OOS rows first. A percentile near 50, a negative OOS return or few trades is a valid, inconclusive outcome, not a bug.',
   ];
   return lines.join('\n');

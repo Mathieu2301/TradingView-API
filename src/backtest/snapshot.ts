@@ -16,6 +16,8 @@ export interface SnapshotInfo {
   readonly droppedFormingBar: boolean;
   /** SHA-256 of the frozen candles: two runs on the same hash saw the same data. */
   readonly sha256: string;
+  /** When the candles were downloaded or frozen, Unix seconds; null for older saved snapshots. */
+  readonly fetchedAt: number | null;
 }
 
 /** Validated, frozen candles. Save it (`JSON.stringify`) to replay a run exactly. */
@@ -30,6 +32,8 @@ export interface SnapshotMeta {
   barSeconds?: number;
   /** Current time in Unix seconds, to detect the bar still forming. Defaults to now. */
   now?: number;
+  /** Download time, Unix seconds. Defaults to now. */
+  fetchedAt?: number | null;
 }
 
 const isNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
@@ -105,6 +109,7 @@ export function freezeSnapshot(rawCandles: readonly Bar[], meta: SnapshotMeta = 
     spanYears: (lastTime + barSeconds - firstTime) / (365.25 * 86_400),
     gaps,
     droppedFormingBar,
+    fetchedAt: meta.fetchedAt === undefined ? Math.floor(Date.now() / 1000) : meta.fetchedAt,
     sha256: createHash('sha256').update(JSON.stringify(candles)).digest('hex'),
     candles,
   });
@@ -118,7 +123,7 @@ export function loadSnapshot(saved: Snapshot | string): Snapshot {
   const data: Snapshot = typeof saved === 'string' ? JSON.parse(saved) : saved;
   if (!data || !Array.isArray(data.candles)) throw invalid('Not a saved snapshot');
   const snapshot = freezeSnapshot(data.candles, {
-    symbol: data.symbol, timeframe: data.timeframe, barSeconds: data.barSeconds, now: Infinity,
+    symbol: data.symbol, timeframe: data.timeframe, barSeconds: data.barSeconds, now: Infinity, fetchedAt: data.fetchedAt ?? null,
   });
   if (snapshot.sha256 !== data.sha256) throw invalid('Snapshot checksum mismatch');
   // Keep the forming-bar flag recorded at capture time.

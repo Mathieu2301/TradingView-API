@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  atrExit, atrTrailingExit, backtest, checkCausality, computeMetrics, createRng, defaultExits, ema, fillPrice, findPivots,
-  fixedExit, formatReport, freezeSnapshot, loadSnapshot, percentileRank, quantile, randomBaseline, rsiDivergence,
+  atrExit, atrTrailingExit, backtest, backtestMany, chartData, checkCausality, computeMetrics, createRng, defaultExits, ema, fillPrice, findPivots,
+  fixedExit, formatReport, formatWarning, freezeSnapshot, loadSnapshot, percentileRank, quantile, randomBaseline, rsiDivergence,
   runBacktest, simulate, sma, splitSegments, tradeReturn, tradesToCsv, TradingViewError,
   type Bar, type Entry, type Signal, type SignalFunction,
 } from '../../src/backtest/index.js';
@@ -361,7 +361,7 @@ describe('backtest: report and one-call API', () => {
     const bars = randomWalk(900, 9);
     const report = runBacktest(bars, { signal: smaCross, runs: 10 });
     expect(JSON.parse(JSON.stringify(report))).toEqual(report);
-    expect(report.settings.signal).toBe('SMA(20) cross');
+    expect(report.settings.signal).toEqual({ id: 'custom', params: {}, label: 'SMA(20) cross' });
     expect(report.causality.reruns).toBeGreaterThan(0);
     expect(report.causality.checkedSignals).toBe(Math.min(100, report.causality.totalSignals));
     const text = formatReport(report);
@@ -401,3 +401,85 @@ describe('backtest: report and one-call API', () => {
     expect(ema(values.slice(0, 5), 3)).toEqual(ema(values, 3).slice(0, 5));
   });
 });
+
+describe('backtest: page and chart data', () => {
+  const bars = randomWalk(1200, 7);
+  const signal = rsiDivergence(SMALL);
+  const run = () => runBacktest(bars, { signal, runs: 5 });
+
+  it('returns identifiers and parameters, not interface text', () => {
+    const report = run();
+    expect(report.library).toEqual({ name: '@mathieuc/tradingview', version: expect.stringMatching(/^4\./) });
+    expect(report.createdAt).toBeGreaterThan(1.7e9);
+    expect(report.snapshot.fetchedAt).toBeGreaterThan(1.7e9);
+    expect(report.settings.signal).toMatchObject({
+      id: 'rsi_divergence', params: { rsiLength: 14, emaLength: 50, pivotLookback: 3, minPivotDistance: 5, maxPivotDistance: 60, trendFilter: true },
+    });
+    expect(report.settings.exits.map((e) => [e.id, e.kind, e.params])).toEqual([
+      ['fixed_1.5R', 'fixed', { stopPct: 0.02, targetR: 1.5 }],
+      ['fixed_2R', 'fixed', { stopPct: 0.02, targetR: 2 }],
+      ['atr1.5_2R', 'atr', { mult: 1.5, targetR: 2, length: 14 }],
+      ['trail_atr3', 'atr_trailing', { mult: 3, length: 14 }],
+    ]);
+    expect(report.rows[0]).not.toHaveProperty('exitLabel');
+    expect(report.warnings.map((w) => w.code)).toContain('short_history');
+    for (const w of report.warnings) expect(formatWarning(w)).not.toMatch(/^\{/);
+    expect(new Set(report.trades.map((t) => t.reason)).size).toBeGreaterThan(0);
+  });
+
+  it('gives buy and hold per segment with the same costs, and refs as bar indices', () => {
+    const report = run();
+    const { inSample, outOfSample } = report.segments;
+    const expected = (s: typeof inSample) => (bars[s.end - 1]!.close * 0.9995) / (bars[s.start]!.open * 1.0005) - 1 - 0.001 - 0.001 * ((bars[s.end - 1]!.close * 0.9995) / (bars[s.start]!.open * 1.0005));
+    expect(inSample.buyHold).toBeCloseTo(expected(inSample), 12);
+    expect(outOfSample.buyHold).toBeCloseTo(expected(outOfSample), 12);
+    for (const t of report.trades) {
+      expect(t.refBars.pivot).toBe(t.signalBar - 3);
+      expect(t.refs.pivot).toBe(bars[t.refBars.pivot!]!.time);
+    }
+    const raw = rsiDivergence({ ...SMALL, trendFilter: false })(freezeSnapshot(bars).candles).length;
+    expect(raw).toBeGreaterThanOrEqual(report.signals.length);
+  });
+
+  it('builds chart data: candles, indicators, split times, signals and trades by exit', () => {
+    const snapshot = freezeSnapshot(bars);
+    const report = runBacktest(snapshot, { signal, runs: 5 });
+    const chart = chartData(report, snapshot, signal);
+    expect(chart.bars).toHaveLength(snapshot.count);
+    expect(Object.keys(chart.indicators)).toEqual(['rsi', 'ema']);
+    expect(chart.indicators.ema![10]).toBeNull();
+    expect(chart.indicators.ema![100]).toBeCloseTo(ema(snapshot.candles.map((c) => c.close), 50)[100]!, 12);
+    expect(chart.splitTime).toBe(bars[report.segments.outOfSample.start]!.time);
+    expect(chart.warmupEndTime).toBe(bars[49]!.time);
+    expect(Object.keys(chart.trades)).toEqual(['fixed_1.5R', 'fixed_2R', 'atr1.5_2R', 'trail_atr3']);
+    expect(Object.values(chart.trades).flat()).toHaveLength(report.trades.length);
+    expect(JSON.parse(JSON.stringify(chart))).toEqual(chart);
+    expect(chartData(report, snapshot).indicators).toEqual({});
+    expect(() => chartData(report, freezeSnapshot(randomWalk(300, 1)))).toThrow(/not the one/);
+  });
+
+  it('runs several markets, with exits per market, and one CSV for all', async () => {
+    const now = Math.floor(Date.now() / 1000);
+    const series = (seed: number, step: number) => randomWalk(700, seed).map((bar, i) => ({ ...bar, time: now - (700 - i) * step, volume: 1 }));
+    const provider: MarketDataProvider = {
+      async watchCandles(query, handlers) {
+        const data = series(query.symbol === 'TEST:A' ? 1 : 2, query.timeframe === 'D' ? 86_400 : 4 * HOUR);
+        handlers.onData(data);
+        return { latest: data, symbolInfo: undefined, stop: async () => undefined } as never;
+      },
+    };
+    const results = await backtestMany({
+      markets: [{ symbol: 'TEST:A', timeframe: '240' }, { symbol: 'TEST:B', timeframe: 'D' }],
+      exits: (m) => [fixedExit({ stopPct: m.timeframe === 'D' ? 0.07 : 0.03, targetR: 2 })],
+      signal: smaCross, runs: 5, provider,
+    });
+    expect(results.map((r) => r.id)).toEqual(['TEST:A_240', 'TEST:B_D']);
+    expect(results[1]!.report.settings.exits[0]!.params).toEqual({ stopPct: 0.07, targetR: 2 });
+    const trades = results.flatMap((r) => r.report.trades);
+    expect(trades.every((t) => t.series === 'TEST:A_240' || t.series === 'TEST:B_D')).toBe(true);
+    const csv = tradesToCsv(trades).split('\n');
+    expect(csv[0]!.startsWith('series,exit,split,direction,cross_time')).toBe(true);
+    await expect(backtestMany({ markets: [], signal: smaCross })).rejects.toThrow(/markets/);
+  });
+});
+

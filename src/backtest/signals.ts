@@ -11,6 +11,8 @@ export interface RsiDivergenceOptions {
   /** Bars between the two pivots of a divergence. Default 5 to 60. */
   minPivotDistance?: number;
   maxPivotDistance?: number;
+  /** Apply the EMA trend filter. Default true; false gives every divergence (to count the raw setups). */
+  trendFilter?: boolean;
 }
 
 const isNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
@@ -25,7 +27,7 @@ const isNumber = (value: unknown): value is number => typeof value === 'number' 
  */
 export function rsiDivergence(options: RsiDivergenceOptions = {}): SignalFunction {
   const {
-    rsiLength = 14, emaLength = 200, pivotLookback = 5, minPivotDistance = 5, maxPivotDistance = 60,
+    rsiLength = 14, emaLength = 200, pivotLookback = 5, minPivotDistance = 5, maxPivotDistance = 60, trendFilter = true,
   } = options;
   const find = (candles: Parameters<SignalFunction>[0]): Signal[] => {
     const closes = candles.map((c) => c.close);
@@ -41,9 +43,9 @@ export function rsiDivergence(options: RsiDivergenceOptions = {}): SignalFunctio
         if (distance < minPivotDistance || distance > maxPivotDistance) continue;
         const c = cur.confirmBar;
         const [r1, r2, level, close] = [rsiValues[prev.bar], rsiValues[cur.bar], trend[c], candles[c].close];
-        if (![r1, r2, level].every(isNumber)) continue;
+        if (![r1, r2].every(isNumber) || (trendFilter && !isNumber(level))) continue;
         const divergence = kind === 'low' ? cur.price < prev.price && r2 > r1 : cur.price > prev.price && r2 < r1;
-        const trendOk = direction === 'long' ? close > level : close < level;
+        const trendOk = !trendFilter || (direction === 'long' ? close > level : close < level);
         if (divergence && trendOk) signals.push({ bar: c, direction, refs: { prev_pivot: prev.bar, pivot: cur.bar } });
       }
     };
@@ -52,7 +54,13 @@ export function rsiDivergence(options: RsiDivergenceOptions = {}): SignalFunctio
     return signals.sort((a, b) => a.bar - b.bar);
   };
   return Object.assign(find, {
-    warmupBars: Math.max(rsiLength, emaLength - 1),
-    label: `RSI(${rsiLength}) divergence, EMA(${emaLength}) trend filter, pivot lookback ${pivotLookback}, pivots ${minPivotDistance}-${maxPivotDistance} bars apart`,
+    id: 'rsi_divergence',
+    params: { rsiLength, emaLength, pivotLookback, minPivotDistance, maxPivotDistance, trendFilter },
+    warmupBars: trendFilter ? Math.max(rsiLength, emaLength - 1) : rsiLength,
+    label: `RSI(${rsiLength}) divergence${trendFilter ? `, EMA(${emaLength}) trend filter` : ''}, pivot lookback ${pivotLookback}, pivots ${minPivotDistance}-${maxPivotDistance} bars apart`,
+    indicators: (candles: Parameters<SignalFunction>[0]) => {
+      const closes = candles.map((c) => c.close);
+      return { rsi: rsi(closes, rsiLength), ema: ema(closes, emaLength) };
+    },
   });
 }

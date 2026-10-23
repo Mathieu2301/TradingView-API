@@ -33,8 +33,14 @@ export interface SignalFunction {
   (candles: readonly Readonly<Required<Bar>>[]): readonly Signal[];
   /** Bars needed before the first valid signal (indicator warm-up). */
   readonly warmupBars?: number;
-  /** Shown in the report. */
+  /** Stable identifier copied to `report.settings.signal.id` (defaults to the function name). */
+  readonly id?: string;
+  /** Parameters copied to `report.settings.signal.params`, for reports and UIs. */
+  readonly params?: Readonly<Record<string, number | string | boolean>>;
+  /** English description used by `formatReport` only; UIs should build their own text from `id` and `params`. */
   readonly label?: string;
+  /** Causal indicator series to draw next to the candles (one value per bar, NaN when undefined). Used by `chartData`. */
+  indicators?(candles: readonly Readonly<Required<Bar>>[]): Record<string, number[]>;
 }
 
 /** A signal turned into an order: decided at the close of `signalBar`, entered at the open of `entryBar`. */
@@ -73,7 +79,12 @@ export interface ExitContext {
  */
 export interface ExitModel {
   id: string;
+  /** English description used by `formatReport` only; UIs should build their own text from `kind` and `params`. */
   label: string;
+  /** Exit family: `fixed`, `atr`, `atr_trailing` for the built-in exits. */
+  kind?: string;
+  /** Parameters of the exit (stop distance, target in R, ATR multiplier and length...). */
+  params?: Readonly<Record<string, number | null>>;
   /** Bars needed before `levels` can work (ATR length - 1...). */
   warmupBars?: number;
   levels(ctx: ExitContext & { entryOpen: number; signalBar: number }): { stop: number; target: number | null } | null;

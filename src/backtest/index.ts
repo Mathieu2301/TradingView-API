@@ -5,10 +5,12 @@
  *
  * @module @mathieuc/tradingview/backtest
  */
-export { backtest, BACKTEST_DEFAULTS, checkCausality, fetchSnapshot, resolveWarmupBars, runBacktest } from './run.js';
+export {
+  backtest, BACKTEST_DEFAULTS, backtestMany, checkCausality, fetchSnapshot, resolveWarmupBars, runBacktest,
+} from './run.js';
 export type {
-  BacktestOptions, BacktestQuery, BacktestReport, CausalityCheck, CausalityViolation, FetchSnapshotQuery, ReportRow,
-  SegmentInfo, SignalRecord, TradeRecord,
+  BacktestManyQuery, BacktestOptions, BacktestQuery, BacktestReport, CausalityCheck, CausalityViolation, FetchSnapshotQuery,
+  Market, MarketResult, ReportRow, ReportWarning, SegmentInfo, SignalRecord, TradeRecord,
 } from './run.js';
 export { freezeSnapshot, loadSnapshot, snapshotInfo } from './snapshot.js';
 export type { Gap, Snapshot, SnapshotInfo, SnapshotMeta } from './snapshot.js';
@@ -24,7 +26,9 @@ export {
 export type { BaselineInput } from './stats.js';
 export { atr, ema, findPivots, rsi, sma } from './indicators.js';
 export type { Pivot } from './indicators.js';
-export { formatReport, formatTable, isoTime, tradesToCsv } from './report.js';
+export { formatReport, formatTable, formatWarning, isoTime, tradesToCsv } from './report.js';
+export { chartData } from './chart.js';
+export type { ChartData } from './chart.js';
 export type {
   Bar, Baseline, Costs, Direction, Entry, ExitContext, ExitModel, ExitReason, Metrics, Segment, Signal, SignalFunction, Trade,
 } from './types.js';

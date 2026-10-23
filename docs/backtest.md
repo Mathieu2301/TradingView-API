@@ -117,16 +117,42 @@ Entries never depend on the exit, so every exit runs on the same entries. `defau
 
 | Field | Content |
 | --- | --- |
-| `snapshot` | Symbol, timeframe, `barSeconds`, `count`, `firstTime`, `lastTime`, `gaps`, `droppedFormingBar`, `sha256` (no candles). |
-| `settings` | Signal label, costs, split ratio, warm-up, runs, seed, exits. |
-| `segments` | `warmup`, `inSample`, `outOfSample`: `start`, `end` (exclusive), `bars`, `startTime`, `endTime`. |
-| `signals` | Every signal: `bar`, `time`, `direction`, `entryBar`, `entryTime`, `split` (`IS`, `OOS` or `null` when in the warm-up, across the split or on the last bar), `refs` as times. |
+| `createdAt`, `library` | Run time (Unix seconds) and `{ name, version }` of the library. |
+| `snapshot` | Symbol, timeframe, `barSeconds`, `count`, `firstTime`, `lastTime`, `gaps`, `droppedFormingBar`, `sha256`, `fetchedAt` (no candles). |
+| `settings` | `signal` (`id`, `params`), fee, slippage, split ratio, warm-up, runs, seed, `exits` (`id`, `kind`, `params`). |
+| `segments` | `warmup`, `inSample`, `outOfSample`: `start`, `end` (exclusive), `bars`, `startTime`, `endTime`, and `buyHold` (long from the first open to the last close, same fee and slippage). |
+| `signals` | Every signal: `bar`, `time`, `direction`, `entryBar`, `entryTime`, `split` (`IS`, `OOS` or `null` when in the warm-up, across the split or on the last bar), `refs` as times and `refBars` as bar indices. |
 | `rows` | One per exit and split: `metrics`, `longs`, `shorts`, `skippedInPosition`, `baseline` (`runs`, `matchedRuns`, `meanTrades`, `p5`, `p50`, `p95`) and `percentile`. |
-| `trades` | Every trade with bar indices **and** times: signal, entry, exit, `refs`, entry open and fill, initial stop, target, exit level and fill, `reason` (`stop`, `trailing_stop`, `stop_gap`, `target`, `target_gap`, `stop_and_target_same_bar`, `segment_end`) and net `return`. |
+| `trades` | Every trade with bar indices **and** times: signal, entry, exit, `refs` and `refBars`, entry open and fill, initial stop, target, exit level and fill, `reason` (`stop`, `trailing_stop`, `stop_gap`, `target`, `target_gap`, `stop_and_target_same_bar`, `segment_end`) and net `return`. |
 | `causality` | `reruns`, `checkedSignals`, `totalSignals`. |
-| `warnings` | Plain sentences: short history, few trades, unmatched random runs, gaps, disabled check. |
+| `warnings` | Codes with their numbers: `short_history`, `no_signals`, `few_trades` (below 30 trades in a row), `baseline_unmatched`, `causality_disabled`, `data_gaps`. `formatWarning(w)` gives the English sentence. |
+
+The report holds identifiers and numbers only: exit ids and `kind`, exit reasons, segment ids (`IS`, `OOS`), warning codes. Build interface text from them in your own language. The `label` fields of `settings` are English descriptions for `formatReport`, not interface text.
 
 `snapshot` (returned next to `report` by `backtest`) holds the candles for charts. Bar indices in the report point into `snapshot.candles`. `formatReport(report)` prints the whole report as text, `formatTable(report.rows)` only the table, and `tradesToCsv(report.trades)` one CSV line per trade (each `refs` name becomes a `<name>_time` column).
+
+### Pages and charts
+
+`chartData(report, snapshot, signal)` returns one JSON object for a price chart: `bars`, `indicators` (from `signal.indicators`, e.g. `rsi` and `ema` for `rsiDivergence`, `null` where undefined), `warmupEndTime`, `splitTime`, `signals` with their `refBars`, and `trades` grouped by exit id. A custom signal can add `indicators(candles) => ({ name: number[] })`.
+
+```ts
+import { backtestMany, chartData, fixedExit, rsiDivergence, atrExit, atrTrailingExit, tradesToCsv } from '@mathieuc/tradingview/backtest';
+
+const signal = rsiDivergence();
+const results = await backtestMany({
+  markets: [{ symbol: 'BINANCE:BTCUSDT', timeframe: '240' }, { symbol: 'BINANCE:BTCUSDT', timeframe: 'D' }],
+  exits: (m) => {
+    const stopPct = m.timeframe === 'D' ? 0.07 : 0.03; // Wider stop on daily bars
+    return [fixedExit({ stopPct, targetR: 1.5 }), fixedExit({ stopPct, targetR: 2 }), atrExit({ mult: 1.5, targetR: 2 }), atrTrailingExit({ mult: 2.5 })];
+  },
+  signal,
+});
+const summary = results.map(({ id, report }) => ({ id, report }));            // Tables and stats
+const charts = Object.fromEntries(results.map((r) => [r.id, chartData(r.report, r.snapshot, signal)]));
+const csv = tradesToCsv(results.flatMap((r) => r.report.trades));             // `series` column first
+```
+
+`backtestMany` runs the same signal on each market in turn; each result has `id` (`<symbol>_<timeframe>`), `report` and `snapshot`, and every trade carries `series` = `id`. To count setups before a filter, rerun the rule without it, e.g. `rsiDivergence({ trendFilter: false })(snapshot.candles).length`.
 
 Every step is also exported for custom protocols: `freezeSnapshot`, `fetchSnapshot`, `checkCausality`, `splitSegments`, `simulate`, `fillPrice`, `tradeReturn`, `computeMetrics`, `randomBaseline`, `percentileRank`, `quantile`, `createRng`, `deriveSeed`.
 

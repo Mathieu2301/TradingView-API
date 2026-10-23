@@ -24,6 +24,8 @@ export function fixedExit({ stopPct, targetR }: FixedExitOptions): ExitModel {
   return {
     id: targetR === null ? `fixed_stop${stopPct * 100}%` : `fixed_${targetR}R`,
     label: `Fixed ${(stopPct * 100).toFixed(1)}% stop, ${targetR === null ? 'no target' : `${targetR}:1 target`}`,
+    kind: 'fixed',
+    params: { stopPct, targetR },
     levels({ direction, entryOpen }) {
       const d = entryOpen * stopPct;
       return { stop: offset(direction, entryOpen, -d), target: targetR === null ? null : offset(direction, entryOpen, targetR * d) };
@@ -48,6 +50,8 @@ export function atrExit({ mult, targetR, length = 14 }: AtrExitOptions): ExitMod
   return {
     id: `atr${mult}_${targetR === null ? 'stop' : `${targetR}R`}`,
     label: `ATR(${length}) x${mult} stop, ${targetR === null ? 'no target' : `${targetR}R target`}`,
+    kind: 'atr',
+    params: { mult, targetR, length },
     warmupBars: length - 1,
     levels({ direction, entryOpen, signalBar, candles }) {
       const d = mult * cachedAtr(candles, length)[signalBar];
@@ -75,6 +79,8 @@ export function atrTrailingExit({ mult, length = 14 }: AtrTrailingExitOptions): 
   return {
     id: `trail_atr${mult}`,
     label: `ATR(${length}) x${mult} trailing stop`,
+    kind: 'atr_trailing',
+    params: { mult, length },
     warmupBars: length - 1,
     levels({ direction, entryOpen, signalBar, candles }) {
       const d = mult * cachedAtr(candles, length)[signalBar];

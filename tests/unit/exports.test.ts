@@ -30,9 +30,9 @@ describe('public API', () => {
 
   it('backtest entry exposes the protocol, its building blocks and the report helpers', () => {
     expect(Object.keys(backtest).sort()).toEqual([
-      'BACKTEST_DEFAULTS', 'TradingViewError', 'atr', 'atrExit', 'atrTrailingExit', 'backtest', 'checkCausality', 'computeMetrics',
+      'BACKTEST_DEFAULTS', 'TradingViewError', 'atr', 'atrExit', 'atrTrailingExit', 'backtest', 'backtestMany', 'chartData', 'checkCausality', 'computeMetrics',
       'createRng', 'defaultExits', 'deriveSeed', 'ema', 'fetchSnapshot', 'fillPrice', 'findPivots', 'fixedExit', 'formatReport',
-      'formatTable', 'freezeSnapshot', 'isoTime', 'loadSnapshot', 'percentileRank', 'quantile', 'randomBaseline', 'resolveWarmupBars',
+      'formatTable', 'formatWarning', 'freezeSnapshot', 'isoTime', 'loadSnapshot', 'percentileRank', 'quantile', 'randomBaseline', 'resolveWarmupBars',
       'rsi', 'rsiDivergence', 'runBacktest', 'simulate', 'sma', 'snapshotInfo', 'splitSegments', 'tradeReturn', 'tradesToCsv',
     ]);
     expect(backtest.TradingViewError).toBe(root.TradingViewError);

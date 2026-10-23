@@ -1,10 +1,13 @@
+import { createRequire } from 'node:module';
 import { timeframeSeconds } from '../chart/timeframes.js';
 import type { Timeframe } from '../chart/types.js';
 import { getCandles, type CandleQuery } from '../data/candles.js';
 import type { MarketDataProvider } from '../data/provider.js';
 import { TradingViewError } from '../errors.js';
 import { defaultExits } from './exits.js';
-import { simulate, splitSegments } from './simulate.js';
+import {
+  fillPrice, simulate, splitSegments, tradeReturn,
+} from './simulate.js';
 import {
   freezeSnapshot, snapshotInfo, type Snapshot, type SnapshotInfo,
 } from './snapshot.js';
@@ -61,6 +64,8 @@ export interface SegmentInfo extends Segment {
   startTime: number | null;
   /** Open time of the last bar, Unix seconds. */
   endTime: number | null;
+  /** Buy and hold over the segment: long at the first open, out at the last close, with the same fee and slippage. */
+  buyHold: number | null;
 }
 
 export interface SignalRecord {
@@ -71,12 +76,17 @@ export interface SignalRecord {
   entryTime: number | null;
   /** Segment containing both the signal and the entry, or null (warm-up, straddling the split, last bar). */
   split: 'IS' | 'OOS' | null;
+  /** Times of the signal's `refs` bars. */
   refs: Record<string, number>;
+  /** Bar indices of the signal's `refs` (into `snapshot.candles`). */
+  refBars: Record<string, number>;
 }
 
 export interface TradeRecord {
+  /** Market id, set by `backtestMany` (`<symbol>_<timeframe>`). */
+  series?: string;
   exit: string;
-  split: string;
+  split: 'IS' | 'OOS';
   direction: Direction;
   signalBar: number;
   signalTime: number;
@@ -84,6 +94,8 @@ export interface TradeRecord {
   entryTime: number;
   /** Times of the signal's `refs` bars. */
   refs: Record<string, number>;
+  /** Bar indices of the signal's `refs` (into `snapshot.candles`). */
+  refBars: Record<string, number>;
   entryOpen: number;
   entryPrice: number;
   initialStop: number;
@@ -98,8 +110,7 @@ export interface TradeRecord {
 
 export interface ReportRow {
   exit: string;
-  exitLabel: string;
-  split: string;
+  split: 'IS' | 'OOS';
   metrics: Metrics;
   longs: number;
   shorts: number;
@@ -127,18 +138,34 @@ export interface CausalityCheck {
   totalSignals: number;
 }
 
-/** Plain JSON: save it, render it or send it as it is. */
+/** Machine-readable warning; `formatReport` turns it into an English sentence. */
+export type ReportWarning =
+  | { code: 'short_history'; years: number; wantedYears: number }
+  | { code: 'no_signals' }
+  | { code: 'few_trades'; trades: number }
+  | { code: 'baseline_unmatched'; exit: string; split: 'IS' | 'OOS'; matchedRuns: number; runs: number; trades: number; meanTrades: number }
+  | { code: 'causality_disabled' }
+  | { code: 'data_gaps'; gaps: number; missingBars: number };
+
+/**
+ * Plain JSON: save it, render it or send it as it is. It holds identifiers and numbers only
+ * (exit ids, exit reasons, segment ids, warning codes); the `label` fields are English
+ * descriptions for `formatReport`, not interface text.
+ */
 export interface BacktestReport {
+  /** Run time, Unix seconds. */
+  createdAt: number;
+  library: { name: string; version: string };
   snapshot: SnapshotInfo;
   settings: {
-    signal: string;
+    signal: { id: string; params: Record<string, number | string | boolean>; label: string };
     fee: number;
     slippage: number;
     splitRatio: number;
     warmupBars: number;
     runs: number;
     seed: number;
-    exits: { id: string; label: string }[];
+    exits: { id: string; kind: string | null; params: Record<string, number | null>; label: string }[];
   };
   segments: { warmup: SegmentInfo; inSample: SegmentInfo; outOfSample: SegmentInfo };
   /** Tradable years after warm-up. */
@@ -147,9 +174,11 @@ export interface BacktestReport {
   rows: ReportRow[];
   trades: TradeRecord[];
   causality: CausalityCheck;
-  /** Plain-language warnings: few trades, short history, unmatched random runs... */
-  warnings: string[];
+  /** Few trades, short history, unmatched random runs, gaps... */
+  warnings: ReportWarning[];
 }
+
+const pkg = createRequire(import.meta.url)('../../package.json') as { name: string; version: string };
 
 const isNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
 
@@ -267,19 +296,29 @@ function toSnapshot(input: Snapshot | readonly Bar[]): Snapshot {
   return snapshot;
 }
 
-function segmentInfo(segment: Segment, candles: readonly Bar[]): SegmentInfo {
+function segmentInfo(segment: Segment, candles: readonly Bar[], costs: Costs): SegmentInfo {
   const empty = segment.end <= segment.start;
+  const buyHold = () => tradeReturn(
+    'long',
+    fillPrice('entry', 'long', candles[segment.start].open, costs.slippage),
+    fillPrice('exit', 'long', candles[segment.end - 1].close, costs.slippage),
+    costs.fee,
+  );
   return {
     ...segment,
     bars: Math.max(0, segment.end - segment.start),
     startTime: empty ? null : candles[segment.start].time,
     endTime: empty ? null : candles[segment.end - 1].time,
+    buyHold: empty ? null : buyHold(),
   };
 }
 
+const validRefs = (refs: Readonly<Record<string, number>> | undefined, candles: readonly Bar[]) => Object.entries(refs ?? {})
+  .filter(([, bar]) => Number.isInteger(bar) && candles[bar]);
 const refTimes = (refs: Readonly<Record<string, number>> | undefined, candles: readonly Bar[]) => Object.fromEntries(
-  Object.entries(refs ?? {}).filter(([, bar]) => Number.isInteger(bar) && candles[bar]).map(([name, bar]) => [name, candles[bar].time]),
+  validRefs(refs, candles).map(([name, bar]) => [name, candles[bar].time]),
 );
+const refBars = (refs: Readonly<Record<string, number>> | undefined, candles: readonly Bar[]) => Object.fromEntries(validRefs(refs, candles));
 
 /** Resolves the warm-up: explicit option, else the largest need of the signal and exits. */
 export function resolveWarmupBars(signal: SignalFunction, exits: readonly ExitModel[], warmupBars?: number): number {
@@ -315,7 +354,7 @@ function causalSignals(o: ResolvedOptions, candles: Snapshot['candles']): { sign
   return { signals, causality: result.check };
 }
 
-function tradeRecord(t: Trade, exit: string, split: string, candles: readonly Bar[]): TradeRecord {
+function tradeRecord(t: Trade, exit: string, split: 'IS' | 'OOS', candles: readonly Bar[]): TradeRecord {
   return {
     exit,
     split,
@@ -325,6 +364,7 @@ function tradeRecord(t: Trade, exit: string, split: string, candles: readonly Ba
     entryBar: t.entryBar,
     entryTime: candles[t.entryBar].time,
     refs: refTimes(t.refs, candles),
+    refBars: refBars(t.refs, candles),
     entryOpen: t.entryOpen,
     entryPrice: t.entryPrice,
     initialStop: t.initialStop,
@@ -355,10 +395,10 @@ function evaluate(
       seed: deriveSeed(o.seed, exit.id, segment.name),
     })
     : null;
+  const split = segment.name as 'IS' | 'OOS';
   const row: ReportRow = {
     exit: exit.id,
-    exitLabel: exit.label,
-    split: segment.name,
+    split,
     metrics,
     longs,
     shorts: metrics.trades - longs,
@@ -369,26 +409,29 @@ function evaluate(
     },
     percentile: baseline && percentileRank(metrics.netReturn, baseline.netReturns),
   };
-  return { row, trades: result.trades.map((t) => tradeRecord(t, exit.id, segment.name, candles)) };
+  return { row, trades: result.trades.map((t) => tradeRecord(t, exit.id, split, candles)) };
 }
 
 function reportWarnings(
   o: ResolvedOptions, snapshot: Snapshot, tradableYears: number, signals: readonly Signal[], rows: readonly ReportRow[],
-): string[] {
-  const warnings: string[] = [];
-  if (tradableYears < o.minYears) {
-    warnings.push(`Only ${tradableYears.toFixed(2)} years of tradable history after warm-up (${o.minYears} wanted): results are even less conclusive.`);
-  }
-  if (signals.length === 0) warnings.push('The signal returned no signal at all.');
+): ReportWarning[] {
+  const warnings: ReportWarning[] = [];
+  if (tradableYears < o.minYears) warnings.push({ code: 'short_history', years: tradableYears, wantedYears: o.minYears });
+  if (signals.length === 0) warnings.push({ code: 'no_signals' });
   const fewest = Math.min(...rows.map((r) => r.metrics.trades));
-  if (fewest < 30) warnings.push(`As few as ${fewest} trades in a row: with so few trades, net return and percentile are mostly noise.`);
+  if (fewest < 30) warnings.push({ code: 'few_trades', trades: fewest });
   for (const row of rows) {
     if (row.baseline && row.baseline.matchedRuns < row.baseline.runs) {
-      warnings.push(`${row.exit} ${row.split}: ${row.baseline.matchedRuns}/${row.baseline.runs} random runs reached ${row.metrics.trades} trades (mean ${row.baseline.meanTrades.toFixed(1)}).`);
+      warnings.push({
+        code: 'baseline_unmatched', exit: row.exit, split: row.split, matchedRuns: row.baseline.matchedRuns,
+        runs: row.baseline.runs, trades: row.metrics.trades, meanTrades: row.baseline.meanTrades,
+      });
     }
   }
-  if (o.causalityChecks === 0) warnings.push('Causality check disabled: look-ahead in the signal would go unnoticed.');
-  if (snapshot.gaps.length) warnings.push(`${snapshot.gaps.length} gap(s) in the data (market closures also count).`);
+  if (o.causalityChecks === 0) warnings.push({ code: 'causality_disabled' });
+  if (snapshot.gaps.length) {
+    warnings.push({ code: 'data_gaps', gaps: snapshot.gaps.length, missingBars: snapshot.gaps.reduce((sum, g) => sum + g.missingBars, 0) });
+  }
   return warnings;
 }
 
@@ -402,6 +445,7 @@ function signalRecord(s: Signal, candles: readonly Bar[], segments: readonly Seg
     entryTime: candles[s.bar + 1]?.time ?? null,
     split: (segment?.name ?? null) as SignalRecord['split'],
     refs: refTimes(s.refs, candles),
+    refBars: refBars(s.refs, candles),
   };
 }
 
@@ -434,22 +478,29 @@ export function runBacktest(input: Snapshot | readonly Bar[], options: BacktestO
   const rows = results.map((r) => r.row);
   const tradableYears = ((candles.length - inSample.start) * snapshot.barSeconds) / (365.25 * 86_400);
 
+  const costs: Costs = { fee: o.fee, slippage: o.slippage };
   return {
+    createdAt: Math.floor(Date.now() / 1000),
+    library: { name: pkg.name, version: pkg.version },
     snapshot: snapshotInfo(snapshot),
     settings: {
-      signal: o.signal.label ?? (o.signal.name || 'custom signal'),
+      signal: {
+        id: o.signal.id ?? (o.signal.name || 'custom'),
+        params: { ...(o.signal.params ?? {}) },
+        label: o.signal.label ?? (o.signal.name || 'custom signal'),
+      },
       fee: o.fee,
       slippage: o.slippage,
       splitRatio: o.splitRatio,
       warmupBars: o.warmupBars,
       runs: o.runs,
       seed: o.seed,
-      exits: o.exits.map((e) => ({ id: e.id, label: e.label })),
+      exits: o.exits.map((e) => ({ id: e.id, kind: e.kind ?? null, params: { ...(e.params ?? {}) }, label: e.label })),
     },
     segments: {
-      warmup: segmentInfo({ name: 'warmup', start: 0, end: inSample.start }, candles),
-      inSample: segmentInfo(inSample, candles),
-      outOfSample: segmentInfo(outOfSample, candles),
+      warmup: segmentInfo({ name: 'warmup', start: 0, end: inSample.start }, candles, costs),
+      inSample: segmentInfo(inSample, candles, costs),
+      outOfSample: segmentInfo(outOfSample, candles, costs),
     },
     tradableYears,
     signals: signals.map((s) => signalRecord(s, candles, [inSample, outOfSample])),
@@ -533,4 +584,47 @@ export async function backtest(query: BacktestQuery): Promise<{ report: Backtest
     ...query, exits, warmupBars, minYears: query.years ?? BACKTEST_DEFAULTS.minYears,
   });
   return { report, snapshot };
+}
+
+export interface Market {
+  symbol: string;
+  timeframe: Timeframe;
+  /** Replay a saved snapshot for this market instead of downloading it. */
+  snapshot?: Snapshot;
+}
+
+export type BacktestManyQuery = Omit<BacktestQuery, 'symbol' | 'timeframe' | 'snapshot' | 'exits'> & {
+  markets: readonly Market[];
+  /** Same exits everywhere, or exits per market (a wider stop on daily bars...). */
+  exits?: readonly ExitModel[] | ((market: Market) => readonly ExitModel[]);
+};
+
+export interface MarketResult {
+  /** `<symbol>_<timeframe>`, also set as `series` on each trade. */
+  id: string;
+  symbol: string;
+  timeframe: Timeframe;
+  report: BacktestReport;
+  snapshot: Snapshot;
+}
+
+/**
+ * The same signal on several markets, one after the other (one download each, or a replay).
+ * Every trade gets `series` = the market id, so `tradesToCsv(results.flatMap((r) => r.report.trades))`
+ * gives one CSV for all of them.
+ */
+export async function backtestMany(query: BacktestManyQuery): Promise<MarketResult[]> {
+  if (!Array.isArray(query?.markets) || query.markets.length === 0) throw invalid('markets must be a non-empty array of { symbol, timeframe }');
+  const results: MarketResult[] = [];
+  for (const market of query.markets) {
+    const id = `${market.symbol}_${market.timeframe}`;
+    if (results.some((r) => r.id === id)) throw invalid(`Duplicate market ${id}`);
+    const exits = typeof query.exits === 'function' ? query.exits(market) : query.exits;
+    const { report, snapshot } = await backtest({
+      ...query, symbol: market.symbol, timeframe: market.timeframe, exits, snapshot: market.snapshot,
+    });
+    for (const trade of report.trades) trade.series = id;
+    results.push({ id, symbol: market.symbol, timeframe: market.timeframe, report, snapshot });
+  }
+  return results;
 }
