@@ -22,7 +22,7 @@ writeFileSync('trades.csv', tradesToCsv(report.trades));
 writeFileSync('snapshot.json', JSON.stringify(snapshot)); // Replay later, exactly
 ```
 
-No account is needed for public symbols. With `credentials`, history goes as far as the account allows (see [Accounts and limits](../README.md#accounts-and-limits)). A run on about 4 500 4H bars, with 4 exits × 2 splits × 1 000 random runs, takes under a second after the download.
+No account is needed for public symbols. With `credentials`, history goes as far as the account allows (see [Accounts and limits](../README.md#accounts-and-limits)). After the download, the reference strategy on about 4 500 4H bars (4 exits × 2 splits × 1 000 random runs) runs in about 0.2 s; a rule with a thousand signals takes about 10 s, mostly in the random baseline (lower `runs` while iterating).
 
 ## Writing the signal
 
