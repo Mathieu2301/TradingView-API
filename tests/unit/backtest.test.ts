@@ -344,8 +344,10 @@ describe('backtest: random baseline and metrics', () => {
 
   it('gives the same report twice and a percentile per row', () => {
     const run = () => runBacktest(randomWalk(900, 9), { signal: smaCross, runs: 30 });
+    // Same data and seed => same report, apart from the run and freeze times.
+    const stable = (r: ReturnType<typeof run>) => JSON.stringify({ ...r, createdAt: 0, snapshot: { ...r.snapshot, fetchedAt: 0 } });
     const a = run();
-    expect(JSON.stringify(run())).toBe(JSON.stringify(a));
+    expect(stable(run())).toBe(stable(a));
     for (const row of a.rows.filter((r) => r.metrics.trades > 0)) {
       expect(row.baseline).toMatchObject({ runs: 30 });
       expect(row.baseline).not.toHaveProperty('netReturns');
