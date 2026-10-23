@@ -12,7 +12,7 @@ import {
   computeMetrics, createRng, deriveSeed, percentileRank, randomBaseline,
 } from './stats.js';
 import type {
-  Bar, Baseline, Costs, Direction, Entry, ExitModel, ExitReason, Metrics, Segment, Signal, SignalFunction,
+  Bar, Baseline, Costs, Direction, Entry, ExitModel, ExitReason, Metrics, Segment, Signal, SignalFunction, Trade,
 } from './types.js';
 
 export interface BacktestOptions {
@@ -287,21 +287,11 @@ export function resolveWarmupBars(signal: SignalFunction, exits: readonly ExitMo
   return Math.max(signal.warmupBars ?? BACKTEST_DEFAULTS.signalWarmupBars, ...exits.map((e) => e.warmupBars ?? 0));
 }
 
-/**
- * Runs the full protocol on frozen candles, synchronously and without network:
- * causality check of the signal, warm-up, chronological IS/OOS split, every exit on the same
- * entries, costs on both sides, metrics per exit and split, seeded random-entry baseline.
- * Throws a `LOOK_AHEAD` TradingViewError when the signal uses future bars.
- *
- * @example
- * const report = runBacktest(candles, { signal: (bars) => bars.flatMap((b, i) => ...) });
- * console.log(formatReport(report));
- */
-export function runBacktest(input: Snapshot | readonly Bar[], options: BacktestOptions): BacktestReport {
+type ResolvedOptions = Required<Omit<BacktestOptions, 'exits' | 'warmupBars'>> & { exits: readonly ExitModel[]; warmupBars: number };
+
+function resolveOptions(options: BacktestOptions): ResolvedOptions {
   if (typeof options?.signal !== 'function') throw invalid('options.signal must be a function (candles) => [{ bar, direction }]');
-  const snapshot = toSnapshot(input);
-  const { candles } = snapshot;
-  const o = { ...BACKTEST_DEFAULTS, ...options };
+  const o = { ...BACKTEST_DEFAULTS, ...options } as Required<Omit<BacktestOptions, 'exits' | 'warmupBars'>>;
   checkOption('fee', o.fee, o.fee >= 0 && o.fee < 1);
   checkOption('slippage', o.slippage, o.slippage >= 0 && o.slippage < 1);
   checkOption('splitRatio', o.splitRatio, o.splitRatio > 0 && o.splitRatio < 1);
@@ -311,86 +301,80 @@ export function runBacktest(input: Snapshot | readonly Bar[], options: BacktestO
   const exits = options.exits ?? defaultExits();
   if (!Array.isArray(exits) || exits.length === 0) throw invalid('exits must be a non-empty array');
   if (new Set(exits.map((e) => e.id)).size !== exits.length) throw invalid('exit ids must be unique');
-  const warmupBars = resolveWarmupBars(options.signal, exits, options.warmupBars);
+  return { ...o, exits, warmupBars: resolveWarmupBars(options.signal, exits, options.warmupBars) };
+}
+
+/** Signals of the full history, rejected when the same rule on shorter history disagrees. */
+function causalSignals(o: ResolvedOptions, candles: Snapshot['candles']): { signals: Signal[]; causality: CausalityCheck } {
+  const signals = normaliseSignals(o.signal(candles), candles.length);
+  if (o.causalityChecks === 0) return { signals, causality: { reruns: 0, checkedSignals: 0, totalSignals: signals.length } };
+  const result = checkCausality(o.signal, candles, {
+    fullSignals: signals, maxSignals: o.causalityChecks, fromBar: o.warmupBars, seed: o.seed,
+  });
+  if (result.violations.length) throw lookAheadError(result.violations, candles);
+  return { signals, causality: result.check };
+}
+
+function tradeRecord(t: Trade, exit: string, split: string, candles: readonly Bar[]): TradeRecord {
+  return {
+    exit,
+    split,
+    direction: t.direction,
+    signalBar: t.signalBar,
+    signalTime: candles[t.signalBar].time,
+    entryBar: t.entryBar,
+    entryTime: candles[t.entryBar].time,
+    refs: refTimes(t.refs, candles),
+    entryOpen: t.entryOpen,
+    entryPrice: t.entryPrice,
+    initialStop: t.initialStop,
+    target: t.target,
+    exitBar: t.exitBar,
+    exitTime: candles[t.exitBar].time,
+    exitLevel: t.exitLevel,
+    exitPrice: t.exitPrice,
+    reason: t.reason,
+    return: t.return,
+  };
+}
+
+/** One exit on one segment: strategy trades, metrics and the random baseline. */
+function evaluate(
+  o: ResolvedOptions, candles: readonly Bar[], entries: readonly Entry[], exit: ExitModel, segment: Segment,
+): { row: ReportRow; trades: TradeRecord[] } {
   const costs: Costs = { fee: o.fee, slippage: o.slippage };
+  const result = simulate({ candles, entries, exit, costs, segment });
+  const metrics = computeMetrics(result.trades);
+  const longs = result.trades.filter((t) => t.direction === 'long').length;
+  const baseline = metrics.trades > 0 && o.runs > 0
+    ? randomBaseline({
+      candles, exit, costs, segment,
+      tradeCount: metrics.trades,
+      longShare: longs / metrics.trades,
+      runs: o.runs,
+      seed: deriveSeed(o.seed, exit.id, segment.name),
+    })
+    : null;
+  const row: ReportRow = {
+    exit: exit.id,
+    exitLabel: exit.label,
+    split: segment.name,
+    metrics,
+    longs,
+    shorts: metrics.trades - longs,
+    skippedInPosition: result.skippedInPosition,
+    baseline: baseline && {
+      runs: baseline.runs, seed: baseline.seed, matchedRuns: baseline.matchedRuns, meanTrades: baseline.meanTrades,
+      p5: baseline.p5, p50: baseline.p50, p95: baseline.p95,
+    },
+    percentile: baseline && percentileRank(metrics.netReturn, baseline.netReturns),
+  };
+  return { row, trades: result.trades.map((t) => tradeRecord(t, exit.id, segment.name, candles)) };
+}
 
-  // 1. Signals, then their causality: the same rule on shorter history must agree.
-  const signals = normaliseSignals(options.signal(candles), candles.length);
-  let causality: CausalityCheck = { reruns: 0, checkedSignals: 0, totalSignals: signals.length };
-  if (o.causalityChecks > 0) {
-    const result = checkCausality(options.signal, candles, {
-      fullSignals: signals, maxSignals: o.causalityChecks, fromBar: warmupBars, seed: o.seed,
-    });
-    if (result.violations.length) throw lookAheadError(result.violations, candles);
-    causality = result.check;
-  }
-
-  // 2. Chronological split and entries (always the open of the bar after the signal).
-  const { inSample, outOfSample } = splitSegments(candles.length, warmupBars, o.splitRatio);
-  const segmentOf = (s: Signal) => [inSample, outOfSample].find((seg) => s.bar >= seg.start && s.bar + 1 < seg.end) ?? null;
-  const entries: Entry[] = signals.map((s) => ({
-    direction: s.direction, signalBar: s.bar, entryBar: s.bar + 1, ...(s.refs ? { refs: s.refs } : {}),
-  }));
-
-  // 3. Every exit on every segment, with its random baseline.
-  const rows: ReportRow[] = [];
-  const trades: TradeRecord[] = [];
-  for (const exit of exits) {
-    for (const segment of [inSample, outOfSample]) {
-      const result = simulate({ candles, entries, exit, costs, segment });
-      const metrics = computeMetrics(result.trades);
-      const longs = result.trades.filter((t) => t.direction === 'long').length;
-      let baseline: Baseline | null = null;
-      if (metrics.trades > 0 && o.runs > 0) {
-        baseline = randomBaseline({
-          candles, exit, costs, segment,
-          tradeCount: metrics.trades,
-          longShare: longs / metrics.trades,
-          runs: o.runs,
-          seed: deriveSeed(o.seed, exit.id, segment.name),
-        });
-      }
-      rows.push({
-        exit: exit.id,
-        exitLabel: exit.label,
-        split: segment.name,
-        metrics,
-        longs,
-        shorts: metrics.trades - longs,
-        skippedInPosition: result.skippedInPosition,
-        baseline: baseline && {
-          runs: baseline.runs, seed: baseline.seed, matchedRuns: baseline.matchedRuns, meanTrades: baseline.meanTrades,
-          p5: baseline.p5, p50: baseline.p50, p95: baseline.p95,
-        },
-        percentile: baseline && percentileRank(metrics.netReturn, baseline.netReturns),
-      });
-      for (const t of result.trades) {
-        trades.push({
-          exit: exit.id,
-          split: segment.name,
-          direction: t.direction,
-          signalBar: t.signalBar,
-          signalTime: candles[t.signalBar].time,
-          entryBar: t.entryBar,
-          entryTime: candles[t.entryBar].time,
-          refs: refTimes(t.refs, candles),
-          entryOpen: t.entryOpen,
-          entryPrice: t.entryPrice,
-          initialStop: t.initialStop,
-          target: t.target,
-          exitBar: t.exitBar,
-          exitTime: candles[t.exitBar].time,
-          exitLevel: t.exitLevel,
-          exitPrice: t.exitPrice,
-          reason: t.reason,
-          return: t.return,
-        });
-      }
-    }
-  }
-
-  // 4. Warnings in plain language.
-  const tradableYears = ((candles.length - inSample.start) * snapshot.barSeconds) / (365.25 * 86_400);
+function reportWarnings(
+  o: ResolvedOptions, snapshot: Snapshot, tradableYears: number, signals: readonly Signal[], rows: readonly ReportRow[],
+): string[] {
   const warnings: string[] = [];
   if (tradableYears < o.minYears) {
     warnings.push(`Only ${tradableYears.toFixed(2)} years of tradable history after warm-up (${o.minYears} wanted): results are even less conclusive.`);
@@ -405,18 +389,62 @@ export function runBacktest(input: Snapshot | readonly Bar[], options: BacktestO
   }
   if (o.causalityChecks === 0) warnings.push('Causality check disabled: look-ahead in the signal would go unnoticed.');
   if (snapshot.gaps.length) warnings.push(`${snapshot.gaps.length} gap(s) in the data (market closures also count).`);
+  return warnings;
+}
+
+function signalRecord(s: Signal, candles: readonly Bar[], segments: readonly Segment[]): SignalRecord {
+  const segment = segments.find((seg) => s.bar >= seg.start && s.bar + 1 < seg.end);
+  return {
+    bar: s.bar,
+    time: candles[s.bar].time,
+    direction: s.direction,
+    entryBar: s.bar + 1,
+    entryTime: candles[s.bar + 1]?.time ?? null,
+    split: (segment?.name ?? null) as SignalRecord['split'],
+    refs: refTimes(s.refs, candles),
+  };
+}
+
+/**
+ * Runs the full protocol on frozen candles, synchronously and without network:
+ * causality check of the signal, warm-up, chronological IS/OOS split, every exit on the same
+ * entries, costs on both sides, metrics per exit and split, seeded random-entry baseline.
+ * Throws a `LOOK_AHEAD` TradingViewError when the signal uses future bars.
+ *
+ * @example
+ * const report = runBacktest(candles, { signal: (bars) => bars.flatMap((b, i) => ...) });
+ * console.log(formatReport(report));
+ */
+export function runBacktest(input: Snapshot | readonly Bar[], options: BacktestOptions): BacktestReport {
+  const o = resolveOptions(options);
+  const snapshot = toSnapshot(input);
+  const { candles } = snapshot;
+
+  // 1. Signals, then their causality: the same rule on shorter history must agree.
+  const { signals, causality } = causalSignals(o, candles);
+
+  // 2. Chronological split and entries (always the open of the bar after the signal).
+  const { inSample, outOfSample } = splitSegments(candles.length, o.warmupBars, o.splitRatio);
+  const entries: Entry[] = signals.map((s) => ({
+    direction: s.direction, signalBar: s.bar, entryBar: s.bar + 1, ...(s.refs ? { refs: s.refs } : {}),
+  }));
+
+  // 3. Every exit on every segment, with its random baseline.
+  const results = o.exits.flatMap((exit) => [inSample, outOfSample].map((segment) => evaluate(o, candles, entries, exit, segment)));
+  const rows = results.map((r) => r.row);
+  const tradableYears = ((candles.length - inSample.start) * snapshot.barSeconds) / (365.25 * 86_400);
 
   return {
     snapshot: snapshotInfo(snapshot),
     settings: {
-      signal: options.signal.label ?? (options.signal.name || 'custom signal'),
+      signal: o.signal.label ?? (o.signal.name || 'custom signal'),
       fee: o.fee,
       slippage: o.slippage,
       splitRatio: o.splitRatio,
-      warmupBars,
+      warmupBars: o.warmupBars,
       runs: o.runs,
       seed: o.seed,
-      exits: exits.map((e) => ({ id: e.id, label: e.label })),
+      exits: o.exits.map((e) => ({ id: e.id, label: e.label })),
     },
     segments: {
       warmup: segmentInfo({ name: 'warmup', start: 0, end: inSample.start }, candles),
@@ -424,19 +452,11 @@ export function runBacktest(input: Snapshot | readonly Bar[], options: BacktestO
       outOfSample: segmentInfo(outOfSample, candles),
     },
     tradableYears,
-    signals: signals.map((s) => ({
-      bar: s.bar,
-      time: candles[s.bar].time,
-      direction: s.direction,
-      entryBar: s.bar + 1,
-      entryTime: candles[s.bar + 1]?.time ?? null,
-      split: (segmentOf(s)?.name ?? null) as SignalRecord['split'],
-      refs: refTimes(s.refs, candles),
-    })),
+    signals: signals.map((s) => signalRecord(s, candles, [inSample, outOfSample])),
     rows,
-    trades,
+    trades: results.flatMap((r) => r.trades),
     causality,
-    warnings,
+    warnings: reportWarnings(o, snapshot, tradableYears, signals, rows),
   };
 }
 
