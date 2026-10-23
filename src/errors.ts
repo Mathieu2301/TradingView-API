@@ -35,7 +35,9 @@ export type TradingViewErrorCode =
   /** An operation was cancelled through an `AbortSignal`. */
   | 'ABORTED'
   /** A user-supplied callback threw while processing data. */
-  | 'CALLBACK_ERROR';
+  | 'CALLBACK_ERROR'
+  /** A backtest signal used bars after the bar it was decided on. */
+  | 'LOOK_AHEAD';
 
 export interface TradingViewErrorOptions {
   /** Raw details sent by the server, when available. */

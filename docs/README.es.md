@@ -121,6 +121,22 @@ const { values } = await getIndicatorData({
 
 Las funciones de datos WebSocket aceptan `timeoutMs`, un `AbortSignal`, credenciales de cuenta (`credentials`) y un `client` compartido opcional. Las consultas HTTP aceptan un `AbortSignal` en sus opciones. Los errores son `TradingViewError` con un `code` como `SYMBOL_ERROR`, `TIMEOUT` o `STUDY_ERROR`. Consulta todas las opciones en la [guía de la API de datos](data-api.md).
 
+## API de backtest
+
+Escribe la regla de entrada; `@mathieuc/tradingview/backtest` hace el resto: velas congeladas, rechazo de la anticipación (look-ahead), entrada en la apertura siguiente, comisiones y slippage en ambos lados, ejecuciones pesimistas, división in-sample/out-of-sample, cuatro salidas y una referencia de entradas aleatorias con semilla.
+
+```ts
+import { backtest, formatReport, rsiDivergence } from '@mathieuc/tradingview/backtest';
+
+const { report } = await backtest({
+  symbol: 'BINANCE:BTCUSDT', timeframe: '240', years: 2,
+  signal: rsiDivergence(), // O la tuya: (candles) => [{ bar, direction: 'long' | 'short' }]
+});
+console.log(formatReport(report)); // report es JSON simple: filas por salida y segmento, operaciones, avisos
+```
+
+No promete ninguna rentabilidad: un resultado negativo o no concluyente es un resultado válido. Lee la [guía de backtest](backtest.md) (en inglés).
+
 ## API de bajo nivel
 
 Para un control completo (varios gráficos y estudios en una conexión, modo replay, paquetes sin procesar), usa directamente el cliente y las sesiones:
