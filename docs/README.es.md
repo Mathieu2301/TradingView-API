@@ -14,7 +14,11 @@
 
 **Convierte tus indicadores de TradingView en un bot de trading, solo conversando.** Un agente de IA en molted instala TradingView-API, prueba tu estrategia con datos históricos y la ejecuta 24/7 en una cuenta demo. Dinero real solo cuando tú lo decidas.
 
-**[▶ Ver la película con sonido](https://molted.studio/dreams/ai-agent-for-tradingview-data?utm_source=github&utm_medium=readme&utm_campaign=tradingview-api#film)** · **[Crear mi agente de IA →](https://molted.studio/dreams/ai-agent-for-tradingview-data?utm_source=github&utm_medium=readme&utm_campaign=tradingview-api)**
+**[Crear mi agente de IA →](https://molted.studio/dreams/ai-agent-for-tradingview-data?utm_source=github&utm_medium=readme&utm_campaign=tradingview-api)**
+
+▶ Con sonido (en inglés):
+
+https://github.com/user-attachments/assets/88859255-9e80-435e-95d4-f6f40bf0946b
 
 ### Una consulta, datos reales
 
