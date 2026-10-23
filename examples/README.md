@@ -14,6 +14,7 @@ Examples that need an account read the `SESSION` and `SIGNATURE` cookies from th
 | Example | API | Account |
 | --- | --- | --- |
 | [candles.js](candles.js) | `getCandles` (count, from/to) | No |
+| [honest-backtest/](honest-backtest) | `getCandles` → backtest protocol: no look-ahead, costs, IS/OOS split, random-entry baseline | No |
 | [watch-candles.js](watch-candles.js) | `watchCandles` | No |
 | [quotes.js](quotes.js) | `getQuote`, `getQuotes`, `watchQuotes` | No |
 | [indicator-data.js](indicator-data.js) | `getIndicatorData` | Pine scripts only |
@@ -35,3 +36,7 @@ Examples that need an account read the `SESSION` and `SIGNATURE` cookies from th
 | [drawings.js](drawings.js) | `getDrawings` | Private layouts |
 | [pine-permissions.js](pine-permissions.js) | `PinePermissionManager` | Yes (script owner) |
 | [user-login.js](user-login.js) | `loginUser`, `getUser` | Username/password |
+
+## Backtesting honestly
+
+[honest-backtest/](honest-backtest) is a reference protocol for testing a strategy on `getCandles` data: frozen snapshot, chronological in-sample/out-of-sample split, no look-ahead, fees and slippage, pessimistic fills, interchangeable exits and a seeded random-entry baseline. It makes no claim of profitability: a negative or inconclusive result is a valid outcome.
