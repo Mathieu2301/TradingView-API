@@ -208,6 +208,14 @@ for the tested symbol/timeframe; UI exports and Deep Backtesting have separate
 subscription requirements.
 
 
+## Backtesting a strategy on candles
+
+The library ships no backtesting engine. [examples/honest-backtest](../examples/honest-backtest) shows a protocol to copy: candles fetched once with `getCandles` and frozen, a chronological 70/30 in-sample/out-of-sample split, signals confirmed without look-ahead and entered at the next bar's open, fees and slippage on both sides, a pessimistic rule when stop and target fall in the same candle, and a seeded random-entry baseline for each exit. A negative or inconclusive result is a valid outcome.
+
+```bash
+npm run build && node examples/honest-backtest/index.js --symbol BINANCE:BTCUSDT --timeframe 240
+```
+
 ## Search and technical analysis
 
 ```ts
