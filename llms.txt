@@ -22,7 +22,7 @@ Low-level API: TradingViewClient, client.createChart() (ChartSession: setMarket,
 
 Pine studies need a TradingView account (session cookies). Built-in studies and candles/quotes work anonymously, with history limits.
 Docs: docs/data-api.md, docs/backtest.md, docs/low-level-api.md, docs/migration-v4.md, docs/v4-coverage.md, docs/v4-reliability.md, docs/protocol-contributing.md. Examples: examples/.
-Backtest API (import from '@mathieuc/tradingview/backtest'; since 4.1.0-beta.1, npm tag beta; report format frozen in 4.1.0-beta.2): write only the entry rule, do not write an engine.
+Backtest API (import from '@mathieuc/tradingview/backtest', since 4.1.0): write only the entry rule, do not write an engine.
 - backtest({ symbol, timeframe, years?, credentials?, signal, exits?, fee?, slippage?, splitRatio?, runs?, seed? }) -> { report, snapshot }. runBacktest(candles | snapshot, options) -> report, synchronous, no network.
 - signal(candles) -> [{ bar, direction: 'long' | 'short', refs? }]: decided at the close of `bar` using bars 0..bar only; entry is always the next bar's open. Optional signal.warmupBars (default 200) and signal.label.
 - The engine reruns signal on truncated history and throws TradingViewError code LOOK_AHEAD if a signal depends on later bars (or repaints).
