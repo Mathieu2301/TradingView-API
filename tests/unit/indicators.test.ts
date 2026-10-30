@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BuiltInIndicator } from '../../src/indicators/builtin-indicator.js';
-import { parseIndicatorDefinition } from '../../src/http/indicators.js';
+import { compiledScriptOf, parseIndicatorDefinition } from '../../src/http/indicators.js';
 import { makePine } from '../helpers/indicators.js';
 
 describe('PineIndicator', () => {
@@ -88,5 +88,39 @@ describe('parseIndicatorDefinition', () => {
     expect(indicator.plots).toEqual({
       plot_0: 'MA_line', plot_1: 'MA_line_2', plot_2: 'MA_line_3', plot_3: 'MA_line_colorer',
     });
+  });
+});
+
+describe('compiledScriptOf', () => {
+  const IL = 'bmI9Ks46_abc==_xyz';
+  const meta = (text = '', extra: Record<string, unknown> = {}): any => ({
+    scriptIdPart: 'STD;RSI',
+    inputs: [
+      { id: 'text', name: 'ILScript', defval: text, type: 'text', isHidden: true },
+      { id: 'in_0', name: 'Length', defval: 14, type: 'integer' },
+    ],
+    ...extra,
+  });
+
+  it('reads result.ilTemplate (historical shape)', () => {
+    expect(compiledScriptOf({ ilTemplate: IL, metaInfo: meta() })).toBe(IL);
+  });
+
+  it('reads the hidden text input defval (27 Oct 2026 shape)', () => {
+    expect(compiledScriptOf({ metaInfo: meta(IL) })).toBe(IL);
+  });
+
+  it('reads metaInfo.defaults.inputs.text (30 Oct 2026 shape)', () => {
+    const result = { metaInfo: meta('', { defaults: { inputs: { text: IL, in_0: 14 } } }) };
+    expect(compiledScriptOf(result)).toBe(IL);
+    const indicator = parseIndicatorDefinition(result, 'STD%3BRSI', 'last');
+    expect(indicator.script).toBe(IL);
+    expect(Object.keys(indicator.inputs)).toEqual(['in_0']);
+  });
+
+  it('ignores values that are not a compiled script', () => {
+    expect(compiledScriptOf({ metaInfo: meta('', { defaults: { inputs: { text: 'plot(close)' } } }) })).toBeUndefined();
+    expect(compiledScriptOf({ metaInfo: meta() })).toBeUndefined();
+    expect(compiledScriptOf(undefined)).toBeUndefined();
   });
 });
