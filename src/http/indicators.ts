@@ -125,6 +125,31 @@ function parsePlots(styles: Record<string, any>, items: any[]): Record<string, s
   return plots;
 }
 
+const COMPILED_SCRIPT_PREFIX = 'bmI9Ks46_';
+
+const compiledScriptOrUndefined = (value: unknown): string | undefined => (
+  typeof value === 'string' && value.startsWith(COMPILED_SCRIPT_PREFIX) ? value : undefined
+);
+
+/**
+ * The compiled script (`ILScript`) of a `pine-facade/translate` result.
+ *
+ * TradingView moved it twice in October 2026: `result.ilTemplate` (historical),
+ * then the `defval` of the hidden `text` input (27 Oct), then
+ * `metaInfo.defaults.inputs.text` (by 30 Oct). All three are read, newest
+ * shape last, so a rollback on their side keeps working too. Without it the
+ * chart server answers `study_error` "Can't parse pine".
+ */
+export function compiledScriptOf(result: any): string | undefined {
+  if (typeof result?.ilTemplate === 'string' && result.ilTemplate) return result.ilTemplate;
+  const meta = result?.metaInfo;
+  const textInput = Array.isArray(meta?.inputs)
+    ? meta.inputs.find((input: any) => input?.id === 'text')
+    : undefined;
+  return compiledScriptOrUndefined(textInput?.defval)
+    ?? compiledScriptOrUndefined(meta?.defaults?.inputs?.text);
+}
+
 /** Converts a `pine-facade/translate` result into a `PineIndicator`. */
 export function parseIndicatorDefinition(result: any, id: string, version: string): PineIndicator {
   const meta = result.metaInfo;
@@ -135,7 +160,7 @@ export function parseIndicatorDefinition(result: any, id: string, version: strin
     shortDescription: meta.shortDescription,
     inputs: parseInputs(meta.inputs),
     plots: parsePlots(meta.styles ?? {}, meta.plots ?? []),
-    script: result.ilTemplate,
+    script: compiledScriptOf(result) ?? '',
   });
 }
 
@@ -154,6 +179,13 @@ export async function getIndicator(id: string, options: GetIndicatorOptions = {}
 
   if (!data?.success || !data.result?.metaInfo?.inputs) {
     throw new TradingViewError('NOT_FOUND', `Inexistent or unsupported indicator: "${data?.reason}"`, { details: data });
+  }
+  if (!compiledScriptOf(data.result)) {
+    throw new TradingViewError(
+      'PARSE_ERROR',
+      `No compiled script in the definition of "${id}": TradingView changed the pine-facade/translate format again`,
+      { details: data },
+    );
   }
   return parseIndicatorDefinition(data.result, encodedId, version);
 }
